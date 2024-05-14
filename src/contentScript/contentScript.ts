@@ -1,0 +1,1391 @@
+//TO DO : remove the jobify
+// remove the 10sec delay
+
+var Email = "";
+
+// to check if the website have be fully loaded
+
+window.onload = (event) => {
+  chrome.runtime.sendMessage({ message: "getLoginEmail" });
+  console.log("page is fully loaded");
+
+  // setTimeout(checkInputFields, 10000000);   //wait for 10 sec
+};
+
+window.addEventListener("load", function () {
+  // console.log("Everything is fully loaded.");
+  setTimeout(checkInputFields, 5000);
+  // Actions that require all resources to be fully loaded
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.email) {
+    // Handle the received email ID
+    Email = request.email;
+    // console.log("Received email ID:", request.email);
+
+    // setTimeout(checkInputFields, 10000);
+    window.addEventListener("load", function () {
+      // console.log("Everything is fully loaded. 1");
+      // Actions that require all resources to be fully loaded
+      checkInputFields();
+    });
+  }
+  if (Email == null) {
+    // createErrorFloatingPopup(0, "Please Google  Login", 1000);
+    console.log("please Google Login");
+  }
+});
+
+var userData;
+
+//handle popup refetch button click
+// In contentScript.js
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action === "refetchData") {
+    console.log("refetchData");
+    // Clear all text-based input fields
+    // = document.querySelectorAll("input");
+    const inputFields = document.querySelectorAll<HTMLInputElement>("input");
+    // inputFields.forEach((input) => {
+    //   // console.log("Clear input",input);
+    //   input.value = "";
+    // });
+    inputFields.forEach((input) => {
+      // Check if the input does not have the class 'css-77hcv'
+      if (!input.classList.contains('css-77hcv')) {
+        // console.log("Clear input", input);
+        input.value = "";  // Clear the input only if it does not have the class
+      }
+    });
+    
+
+    // check all checkboxes
+    document
+      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+      .forEach((checkbox) => {
+        // console.log("Checking unchecked",checkbox);
+        // console.log("Checking unchecked",checkbox.selected);
+        checkbox.checked = true;
+      });
+
+    // Reset radio buttons - You might want to handle this differently based on your requirements
+    document
+      .querySelectorAll<HTMLInputElement>('input[type="radio"]')
+      .forEach((radio) => {
+        // radio.checked = false; // or set a specific radio button in a group to checked based on your needs
+        // console.log("Checking radio",radio);
+      });
+
+    // Reset select dropdowns to their first option or a default value
+    document.querySelectorAll("select").forEach((select) => {
+      select.selectedIndex = 0; // or set it to a specific index that represents the default value
+    });
+
+    document.querySelectorAll("form").forEach((form) => {
+      form.reset();
+    });
+    console.log("here");
+    console.log("email", Email);
+    // Fetch email id from background script
+
+    // chrome.runtime.sendMessage(
+    //   { message: "getLoginEmail" },
+    //   function (response) {
+    //     console.log("response: " + response)
+    //     if (response.email) {
+    //       Email = response.email; // Assuming the background script sends back an object with an email property
+    //       console.log("Email received from background:", Email);
+
+    //       // checkInputFields() // no need Implement this function to fetch data from server and fill form fields
+    //       window.addEventListener("load", function () {
+    //         // console.log("Everything is fully loaded. 2");
+    //         // Actions that require all resources to be fully loaded
+    //         checkInputFields();
+    //       });
+    //     } else {
+    //       // createErrorFloatingPopup(0, "Please Google Login", 10000); // no need
+    //       console.log("please Google Login");
+    //     }
+    //   }
+    // );
+    if (Email) {
+      console.log("here", Email)
+      // window.addEventListener("load", function () {
+        console.log("Everything is fully loaded. 2");
+        // Actions that require all resources to be fully loaded
+        checkInputFields();
+      // });
+    } else {
+      console.log("no email");
+    }
+  }
+});
+
+// Function to handle button clicks
+function handleButtonClick(event) {
+  // Your code to handle button clicks
+  // console.log("Button clicked!", event.target);
+  // Perform other actions as needed
+}
+
+// Add event listeners to all button elements on the page
+const allButtons = document.querySelectorAll("button");
+allButtons.forEach((button) => {
+  button.addEventListener("click", handleButtonClick);
+});
+
+// Function to be called when an input value changes
+function handleInputChange(event) {
+  // Your code to handle input changes
+  // console.log("Input value changed:", event.target.value);
+  // Perform other actions as needed
+}
+
+// Find all button elements on the page
+
+function checkInputFields() {
+  // console.log("to fetch");
+  const inputFields = document.querySelectorAll("input");
+  const selectFields = document.querySelectorAll("select");
+  const count = inputFields.length + selectFields.length;
+  // inputFields.forEach((divElement) => {
+  //   divElement.style.backgroundColor = 'green';
+  // });
+  // const inputFields = document.querySelectorAll('div[data-automation-id] input[type="text"], div[data-automation-id] input[type="checkbox"], div[data-automation-id] input[type="radio"]');
+  console.log("inputFields", inputFields);
+  if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
+    console.log("to fetch", Email);
+    // const url = "http://localhost:5000/api/details/extension/" + Email;
+    const url = "https://api.autofilljobs.com/details/extension/" + Email;
+    fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        // console.log("response",response.json());
+        return response.json();
+      })
+      .then((data) => {
+        // Process the data received from the backend
+        // console.log("data", data);
+
+        if (data.error != "no error") {
+          // createErrorFloatingPopup(0, "Please Register in Website", 10000);
+          console.log("Please Register in Website");
+        } else {
+          userData = data.data;
+          // createFloatingPopup(count);
+          dataFill(data.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data from the backend", error);
+        // Assuming the response will have an email field
+        // createErrorFloatingPopup(0, "Server Down", 20000); // Show for 10 seconds
+        console.log("Server Down");
+      });
+  }
+}
+document.addEventListener(
+  "mousedown",
+  function (event) {
+    // console.log("event", event);
+    if (event.button === 2) {
+      // Right mouse button
+      const lastClickedElement = event.target;
+      // console.log("lastClickedElement", lastClickedElement);
+      dataFill(userData);
+    }
+  },
+  true
+);
+
+function onPopButtonClick() {
+  // console.log("onPopButtonClick");
+  dataFill(userData);
+  // window.addEventListener('load', function() {
+  //   console.log('Everything is fully loaded. 3');
+  //   // Actions that require all resources to be fully loaded
+  // });
+}
+// checkInputFields();
+var personDetails = {
+  name: "Amal Jose Vallavanthara",
+  firstname: "Amal",
+  middlename: "Jose",
+  lastname: "Vallavanthara",
+  location: "Germany",
+  address: "Kahlhieb 2",
+  city: "Stuttgart",
+  postcode: 70499,
+  email: "emailUser",
+  phone: "017632634505",
+  code: "+49",
+  password: "Hello123@",
+  gender: "Male",
+};
+
+const mapDetailRegex = {
+  firstName:
+    /first[-_ ]?name|fname|f[_]*name|given[_ ]?name|forename|personal[_ ]?name/gi,
+  middleName: /middle[-_ ]?name|mname|m[_]*name|initial|middle[_ ]?initial/gi,
+  lastName:
+    /last[-_ ]?name|lname|l[_]*name|surname|family[_ ]?name|paternal[-_ ]?name|sir[_ ]?name/gi,
+  fullName:
+    /(^|\b)full[\s-_]?name\b|(^|\b)user[\s-_]?name\b|given[\s-_]?name\(s\)?|(^|\b)complete[\s-_]?name\b|full[_ ]?legal[_ ]?name/gi,
+  preferredName:
+    /preferred[-_ ]?name|nickname|alias|preferred[_ ]?first[_ ]?name/gi,
+  familyName: /family[-_ ]?name|last[-_ ]?name/gi,
+  zip: /zip(code)?|postal[-_ ]?code|post[_ ]?code/gi,
+  phoneNumber:
+    /phone[-_ ]?(number)?\*?|mobile[-_ ]?(number)?\*?|telephone\*?|contact[_ ]?number/gi,
+  email: /e[-_ ]?mail|email[-_ ]?address|email/gi,
+  phoneAlternativeNumber:
+    /alternate[-_ ]?phone|secondary[-_ ]?phone|alternative[_ ]?contact[_ ]?number/gi,
+  dateOfBirth: /dob|date[-_ ]?of[-_ ]?birth|birth[-_ ]?date|birthdate/gi,
+  address1: /address[-_ ]?1|address|street[-_ ]?address|primary[_ ]?address/gi,
+  address2: /address[-_ ]?2|suite|unit|apartment|address[_ ]?line[_ ]?2/gi,
+  gender: /gender|sex|male[_ ]?or[_ ]?female/gi,
+  street: /street|street[-_ ]?name|road|avenue/gi,
+  houseNumber: /house[-_ ]?number|building[-_ ]?number|house[_ ]?num/gi,
+  city: /city|town|locality|city[_ ]?name/gi,
+  state: /state|province|region|state[_ ]?name/gi,
+  country: /country|nation|country[_ ]?name|nationality/gi,
+  apartment: /apartment|flat|unit|apartment[_ ]?number/gi,
+  floor: /floor|level|floor[_ ]?number/gi,
+  building: /building|complex|building[_ ]?name/gi,
+  twitterUrl: /twitter[-_ ]?url|twitter[_ ]?account|@[\w]+/gi,
+  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile/gi,
+  githubUrl: /github[-_ ]?url|github[_ ]?account/gi,
+  expectedSalary:
+    /expected[-_ ]?(salary|pay|compensation|wage(s)?)|salary[-_ ]?(expectation(s)?|range|desired|requirement(s)?)|desired[-_ ]?(salary|pay|compensation|wage(s)?)|compensation[_ ]?expectations/gi,
+  password: /password|passcode|pwd/gi,
+  confirmPassword:
+    /confirm[-_ ]?password|verify[-_ ]?password|password[_ ]?confirmation/gi,
+  employmentStatus: /employment[-_ ]?status|job[-_ ]?status|work[_ ]?status/gi,
+  company: /company|employer|organization|company[_ ]?name/gi,
+  jobTitle: /job[-_ ]?title|position|role|designation/gi,
+  startDate:
+    /start[-_ ]?date|date[-_ ]?of[-_ ]?entry|employment[_ ]?start[_ ]?date/gi,
+  endDate:
+    /end[-_ ]?date|date[-_ ]?of[-_ ]?leaving|employment[_ ]?end[_ ]?date/gi,
+  educationLevel:
+    /education[-_ ]?level|highest[-_ ]?qualification|academic[_ ]?level/gi,
+  degree: /degree|qualification|degree[_ ]?title/gi,
+  fieldOfStudy: /field[-_ ]?of[-_ ]?study|major|specialization/gi,
+  school: /school|university|college|institution/gi,
+  graduationDate: /graduation[-_ ]?date|date[_ ]?of[_ ]?graduation/gi,
+  grossSalary:
+    /gross[_ ]?salary|total[_ ]?earnings|annual[_ ]?income|salary[_ ]?before[_ ]?taxes/gi,
+  noticePeriod:
+    /notice[_ ]?period|availability|time[_ ]?to[_ ]?join|joining[_ ]?time/gi,
+  howDidYouHearAboutUs:
+    /how[_ ]?did[_ ]?you[_ ]?hear[_ ]?about[_ ]?us|source[_ ]?of[_ ]?application|referral[_ ]?source/gi,
+  emailAddress: /e[-_ ]?mail[_ ]?address|email|contact[_ ]?email/gi,
+  phoneDeviceType:
+    /phone[_ ]?device[_ ]?type|mobile[_ ]?model|cell[_ ]?phone[_ ]?kind/gi,
+  nationality:
+    /nationality|citizen(ship)?|country[_\s-]?of[_\s-]?origin|passport[_\s-]?country/gi,
+  prefix: /prefix|title|salutation|(mr|ms|mrs|miss|dr|prof)\.?/gi,
+  countryRegion:
+    /country[_\s-]?region|region|area|location[_\s-]?code|geo(graphical)?[_\s-]?area|place[_\s-]?of[_\s-]?residence|residential[_\s-]?area|living[_\s-]?area|habitation[_\s-]?area|domicile/gi,
+};
+
+const selectInputRegex = {
+  gender: /gender|gender*|sex/gi,
+  country: /location|country|region|candidate-location/gi,
+  state: /state|province|region/gi,
+  employmentStatus: /employment[-_ ]?status|job[-_ ]?status/gi,
+  phoneDeviceType:
+    /phone[_ ]?device[_ ]?type|mobile[_ ]?model|cell[_ ]?phone[_ ]?kind/gi,
+  location:
+    /location|place[_ ]?of[_ ]?residence|work[_ ]?location|city|state/gi,
+  howDidYouHearAboutUs:
+    /how[_ ]?did[_ ]?you[_ ]?hear[_ ]?about[_ ]?us|source[_ ]?of[_ ]?application|referral[_ ]?source/gi,
+  educationLevel:
+    /education[-_ ]?level|highest[-_ ]?qualification|academic[_ ]?level/gi,
+  degree: /degree|qualification|degree[_ ]?title/gi,
+  fieldOfStudy: /field[-_ ]?of[-_ ]?study|major|specialization/gi,
+  city: /city|town|locality|city[_ ]?name/gi,
+  maritalStatus:
+    /marital[_\s-]?status|marriage[_\s-]?status|civil[_\s-]?status|relationship[_\s-]?status/gi,
+  servedInMilitary:
+    /military[_\s-]?service|armed[_\s-]?forces[_\s-]?experience|veteran[_\s-]?status|service[_\s-]?record/gi,
+  workedPreviously:
+    /previous[_\s-]?employment|prior[_\s-]?job[_\s-]?experience|past[_\s-]?work|employment[_\s-]?history/gi,
+  countryRegion:
+    /country[_\s-]?region|region|area|location[_\s-]?code|geo(graphical)?[_\s-]?area|place[_\s-]?of[_\s-]?residence|residential[_\s-]?area|living[_\s-]?area|habitation[_\s-]?area|domicile/gi,
+  nationality:
+    /nationality|citizen(ship)?|country[_\s-]?of[_\s-]?origin|passport[_\s-]?country/gi,
+  prefix: /prefix|title|salutation|(mr|ms|mrs|miss|dr|prof)\.?/gi,
+  // You can add more fields as needed, following the same pattern.
+};
+
+const radioInputRegex = {
+  gender: /male|female|other|prefer not to say/gi, // Regex pattern to match radio button values for gender
+  // Other regex patterns...
+};
+const dateInputRegex = {
+  dateOfBirth: /dob|date[-_ ]?of[-_ ]?birth|birth[-_ ]?date|birthdate/gi,
+  startDate: /start[-_ ]?date|date[-_ ]?of[-_ ]?entry/gi,
+  endDate: /end[-_ ]?date|date[-_ ]?of[-_ ]?leaving/gi,
+  // other regex patterns...
+};
+
+const workExperienceRegex = {
+  jobTitle: /job title|Job[_ -]?Title/gi,
+  companyName: /company[_ -]?name|company/gi,
+  description:
+    /description|[a-zA-z*0-9]*role[a-zA-z*0-9]* description[a-zA-z*0-9]*/gi,
+  location: /location|country|region|candidate-location/gi,
+  stillWorking: /[a-zA-z*0-9]*still[_ -]working[a-zA-z*0-9]*/gi,
+  startDate:
+    /[a-zA-z*0-9]*start[_ -]?date[a-zA-z*0-9]*|[a-zA-z*0-9]*from[a-zA-z*0-9]*/gi,
+  endDate: /[a-zA-z*0-9]*end[- _]?date[a-zA-z*0-9]*|to[a-zA-z*0-9]*/gi,
+  skills: /skills/gi,
+};
+const projectExperienceRegex = {
+  projectName: /project[_ -]?name|project/gi,
+  startDate:
+    /[a-zA-z*0-9]*start[_ -]?date[a-zA-z*0-9]*|[a-zA-z*0-9]*from[a-zA-z*0-9]*/gi,
+  endDate: /[a-zA-z*0-9]*end[- _]?date[a-zA-z*0-9]*|to[a-zA-z*0-9]*/gi,
+  skills: /skills/gi,
+  stillWorking:
+    /[a-zA-z*0-9]*still[_ -]working[a-zA-z*0-9]*|ongoing[a-zA-z*0-9]*/gi,
+  description:
+    /description|[a-zA-z*0-9]*project[a-zA-z*0-9]* description[a-zA-z*0-9]*/gi,
+  gitUrl: /git[_ -]?url|repository[_ -]?url|source[_ -]?code[_ -]?url/gi,
+  hostUrl: /host[_ -]?url|live[_ -]?site[_ -]?url|demo[_ -]?url/gi,
+};
+
+const educationExperienceRegex = {
+  courseName: /course[_ -]?name|program/gi,
+  field: /field[_ -]?of[_ -]?study|major/gi,
+  collegeName: /college[_ -]?name|university|institution/gi,
+  startDate:
+    /[a-zA-z*0-9]*start[_ -]?date[a-zA-z*0-9]*|[a-zA-z*0-9]*from[a-zA-z*0-9]*/gi,
+  endDate: /[a-zA-z*0-9]*end[- _]?date[a-zA-z*0-9]*|to[a-zA-z*0-9]*/gi,
+  skills: /skills/gi,
+  stillStudying:
+    /still[_ -]?studying|ongoing[_ -]?education|currently[_ -]?enrolled/gi,
+  description: /description|course[_ -]?details|program[_ -]?overview/gi,
+  grade: /grade|gpa|score|marks/gi,
+  location: /location|campus|city|place/gi,
+  educationType: /education[_ -]?type|degree[_ -]?level|certification/gi,
+};
+
+const dataFill = (data) => {
+  // console.log("data", data);
+  const userDetails = data.details;
+  const userWorkExperience = data.workExperiences;
+  const userProjectExperience = data.projectExperiences;
+  const userEducationExperience = data.educationExperiences;
+
+  const pageContent = document.body.innerText.toLowerCase();
+  const allInnerTextArray = pageContent
+    .split("\n")
+    .filter((text) => text.trim() !== "");
+  // console.log("pageContent", allInnerTextArray);
+  // Combined regex patterns for each category
+  const workExperienceRegexPattern =
+    /\b(work[_ -]?experience|professional[_ -]?experience|employment[_ -]?history)\b/i;
+  const educationExperienceRegexPattern =
+    /\b(education[_ -]?experience|Education|academic[_ -]?background|educational[_ -]?history|studies)\b/i;
+  const projectExperienceRegexPattern =
+    /\b(project[_ -]?experience|project|portfolio|project[_ -]?history)\b/i;
+
+  function findElementByText(searchText, rootElement) {
+    const lowerSearchText = searchText.toLowerCase();
+    // console.log("rootElement: " + rootElement.innerText);
+    // const pageContent = rootElement.textContent;
+    // console.log("rootElement text: ",pageContent)
+    // Splitting the textContent of the rootElement into an array by new lines
+    const textSegments = rootElement.innerText.split("\n");
+
+    // Filtering out empty strings that might be generated by consecutive newline characters
+    const nonEmptyTextSegments = textSegments.filter(
+      (segment) => segment.trim() !== ""
+    );
+
+    // Checking each segment for the presence of the searchText
+    const foundSegments = nonEmptyTextSegments.filter((segment) =>
+      segment.toLowerCase().includes(lowerSearchText)
+    );
+    // console.log("rootElement text found or not: ",foundSegments)
+    // Using `Array.prototype.some` to check if any segment contains the searchText
+    const isTextFound = nonEmptyTextSegments.some((segment) =>
+      segment.toLowerCase().includes(lowerSearchText)
+    );
+
+    // console.log("Is text found?", isTextFound);
+
+    if (!isTextFound) {
+      // console.log("Found element null  element: ",rootElement)
+      return null;
+    } else if (isTextFound && rootElement.childElementCount < 1) {
+      const element = rootElement;
+      // console.log("Found actual leaf element element: ",element)
+      return element;
+    } else if (isTextFound && rootElement.childElementCount >= 1) {
+      // console.log("Founding element parent: ",rootElement)
+      const immediateChildren = rootElement.children;
+      // console.log("iimmediateChildren", immediateChildren);
+      // Get all child elements as an array
+      //  console.log("innerHTML",rootElement.innerHTML)
+      const childrenArray = Array.from(immediateChildren);
+      // console.log(childrenArray)
+      // If the element has children, recursively search them
+      if (rootElement.childElementCount > 0) {
+        for (const child of Array.from(rootElement.children)) {
+          const foundElement = findElementByText(searchText, child);
+          if (foundElement) {
+            // If the child search is successful, return the found element
+            return foundElement;
+          }
+        }
+      }
+    }
+  }
+
+  function findAllButtonsInParent(
+    element: Element,
+    parentTagName: string = "DIV"
+  ): NodeListOf<HTMLButtonElement> | null {
+    let currentElement: Element | null = element;
+    let parentElement: HTMLElement | null = null;
+
+    // Step 1: Find the parent div (or specified parent element)
+    while (currentElement) {
+      if (
+        currentElement.parentElement &&
+        currentElement.parentElement.tagName === parentTagName.toUpperCase()
+      ) {
+        parentElement = currentElement.parentElement as HTMLElement;
+        break; // Found the parent element
+      }
+      currentElement = currentElement.parentElement;
+    }
+
+    // If no parent element is found, return null
+    if (!parentElement) {
+      // console.log(`No parent ${parentTagName} found for the given element.`);
+      return null;
+    }
+
+    // Step 2: Find all buttons in the parent element
+    let buttons = parentElement.querySelectorAll<HTMLButtonElement>("button");
+
+    return buttons; // Returns all found button elements
+  }
+
+  // Example usage:
+  // Assuming you have an element to start with, for example:
+  // const someElement = document.querySelector('.some-class');
+
+  function programmaticallyClickButtons(timesToClick, button, callback) {
+    if (timesToClick <= 0) {
+      // console.log("All buttons have been clicked.");
+      if (callback) {
+        callback(); // When finished with clicks, call the callback function
+      }
+      return; // Stop if no more clicks are needed
+    }
+
+    // Click the button
+    button.click();
+    // console.log("Button clicked! Remaining clicks:", timesToClick - 1);
+
+    // Wait for a second before the next click
+    setTimeout(() => {
+      // Recursively click the rest of the buttons
+      programmaticallyClickButtons(timesToClick - 1, button, callback);
+    }, 1000);
+  }
+
+  // Usage:
+
+  // Start with Work Experience
+  if (pageContent.match(workExperienceRegexPattern)) {
+    console.log("Work Experience content detected");
+    let foundElement = findElementByText("Work Experience", document.body);
+
+    if (foundElement) {
+      let buttons = findAllButtonsInParent(foundElement);
+      if (buttons.length > 0) {
+        programmaticallyClickButtons(
+          userWorkExperience.length,
+          buttons[0],
+          function () {
+            // Work Experience has finished, now start Education Experience
+            fillDetailsThenClickEducation();
+          }
+        );
+      }
+    }
+  }
+
+  function fillDetailsThenClickEducation() {
+    // Assume fillDetails function exists and works correctly
+    userWorkExperience.forEach((experience, index) => {
+      console.log("Filling work experience", experience);
+      fillDetails(experience, workExperienceRegex);
+    });
+
+    // Now check for Education Experience
+    if (pageContent.match(educationExperienceRegexPattern)) {
+      console.log("Education Experience content detected");
+      let foundElement = findElementByText("Education", document.body);
+
+      if (foundElement) {
+        let buttons = findAllButtonsInParent(foundElement);
+        if (buttons.length > 0) {
+          // Only start clicking the education buttons after the work experiences have been filled
+          programmaticallyClickButtons(
+            userEducationExperience.length,
+            buttons[0],
+            function () {
+              // Education Experience has finished, you can continue with other tasks or call another function here
+              fillEducationDetails();
+            }
+          );
+        }
+      }
+    }
+  }
+
+  function fillEducationDetails() {
+    userEducationExperience.forEach((experience, index) => {
+      console.log("Filling education experience", experience);
+      fillDetails(experience, educationExperienceRegex);
+    });
+    // If there are more categories to fill, continue the chain here...
+    // Now check for Education Experience
+    if (pageContent.match(projectExperienceRegexPattern)) {
+      console.log("Project Experience content detected");
+      let foundElement = findElementByText("Project", document.body);
+
+      if (foundElement) {
+        let buttons = findAllButtonsInParent(foundElement);
+        if (buttons.length > 0) {
+          // Only start clicking the education buttons after the work experiences have been filled
+          programmaticallyClickButtons(
+            userProjectExperience.length,
+            buttons[0],
+            function () {
+              // Education Experience has finished, you can continue with other tasks or call another function here
+              fillProjectDetails();
+            }
+          );
+        }
+      }
+    }
+  }
+  function fillProjectDetails() {
+    userProjectExperience.forEach((experience, index) => {
+      console.log("Filling project experience", experience);
+      fillDetails(experience, projectExperienceRegex);
+    });
+  }
+
+  // function programmaticallyClickButtons(timesToClick, buttons) {
+  //   if (timesToClick <= 0 || !buttons.length) {
+  //       return; // Stop if no more clicks are needed or buttons are undefined
+  //   }
+
+  //   // Click the first button
+  //   buttons[0].click();
+  //   console.log('Button clicked! Remaining clicks:', timesToClick - 1);
+
+  //   // Wait for a second before the next click
+  //   setTimeout(() => {
+  //       // Recursively click the rest of the buttons
+  //       programmaticallyClickButtons(timesToClick - 1, buttons);
+  //   }, 1000);
+  // }
+
+  // // For Work Experience
+  // if (pageContent.match(workExperienceRegexPattern)) {
+  //   console.log("Work Experience content detected");
+  //   let workExpLength = userWorkExperience.length; // Correct variable for length
+  //   let foundElement=findElementByText("Work Experience",document.body);
+  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  //   //  console.log("foundElement here", foundElement);
+
+  //   if (foundElement) {
+  //     let buttons = findAllButtonsInParent(foundElement);
+  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //     if (buttons) {
+  //       let buttons = findAllButtonsInParent(foundElement);
+  //       programmaticallyClickButtons(workExpLength, buttons); // Use the recursive function
+  //     }
+  // else {
+  //       console.log("No buttons found in the parent element.");
+  //       // userWorkExperience.forEach((experience, index) => {
+  //       //   console.log("hereerer erw ",experience);
+  //       //   fillDetails(experience, workExperienceRegex);
+  //       // });
+  //       // console.log("workExperience", userWorkExperience);
+  //     }
+  //         setTimeout(() => {
+  //         userWorkExperience.forEach((experience, index) => {
+  //           console.log("hereerer erw ",experience);
+  //           fillDetails(experience, workExperienceRegex);
+  //         });
+  //       }, 3000);
+  //   }
+
+  // }
+
+  // // // For Education Experience
+  // if (pageContent.match(educationExperienceRegexPattern)) {
+  //   console.log(" education Experience content detected");
+  //   let educationExpLength = userEducationExperience.length; // Correct variable for length
+  //   let foundElement=findElementByText("Education",document.body);
+  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  //   //  console.log("foundElement here", foundElement);
+
+  //   if (foundElement) {
+  //     let buttons = findAllButtonsInParent(foundElement);
+  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //     if (buttons) {
+  //       let buttons = findAllButtonsInParent(foundElement);
+  //       programmaticallyClickButtons(educationExpLength, buttons); // Use the recursive function
+  //     }
+  //     else {
+  //       console.log("No buttons found in the parent element.");
+  //     }
+  //     setTimeout(() => {
+  //       userEducationExperience.forEach((experience, index) => {
+  //         console.log("hereerer erw ",experience);
+  //         fillDetails(experience, educationExperienceRegex);
+  //       });
+  //     }, 3000);
+  // }
+  // }
+
+  // // For Project Experience
+  // if (pageContent.match(projectExperienceRegexPattern)) {
+  //   console.log(" project Experience content detected");
+  //   let projectExpLength = userProjectExperience.length; // Correct variable for length
+  //   let foundElement=findElementByText("Project Experience",document.body);
+  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  //   //  console.log("foundElement here", foundElement);
+
+  //   if (foundElement) {
+  //     let buttons = findAllButtonsInParent(foundElement);
+  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //     if (buttons) {
+  //       let buttons = findAllButtonsInParent(foundElement);
+  //       programmaticallyClickButtons(projectExpLength, buttons); // Use the recursive function
+  //       setTimeout(() => {
+  //         userProjectExperience.forEach((experience, index) => {
+  //           console.log("hereerer erw ",experience);
+  //           fillDetails(experience, projectExperienceRegex);
+  //         });
+  //       }, 3000);
+  //     }
+  //     else {
+  //       console.log("No buttons found in the parent element.");
+  //       userProjectExperience.forEach((experience, index) => {
+  //         console.log("hereerer erw ",experience);
+  //         fillDetails(experience, projectExperienceRegex);
+  //       });
+  //       console.log("educationExperience", userProjectExperience);
+  //     }
+  // }
+  // }
+
+  // // Assuming pageContent is a string that contains the entire content to be checked
+  // if (pageContent.match(workExperienceRegexPattern)) {
+  //  console.log("worker content")
+  //  console.log("user work experience length: " ,userWorkExperience.length)
+  //  let length = userWorkExperience.length
+  //  let foundElement=findElementByText("Work Experience",document.body);
+  // //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  // //  console.log("foundElement here", foundElement);
+
+  //  if (foundElement) {
+  //   let buttons = findAllButtonsInParent(foundElement);
+  //   // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //   if (foundElement) {
+  //     let buttons = findAllButtonsInParent(foundElement);
+  //     if (buttons) {
+  //       buttons.forEach(button => {
+  //         // Attach a click event listener to each button
+  //         button.addEventListener('click', () => {
+  //           // console.log('Button clicked!');
+  //         });
+
+  // //         // test if the button has been clicked or not
+  // //         // Initialize a Mutation Observer to monitor DOM changes
+  // // const observer = new MutationObserver((mutations) => {
+  // //   for (let mutation of mutations) {
+  // //     if (mutation.type === 'childList') {
+  // //       console.log('Clicked and DOM changed.');
+  // //       // If you only want to log the message once after the first change,
+  // //       // you can disconnect the observer here
+  // //       // observer.disconnect();
+  // //     }
+  // //   }
+  // // });
+
+  // // // Configuration object for the observer (we're interested in child nodes being added or removed)
+  // // const config = { childList: true, subtree: true };
+
+  // // // Start observing the document body for changes
+  // // observer.observe(document.body, config);
+
+  // foundElement.addEventListener('click', function(event) {
+  //         event.stopPropagation();
+  //         console.log('Click event caught by h1, propagation stopped');
+  //     });
+
+  //         // Optionally, if you want to programmatically click the button right away
+  //         while(length > 0) {
+  //         console.log('Button clicked! its count',length);
+  //         setTimeout(()=>{
+  //           button.click();
+  //         },1000)
+  //         length -= 1;
+  //         }
+
+  //       });
+  //       console.log("these are the buttons", buttons); // Logs NodeList of found buttons
+  //       setTimeout(() => {
+  //         userWorkExperience.forEach((experience, index) => {
+  //           console.log("hereerer erw ",experience);
+  //           fillDetails(experience, workExperienceRegex);
+  //         });
+  //       }, 3000);
+
+  //     } else {
+  //       console.log("No buttons found in the parent element.");
+  //       userWorkExperience.forEach((experience, index) => {
+  //         console.log("hereerer erw ",experience);
+  //         fillDetails(experience, workExperienceRegex);
+  //       });
+  //       console.log("workExperience", userWorkExperience);
+  //     }
+  //   }
+
+  // }
+
+  // }
+
+  // if (pageContent.match(educationExperienceRegexPattern)) {
+
+  //   console.log("Education content")
+  //   console.log("user Education experience length: " ,userEducationExperience.length)
+  //   let length = userEducationExperience.length
+  //   let foundElement=findElementByText("Education",document.body);
+  //  //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  //  //  console.log("foundElement here", foundElement);
+
+  //   if (foundElement) {
+  //    const buttons = findAllButtonsInParent(foundElement);
+  //    // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //    if (foundElement) {
+  //      let  buttons = findAllButtonsInParent(foundElement);
+  //      if (buttons) {
+  //        buttons.forEach(button => {
+  //          // Attach a click event listener to each button
+  //          button.addEventListener('click', () => {
+  //            // console.log('Button clicked!');
+  //          });
+  //          foundElement.addEventListener('click', function(event) {
+  //           event.stopPropagation();
+  //           console.log('Click event caught by h1, propagation stopped');
+  //       });
+
+  //          // Optionally, if you want to programmatically click the button right away
+  //          while(length > 0) {
+  //          console.log('Button clicked!');
+  //          setTimeout(()=>{
+  //           button.click();
+  //         },1000)
+
+  //          length -= 1;
+  //          }
+
+  //        });
+  //        console.log("these are the buttons", buttons); // Logs NodeList of found buttons
+  //        setTimeout(() => {
+  //         userEducationExperience.forEach((experience, index) => {
+  //           fillDetails(experience, educationExperienceRegex);
+  //         });
+  //        }, 3000);
+
+  //      } else {
+  //        console.log("No buttons found in the parent element.");
+  //        userEducationExperience.forEach((experience, index) => {
+  //         fillDetails(experience, educationExperienceRegex);
+  //       });
+  //        console.log("educationExperience", userEducationExperience);
+  //      }
+  //    }
+
+  //  }
+
+  // }
+
+  // if (pageContent.match(projectExperienceRegexPattern)) {
+  //   console.log("Project content")
+  //   console.log("user Project experience length: " ,userProjectExperience.length)
+  //   let length = userProjectExperience.length
+  //   let  foundElement=findElementByText("Project",document.body);
+  //  //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
+  //  //  console.log("foundElement here", foundElement);
+
+  //   if (foundElement) {
+  //     let buttons = findAllButtonsInParent(foundElement);
+  //    // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
+  //    if (foundElement) {
+  //      let buttons = findAllButtonsInParent(foundElement);
+  //      if (buttons) {
+  //        buttons.forEach(button => {
+  //          // Attach a click event listener to each button
+  //          button.addEventListener('click', () => {
+  //            // console.log('Button clicked!');
+  //          });
+  //          foundElement.addEventListener('click', function(event) {
+  //           event.stopPropagation();
+  //           console.log('Click event caught by h1, propagation stopped');
+  //       });
+  //          // Optionally, if you want to programmatically click the button right away
+  //          while(length > 0) {
+  //          console.log('Button clicked!');
+  //          setTimeout(()=>{
+  //           button.click();
+  //         },1000)
+
+  //          length -= 1;
+  //          }
+
+  //        });
+  //        console.log("these are the buttons", buttons); // Logs NodeList of found buttons
+  //        setTimeout(() => {
+  //         userProjectExperience.forEach((experience, index) => {
+  //           fillDetails(experience, projectExperienceRegex);
+  //         });
+  //        }, 3000);
+
+  //      } else {
+  //        console.log("No buttons found in the parent element.");
+  //        userEducationExperience.forEach((experience, index) => {
+  //         fillDetails(experience, projectExperienceRegex);
+  //       });
+  //        console.log("projectExperience", userProjectExperience);
+  //      }
+  //    }
+
+  //  }
+
+  //   // userProjectExperience.forEach((experience, index) => {
+  //   //   fillDetails(experience, projectExperienceRegex);
+  //   // });
+
+  // }
+
+  // Search for elements that may have a dropzone attribute
+  const dropZones = document.querySelectorAll(
+    "[dropzone], [data-transfer], [data-dropzone],[data-upload],  .upload-area, .file-dropzone"
+  );
+
+  console.log("Detected potential drop zones:", dropZones.length);
+
+  const uploaders = document.querySelectorAll(
+    '[data-automation-id="file-upload-drop-zone"]'
+  );
+  console.log("Detected uploader:", uploaders);
+
+  // // Function to find all file input elements and set the file
+  // function setFileToAllFileInputs() {
+  //   const fileInputs = document.querySelectorAll('input[type="file"]');
+  //   console.log('Detected file:', fileInputs);
+  //   // fileInputs.forEach(input => simulateFileUpload(input, file));
+  // }
+
+  // setFileToAllFileInputs()
+
+  const cvField = document.querySelector('input[type="file"][name="resume"]');
+
+  // Function to fetch and upload a file from a remote URL
+  function uploadFile(inputSelector, fileUrl, fileName) {
+    fetch(fileUrl)
+      .then((resp) => resp.blob()) // Convert the response to a blob
+      .then((blob) => {
+        const file = new File([blob], fileName, { type: "application/pdf" }); // Create a file in memory
+        const dt = new DataTransfer(); // Create a DataTransfer object
+        dt.items.add(file); // Add the file to the DataTransfer object
+
+        const inputElement = document.querySelector(inputSelector); // Get the file input on the page
+        inputElement.files = dt.files; // Set the files property with our DataTransfer files list
+
+        // Dispatch a 'change' event on the input to trigger any event handlers
+        const event = new Event("change", { bubbles: true });
+        inputElement.dispatchEvent(event);
+      })
+      .catch((error) => console.error("File upload failed:", error));
+  }
+
+  // Call the function with the selector for your file input, the URL of the file, and the desired file name
+  uploadFile(
+    'input[type="file"][name="resume"]',
+    "https://example.com/path/to/your/file.pdf",
+    "MyResume.pdf"
+  );
+
+  fillDetails(userDetails, mapDetailRegex);
+
+  return;
+};
+
+const fillDetails = (userDetails, regexMap) => {
+  const inputElements = document.querySelectorAll<HTMLInputElement>("input");
+  const selectFields = document.querySelectorAll<HTMLSelectElement>("select");
+  console.log("fields:", inputElements);
+  const fillInputField = (userDetails, regexMap) => {
+    // const inputElements = document.querySelectorAll("input[type='text'], input:not([type])");
+
+    inputElements.forEach((input) => {
+      let matchFound = false;
+      let matchedKey = null;
+
+      if (input.value) {
+        return;
+      }
+
+      // First, check the input element's attributes for a regex match
+      for (let key in regexMap) {
+        if (matchFound) break; // If a match is found, exit the loop
+
+        // Check various attributes of the input element
+        const attributesToCheck = [
+          "name",
+          "id",
+          "class",
+          "title",
+          "placeholder",
+        ];
+        attributesToCheck.some((attr) => {
+          const value = input.getAttribute(attr);
+          // console.log("value",value);
+          if (value && regexMap[key].test(value)) {
+            // console.log("value here",value,key);
+            matchFound = true;
+            matchedKey = key;
+            return true; // Match found, break the some() loop
+          }
+          return false; // No match, continue the some() loop
+        });
+
+        // Check the associated label if a match hasn't been found
+        if (!matchFound && input.id) {
+          const label = document.querySelector(`label[for="${input.id}"]`);
+          if (label && regexMap[key].test(label.textContent)) {
+            matchFound = true;
+            matchedKey = key;
+          }
+        }
+      }
+
+      // Then, check parent elements for a regex match
+      if (!matchFound) {
+        let parentElement = input.parentElement;
+        while (!matchFound && parentElement) {
+          // Get the text content of the parent element and trim it
+          const parentText = parentElement.textContent.trim();
+          // console.log("parentText", parentText);
+
+          // Split the text content into an array of lines
+
+          const lines = getTextLines(parentElement);
+          // console.log("lines", lines);
+          // If there are more than a certain number of lines, it's likely not a match
+          if (lines.length > 2) break;
+
+          // Check each line for a regex match
+          for (let key in regexMap) {
+            const lineMatch = lines.find((line) => regexMap[key].test(line));
+            if (lineMatch) {
+              // console.log("Match found for key:", key, "with line:", lineMatch);
+              matchFound = true;
+              matchedKey = key;
+              break; // Match found, break the loop
+            }
+          }
+
+          // Move up to check the next parent element
+          parentElement = parentElement.parentElement;
+        }
+      }
+
+      // If a match is found, set the value of the input element
+      if (matchFound && matchedKey && userDetails[matchedKey]) {
+        // console.log("match found", matchedKey,userData[matchedKey]);
+        input.value = userDetails[matchedKey];
+        // Trigger change and input events
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        delete userDetails[matchedKey];
+      }
+    });
+  };
+
+  fillInputField(userDetails, regexMap);
+
+  function getTextLines(element) {
+    let lines = [];
+    let currentLine = "";
+
+    function traverse(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Append text nodes to the current line
+        currentLine += node.textContent.trim();
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // If we hit a block-level element, treat it as a new line
+        if (
+          ["DIV", "P", "LABEL", "H1", "H2", "H3", "H4", "H5", "H6"].includes(
+            node.tagName
+          )
+        ) {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = "";
+          }
+          // Recursively traverse the block-level element
+          Array.from(node.childNodes).forEach(traverse);
+        } else {
+          // Inline elements don't start a new line but may contain text or other inline elements
+          Array.from(node.childNodes).forEach(traverse);
+        }
+      }
+    }
+
+    // Start the traversal from the provided element
+    traverse(element);
+
+    // If there's any remaining text, add it as a line
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
+
+  const fillSelectField = (userDetails, regexMap) => {
+    const selectElements = document.querySelectorAll("select");
+
+    selectElements.forEach((select) => {
+      let matchFound = false;
+      let matchedKey = null;
+      if (select.value) {
+        return;
+      }
+      // First, check the select element's attributes for a regex match
+      for (let key in regexMap) {
+        if (matchFound) break; // If a match is found, exit the loop
+
+        // Check various attributes of the select element
+        const attributesToCheck = [
+          "name",
+          "id",
+          "class",
+          "title",
+          "placeholder",
+        ];
+        attributesToCheck.some((attr) => {
+          const value = select.getAttribute(attr);
+          // console.log("select.getAttribute",value);
+          if (value && regexMap[key].test(value)) {
+            matchFound = true;
+            matchedKey = key;
+            return true; // Match found, break the some() loop
+          }
+          return false; // No match, continue the some() loop
+        });
+
+        // Check the associated label if a match hasn't been found
+        if (!matchFound && select.id) {
+          const label = document.querySelector(`label[for="${select.id}"]`);
+          // console.log("labels: " + label);
+          if (label && regexMap[key].test(label.textContent)) {
+            matchFound = true;
+            matchedKey = key;
+            // No need to return true here as we're not in a some() loop
+          }
+        }
+      }
+
+      if (!matchFound) {
+        let parentElement = select.parentElement;
+        while (!matchFound && parentElement) {
+          const lines = getTextLines(parentElement); // Get text lines from parent element
+          // console.log("lines",lines);
+          if (lines.length > 2) break; // If too many lines, it's probably not a label
+
+          for (let key in regexMap) {
+            // console.log("lines",lines);
+            const lineMatch = lines.find((line) => regexMap[key].test(line));
+            if (lineMatch) {
+              matchFound = true;
+              matchedKey = key;
+              break; // Match found, break the loop
+            }
+          }
+
+          parentElement = parentElement.parentElement; // Check the next parent
+        }
+      }
+
+      // If a match is found, set the value of the select element
+      if (matchFound && matchedKey && userDetails[matchedKey]) {
+        const selectValue = userDetails[matchedKey];
+        Array.from(select.options).forEach((option) => {
+          if (option.text === selectValue || option.value === selectValue) {
+            select.value = option.value;
+            // Trigger change and input events
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+            select.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        });
+      }
+    });
+  };
+  fillSelectField(userDetails, selectInputRegex);
+
+  function matchIgnoringExtras(value1, value2) {
+    // Remove all non-word characters and spaces from both strings
+    // and compare them in lower case.
+    const cleanValue1 = value1.replace(/\W+|\s+/g, "").toLowerCase();
+    const cleanValue2 = value2.replace(/\W+|\s+/g, "").toLowerCase();
+
+    // Check if the cleaned strings are equal
+    return cleanValue1 === cleanValue2;
+  }
+
+  // // Example usage:
+  // const radioValue = "male";
+  // const regexPattern = /male|female|other|prefer not to say/gi;
+
+  const fillRadioButton = (userDetails, regexMap) => {
+    // Select all radio input elements
+    const radioButtons = document.querySelectorAll<HTMLInputElement>(
+      "input[type='radio']"
+    );
+
+    radioButtons.forEach((radio) => {
+      let matchFound = false;
+      let matchedKey = null;
+      // console.log("radio: " + radio.value)
+      const radioValue = radio.value || "";
+      // Check if the radio button's value matches any regex and find the corresponding user detail key
+      for (let key in regexMap) {
+        // console.log("radio inner: " + radioValue.trim().toLowerCase(), regexMap[key]);
+        // const regexAsString = regexMap[key].toString().replace(/\/gi$/, '').replace(/^\//, ''); // Convert regex to string and remove the slashes and flags
+        // console.log(matchIgnoringExtras(radio.value.trim, regexAsString)); // This will log 'true' or 'false'
+        // console.log(radio.value.trim().toLowerCase()===regexMap[key])
+        // regexMap[key].test(label.textContent)
+        if (regexMap[key].test(radioValue.toLowerCase())) {
+          // console.log("here......", radioValue)
+          matchedKey = key;
+          matchFound = true;
+          break; // Match found, break the loop
+        }
+      }
+      // console.log("match key: " , matchedKey,matchFound);
+
+      // If a match is found and the user detail exists, set the radio button as checked
+      if (matchFound && matchedKey && userDetails[matchedKey]) {
+        // console.log("setting radio",userDetails[matchedKey].toLowerCase(),radioValue.toLowerCase())
+        if (
+          userDetails[matchedKey].toLowerCase() === radioValue.toLowerCase()
+        ) {
+          // console.log("user detail key: " + userDetails[matchedKey])
+          radio.checked = true;
+          // Trigger the 'change' event to ensure any associated event handlers are activated
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    });
+  };
+
+  fillRadioButton(userDetails, radioInputRegex);
+
+  const fillDateField = (userDetails, regexMap) => {
+    const dateInputs =
+      document.querySelectorAll<HTMLInputElement>("input[type='date']");
+
+    dateInputs.forEach((input) => {
+      let matchFound = false;
+      let matchedKey = null;
+
+      // Check the input element's attributes for a regex match
+      for (let key in regexMap) {
+        if (matchFound) break;
+
+        const attributesToCheck = [
+          "name",
+          "id",
+          "class",
+          "title",
+          "placeholder",
+        ];
+        attributesToCheck.some((attr) => {
+          const value = input.getAttribute(attr);
+          if (value && regexMap[key].test(value)) {
+            matchFound = true;
+            matchedKey = key;
+            return true;
+          }
+          return false;
+        });
+
+        // Check the associated label if a match hasn't been found
+        if (!matchFound && input.id) {
+          const label = document.querySelector(`label[for="${input.id}"]`);
+          if (label && regexMap[key].test(label.textContent.trim())) {
+            matchFound = true;
+            matchedKey = key;
+          }
+        }
+      }
+
+      // Check parent elements for a match if needed
+      if (!matchFound) {
+        let parentElement = input.parentElement;
+        while (!matchFound && parentElement) {
+          const lines = getTextLines(parentElement); // Get text lines from parent element
+          if (lines.length > 2) break; // If too many lines, it's probably not a label
+
+          for (let key in regexMap) {
+            const lineMatch = lines.find((line) => regexMap[key].test(line));
+            if (lineMatch) {
+              matchFound = true;
+              matchedKey = key;
+              break; // Match found, break the loop
+            }
+          }
+
+          parentElement = parentElement.parentElement; // Check the next parent
+        }
+      }
+
+      // If a match is found, set the value of the date input
+      if (matchFound && matchedKey && userDetails[matchedKey]) {
+        input.value = userDetails[matchedKey]; // Directly assign the value
+        // Trigger change and input events
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+  };
+
+  fillDateField(userDetails, dateInputRegex);
+};
+
+function createFloatingPopup(count: number) {
+  const popupDiv = document.createElement("div");
+
+  // Apply styles to position the popup at the top-right corner
+  popupDiv.style.position = "fixed";
+  popupDiv.style.top = "10px"; // Adjust this to set the distance from the top
+  popupDiv.style.right = "10px"; // Adjust this to set the distance from the right
+  popupDiv.style.height = "50px";
+  popupDiv.style.backgroundColor = "black"; // Customize popup styles
+  popupDiv.style.border = "1px solid black"; // Customize popup styles
+  popupDiv.style.zIndex = "1000";
+  popupDiv.style.transition = "0.3s ease"; // Adding transition for smooth animation
+  popupDiv.style.borderTopLeftRadius = "15px"; // Adding border radius to the top-left corner
+  popupDiv.style.borderBottomLeftRadius = "15px"; // Adding border radius to the bottom-left corner
+
+  popupDiv.style.display = "flex"; // Use flex display
+  popupDiv.style.alignItems = "center"; // Center items vertically
+
+  // Add the popup to the page
+  document.body.appendChild(popupDiv);
+
+  // Create and style the button
+  const button = document.createElement("button");
+  button.textContent = "Button";
+  button.style.backgroundColor = "black"; // Customize button styles
+  button.style.color = "white"; // Customize button styles
+  button.style.border = "1px solid black"; // Customize button styles
+  button.style.padding = "5px 10px"; // Adjust padding as needed
+  popupDiv.appendChild(button);
+
+  // Create and style the text content
+  const textContent = document.createElement("div");
+  textContent.textContent = "Fields: " + count;
+  textContent.style.marginLeft = "10px"; // Adjust spacing between button and text
+  textContent.style.color = "white"; // Customize text styles
+
+  // Functionality for hover effect and animation
+  popupDiv.addEventListener("mouseenter", () => {
+    popupDiv.appendChild(textContent);
+    // popupDiv.style.right = "150px"; // Slide to the left
+  });
+
+  popupDiv.addEventListener("mouseleave", () => {
+    popupDiv.style.right = "10px"; // Return to the original position
+    popupDiv.style.right = "10px"; // Return to the original position
+    if (popupDiv.contains(textContent)) {
+      popupDiv.removeChild(textContent); // Remove the text content
+    }
+  });
+
+  // Close button event listener
+  button.addEventListener("click", () => {
+    // document.body.removeChild(popupDiv);
+    onPopButtonClick();
+  });
+}
+
+function createErrorFloatingPopup(
+  count: number,
+  message: string = "",
+  duration: number = 10000
+) {
+  const popupDiv = document.createElement("div");
+
+  // Apply styles to position the popup at the top-right corner
+  popupDiv.style.position = "fixed";
+  popupDiv.style.top = "10px";
+  popupDiv.style.right = "10px";
+  popupDiv.style.minHeight = "50px";
+  popupDiv.style.backgroundColor = "#333"; // Darker background
+  popupDiv.style.color = "white"; // Text color
+  popupDiv.style.padding = "10px";
+  popupDiv.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+  popupDiv.style.zIndex = "10000";
+  popupDiv.style.display = "flex";
+  popupDiv.style.justifyContent = "center";
+  popupDiv.style.alignItems = "center";
+  popupDiv.style.borderRadius = "5px";
+  popupDiv.innerHTML = message; // Set the message
+
+  // Add the popup to the page
+  document.body.appendChild(popupDiv);
+
+  // Fade out and remove the popup after a specified duration if not a manual close type
+  if (duration > 0) {
+    setTimeout(() => {
+      popupDiv.style.transition = "opacity 0.5s ease";
+      popupDiv.style.opacity = "0";
+      setTimeout(() => document.body.removeChild(popupDiv), 500); // Wait for fade out to finish
+    }, duration);
+  }
+}
+
+// Modify the existing logic to use the modified createFloatingPopup function
+// Check if Email is not received and then show the login prompt
+chrome.runtime.sendMessage(
+  { message: "getLoginEmail" },
+  function (response) {}
+);
