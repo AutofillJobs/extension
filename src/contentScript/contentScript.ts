@@ -1,10 +1,29 @@
 //TO DO : remove the jobify
 // remove the 10sec delay
+chrome.storage.local.get(['toggleState'], function(result) {
+  console.log('Toggle state stored in local storage:', result.toggleState);
+  if (result.toggleState || result.toggleState===undefined) {
+    initializeScript();
+  }
+});
 
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+  if (namespace === 'local' && changes.toggleState) {
+    const newValue = changes.toggleState.newValue;
+    console.log('Toggle state changed to:', newValue);
+    if (newValue) {
+      initializeScript();
+    } else {
+      // Optionally handle the case when the toggle state is turned off
+      console.log('Toggle state is off. Script will not execute.');
+    }
+  }
+});
+
+
+function initializeScript(){
 var Email = "";
-
 // to check if the website have be fully loaded
-
 window.onload = (event) => {
   chrome.runtime.sendMessage({ message: "getLoginEmail" });
   console.log("page is fully loaded");
@@ -35,6 +54,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // createErrorFloatingPopup(0, "Please Google  Login", 1000);
     console.log("please Google Login");
   }
+  
 });
 
 var userData;
@@ -42,6 +62,9 @@ var userData;
 //handle popup refetch button click
 // In contentScript.js
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if(request.type=="TOGGLE_STATE_CHANGED"){
+    console.log(request.value);
+  }
   if (request.action === "refetchData") {
     console.log("refetchData");
     // Clear all text-based input fields
@@ -1389,3 +1412,4 @@ chrome.runtime.sendMessage(
   { message: "getLoginEmail" },
   function (response) {}
 );
+}

@@ -1,5 +1,7 @@
 let userEmail = '';
-
+chrome.storage.local.get(['toggleState'], function(result) {
+  console.log('Toggle state stored in local storage1:', result.toggleState);
+});
 chrome.identity.getProfileUserInfo(function(userInfo) {
   console.log('User Info:', userInfo);
   if (userInfo.email) {
@@ -9,7 +11,6 @@ chrome.identity.getProfileUserInfo(function(userInfo) {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("received message",request.message)
   if (request.message === "getLoginEmail") {
     // Replace this with your logic to get the current login email ID
     console.log("here",userEmail);
@@ -19,7 +20,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tabs.sendMessage(tabs[0].id, { email: userEmail });
     });
   }
+
+
+  if(request.type==="TOGGLE_STATE_CHANGED"){
+    chrome.storage.local.set({ toggleState: request.value }, () => {
+      console.log('Toggle state stored in local storage:', request.value);
+    });
+  }  
+    // Update local content script state or functionality based on this
+  
 });
+
+
 
 
 

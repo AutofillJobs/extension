@@ -12,7 +12,10 @@
     "activeTab",
     "identity",
     "identity.email",
-    "background"
+    "background",
+    "storage",
+    "tabs",
+    "scripting"
   ],
   "icons": {
     "16": "icon.png",
