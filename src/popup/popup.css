@@ -1,64 +1,80 @@
 body {
-    height: 300px;
-    width: 400px;
+  height: 300px;
+  width: 400px;
 }
+
 .switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 34px;
-  }
-  
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
-  }
-  
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
-  
-  input:checked + .slider {
-    background-color: #00df9a;
-  }
-  
-  input:checked + .slider:before {
-    transform: translateX(26px);
-  }
-  
-  /* Adjusting label style to match toggle size */
-  .toggle-switch span {
-    display: inline-block;
-    vertical-align: middle; /* Center text vertically with the toggle */
-    line-height: 34px; /* Match the height of the toggle */
-    height: 34px; /* Explicit height for better control */
-    color: white; /* Same text color */
-    font-size: 25px; /* Appropriately sized font */
-    font-weight: bold; /* Same font weight */
-    margin-left: 10px; /* Space between toggle and label */
-    user-select: none; /* Disable text selection */
-    cursor: pointer; /* Pointer cursor to indicate clickable */
-    padding-top: 5px;
-  }
-  
+  position: relative;
+  display: inline-block;
+  width: 40px; /* Reduced size */
+  height: 20px; /* Reduced size */
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 20px; /* Adjusted for smaller size */
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px; /* Reduced size */
+  width: 14px; /* Reduced size */
+  left: 2px; /* Adjusted for smaller size */
+  bottom: 3px; /* Adjusted for smaller size */
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #00df9a;
+}
+
+input:checked + .slider:before {
+  transform: translateX(14px); /* Adjusted for smaller size */
+}
+
+/* Centering the heading and toggle switch */
+.header-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Position the toggle switch next to the heading */
+.toggle-switch {
+  margin-left: 45px;
+  display: inline;
+}
+
+.toggle-switch span {
+  display: inline;
+  vertical-align: middle; /* Center text vertically with the toggle */
+  line-height: 20px; /* Match the height of the toggle */
+  height: 20px; /* Explicit height for better control */
+  color: white; /* Same text color */
+  font-size: 14px; /* Appropriately sized font */
+  font-weight: bold; /* Same font weight */
+  margin-left: 10px; /* Space between toggle and label */
+  user-select: none; /* Disable text selection */
+  cursor: pointer; /* Pointer cursor to indicate clickable */
+}
+
+.header-container{
+  margin-left: 80px;
+}
