@@ -165,6 +165,8 @@ function handleInputChange(event) {
   // Perform other actions as needed
 }
 
+//For URL Generation 
+
 // Find all button elements on the page
 
 function checkInputFields() {
@@ -179,8 +181,8 @@ function checkInputFields() {
   console.log("inputFields", inputFields);
   if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
     console.log("to fetch", Email);
-    // const url = "http://localhost:5000/api/details/extension/" + Email;
-    const url = "https://api.autofilljobs.com/details/extension/" + Email;
+    const url = "http://localhost:5000/api/details/extension/" + Email;
+    // const url = "https://api.autofilljobs.com/details/extension/" + Email;
     fetch(url, {
       method: "GET",
       headers: {
@@ -404,6 +406,7 @@ const educationExperienceRegex = {
 };
 
 const dataFill = (data) => {
+  console.log(data);
   // console.log("data", data);
   const userDetails = data.details;
   const userWorkExperience = data.workExperiences;
@@ -421,7 +424,7 @@ const dataFill = (data) => {
   const educationExperienceRegexPattern =
     /\b(education[_ -]?experience|Education|academic[_ -]?background|educational[_ -]?history|studies)\b/i;
   const projectExperienceRegexPattern =
-    /\b(project[_ -]?experience|project|portfolio|project[_ -]?history)\b/i;
+    /\b(project[_ -]?experience|project|portfolio|project[_ -]?histoconry)\b/i;
 
   function findElementByText(searchText, rootElement) {
     const lowerSearchText = searchText.toLowerCase();
@@ -939,30 +942,128 @@ const dataFill = (data) => {
   const cvField = document.querySelector('input[type="file"][name="resume"]');
 
   // Function to fetch and upload a file from a remote URL
-  function uploadFile(inputSelector, fileUrl, fileName) {
-    fetch(fileUrl)
-      .then((resp) => resp.blob()) // Convert the response to a blob
-      .then((blob) => {
-        const file = new File([blob], fileName, { type: "application/pdf" }); // Create a file in memory
-        const dt = new DataTransfer(); // Create a DataTransfer object
-        dt.items.add(file); // Add the file to the DataTransfer object
-
-        const inputElement = document.querySelector(inputSelector); // Get the file input on the page
-        inputElement.files = dt.files; // Set the files property with our DataTransfer files list
-
+  async function uploadFile(inputSelector, blobStorageUrl, fileName) {
+    try {
+        // Fetch the file from the blob storage URL
+        const response = await fetch(blobStorageUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/octet-stream'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Network response was not ok ${response.statusText}`);
+        }
+        
+        // Convert the response to a blob
+        const blob = await response.blob();
+        
+        // Create a file in memory
+        const file = new File([blob], fileName, { type: blob.type });
+        
+        // Create a DataTransfer object
+        const dt = new DataTransfer();
+        
+        // Add the file to the DataTransfer object
+        dt.items.add(file);
+        
+        // Get the file input element on the page
+        const inputElement = document.querySelector(inputSelector);
+        
+        if (!inputElement) {
+            throw new Error("File input element not found");
+        }
+        
+        // Set the files property with our DataTransfer files list
+        inputElement.files = dt.files;
+        
         // Dispatch a 'change' event on the input to trigger any event handlers
         const event = new Event("change", { bubbles: true });
         inputElement.dispatchEvent(event);
-      })
-      .catch((error) => console.error("File upload failed:", error));
+        
+        console.log("File upload successful");
+    } catch (error) {
+        console.error("File upload failed:", error);
+    }
+}
+
+
+
+  function generateFileName(email, fileType) {
+    // Ensure the fileType is either 'cv' or 'resume'
+    if (fileType !== 'cv' && fileType !== 'resume') {
+        throw new Error("fileType must be either 'cv' or 'resume'");
+    }
+    
+    // Determine the file extension based on the file type
+    const extension = '.pdf';
+    
+    // Generate the file name
+    const fileName = `${email}${fileType}${extension}`;
+    
+    return fileName;
+}
+
+
+async function fetchSasToken(blobName) {
+  const url = "http://localhost:5000/api/sas/extension/" + blobName;
+    // const url = "https://api.autofilljobs.com/sas/extension" + blobName;
+  
+  
+   try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Network response was not ok ${response.statusText}`);
+    }
+
+    const sasToken = await response.text(); // Treat the response as text
+    return sasToken;
+  } catch (error) {
+    console.error("There has been a problem with your fetch operation:", error);
+  }
   }
 
-  // Call the function with the selector for your file input, the URL of the file, and the desired file name
+
+
+
+//Resume fill
+async function fillResume() {
+  const resumename = generateFileName(Email, 'resume');
+  const blobpath="resumes%2F"+resumename;
+  const sasresume = await fetchSasToken(blobpath);
+  const link = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/resumes/" + resumename + "?" + sasresume;
+  console.log("Resume URL:", link);
   uploadFile(
     'input[type="file"][name="resume"]',
-    "https://example.com/path/to/your/file.pdf",
-    "MyResume.pdf"
+    link,
+    resumename
   );
+}
+
+async function fillCV() {
+  const cvname = generateFileName(Email, 'cv');
+  const blobpath="cvs%2F"+cvname;
+  const sascv = await fetchSasToken(blobpath);
+  const link1 = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/cvs/" + cvname + "?" + sascv;
+  console.log("CV URL:", link1);
+  uploadFile(
+    'input[type="file"][name="cv"]',
+    link1,
+    cvname
+  );
+}
+
+fillCV();
+fillResume();
+
+ 
 
   fillDetails(userDetails, mapDetailRegex);
 
