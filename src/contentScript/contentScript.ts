@@ -23,6 +23,7 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 function initializeScript(){
 var Email = "";
+console.log("here")
 // to check if the website have be fully loaded
 window.onload = (event) => {
   chrome.runtime.sendMessage({ message: "getLoginEmail" });
@@ -41,7 +42,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.email) {
     // Handle the received email ID
     Email = request.email;
-    // console.log("Received email ID:", request.email);
+    console.log("Received email ID:", request.email);
 
     // setTimeout(checkInputFields, 10000);
     window.addEventListener("load", function () {
@@ -196,7 +197,7 @@ function checkInputFields() {
       })
       .then((data) => {
         // Process the data received from the backend
-        // console.log("data", data);
+        console.log("data", data);
 
         if (data.error != "no error") {
           // createErrorFloatingPopup(0, "Please Register in Website", 10000);

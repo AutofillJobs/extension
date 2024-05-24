@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Autofilljobs",
   "description": "Automatically fill job application forms using AI",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Autofilljobs",
