@@ -15,7 +15,8 @@
     "background",
     "storage",
     "tabs",
-    "scripting"
+    "scripting",
+    "webRequest"
   ],
   "icons": {
     "16": "icon.png",
@@ -37,7 +38,7 @@
     }
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>","*://*/*"
   ],
   "web_accessible_resources": [
     

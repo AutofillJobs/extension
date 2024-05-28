@@ -38,6 +38,14 @@ window.addEventListener("load", function () {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'urlChangedAfterPost') {
+    console.log('URL changed after POST request:', request.url);
+    // Perform further actions, like notifying the user or storing data
+  }
+});
+
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.email) {
     // Handle the received email ID
     Email = request.email;

@@ -31,6 +31,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
 });
 
+// background.ts
+
+let lastRequestTabId: number | null = null;
+let lastRequestTime: number | null = null;
+let lastRequestUrl: string | null = null;
+
+// Listen for POST requests
+chrome.webRequest.onCompleted.addListener(
+  (details) => {
+    if (details.method === 'POST' && details.statusCode === 200) {
+      console.log('Detected POST request with status 200:', details);
+      lastRequestTabId = details.tabId;
+      lastRequestTime = Date.now();
+      // Get the current URL before the POST request
+      chrome.tabs.get(details.tabId, (tab) => {
+        if (tab.url) {
+          lastRequestUrl = tab.url;
+          console.log('URL before POST request:', lastRequestUrl); // Log the URL before the POST request
+          chrome.runtime.sendMessage({ action: 'logUrl', url: lastRequestUrl, type: 'beforePost' });
+        }
+      });
+    }
+  },
+  { urls: ['<all_urls>'] }
+);
+
+// Listen for tab URL changes
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url && tabId === lastRequestTabId && lastRequestTime && (Date.now() - lastRequestTime < 5000)) {
+    console.log('URL changed after POST request:', changeInfo.url);
+    console.log('Previous URL:', lastRequestUrl); // Log the URL before the POST request
+    // Notify content script or perform other actions
+    chrome.tabs.sendMessage(tabId, { 
+      action: 'urlChangedAfterPost', 
+      previousUrl: lastRequestUrl, 
+      newUrl: changeInfo.url 
+    });
+    chrome.runtime.sendMessage({ action: 'logUrl', previousUrl: lastRequestUrl, newUrl: changeInfo.url, type: 'afterPost' });
+    // Reset tracking variables
+    lastRequestTabId = null;
+    lastRequestTime = null;
+    lastRequestUrl = null;
+  }
+});
+
+
+
+
+
+
+
+
 
 
 
