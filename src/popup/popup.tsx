@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import "./popup.css";
-console.log("Hii");
 const Popup = () => {
   const [isToggled, setIsToggled] = useState(true);
 
@@ -10,15 +9,22 @@ const Popup = () => {
       if (result.toggleState !== undefined) {
         setIsToggled(result.toggleState);
       }
+      else {
+        chrome.storage.local.set({ toggleState: true });
+        setIsToggled(true);
+      }
     });
   }, []); // Default to false if not loaded from storage
 
   const handleRefetchClick = () => {
-    console.log('Refetch Data button clicked');
-    // Query the active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "refetchData" });
-    });
+    if (isToggled) {
+      console.log('Refetch Data button clicked');
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "refetchData" });
+      });
+    } else {
+      console.log('Toggle state is off. Data will not be filled.');
+    }
   };
 
   const toggleSwitch = () => {

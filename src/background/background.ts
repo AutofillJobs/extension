@@ -1,4 +1,7 @@
 let userEmail = '';
+let lastFilledFields = null;
+const url = "http://localhost:5000/api/details/extension/filledFields" 
+// const url = "https://api.autofilljobs.com/details/extension/filledFields" + Email;
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
@@ -27,6 +30,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log('Toggle state stored in local storage:', request.value);
     });
   }  
+  if (request.action === 'filledFields') {
+    console.log('Received filled fields:', request.data);
+    lastFilledFields = request.data; // Save the filled fields
+  }
+
     // Update local content script state or functionality based on this
   
 });
@@ -36,6 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 let lastRequestTabId: number | null = null;
 let lastRequestTime: number | null = null;
 let lastRequestUrl: string | null = null;
+let lastHostname = null;
 
 // Listen for POST requests
 chrome.webRequest.onCompleted.addListener(
@@ -48,6 +57,8 @@ chrome.webRequest.onCompleted.addListener(
       chrome.tabs.get(details.tabId, (tab) => {
         if (tab.url) {
           lastRequestUrl = tab.url;
+          lastHostname = new URL(tab.url).hostname;
+          console.log('Hostname:', lastHostname); 
           console.log('URL before POST request:', lastRequestUrl); // Log the URL before the POST request
           chrome.runtime.sendMessage({ action: 'logUrl', url: lastRequestUrl, type: 'beforePost' });
         }
@@ -63,6 +74,36 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     console.log('URL changed after POST request:', changeInfo.url);
     console.log('Previous URL:', lastRequestUrl); // Log the URL before the POST request
     // Notify content script or perform other actions
+
+    if (lastFilledFields) {
+      console.log('Filled fields after successful POST request:', lastFilledFields);
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          filledFields: lastFilledFields,
+          previousUrl: lastRequestUrl,
+          lastHostname: lastHostname,
+          newUrl: changeInfo.url
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Successfully sent filled fields to backend:', data);
+      })
+      .catch(error => {
+        console.error('Error sending filled fields to backend:', error);
+      });
+
+
+
+      lastFilledFields = null; // Clear the stored filled fields after logging
+    }
+
     chrome.tabs.sendMessage(tabId, { 
       action: 'urlChangedAfterPost', 
       previousUrl: lastRequestUrl, 
@@ -73,6 +114,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     lastRequestTabId = null;
     lastRequestTime = null;
     lastRequestUrl = null;
+    lastHostname = null;
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'filledFields') {
+    console.log('Received filled fields:', request.data);
+    // Handle the received data here
   }
 });
 
