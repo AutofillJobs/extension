@@ -85,10 +85,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         },
         body: JSON.stringify({
           email: userEmail,
+          companyName: lastHostname,
           filledFields: lastFilledFields,
-          previousUrl: lastRequestUrl,
-          lastHostname: lastHostname,
-          newUrl: changeInfo.url
+          
+         
         }),
       })
       .then(response => response.json())
