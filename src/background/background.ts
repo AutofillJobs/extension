@@ -1,7 +1,7 @@
 let userEmail = '';
 let lastFilledFields = null;
-const url = "http://localhost:5000/api/details/extension/filledFields" 
-// const url = "https://api.autofilljobs.com/details/extension/filledFields" + Email;
+// const url = "http://localhost:5000/api/details/extension/filledFields" 
+const url = "https://api.autofilljobs.com/details/extension/filledFields"
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
