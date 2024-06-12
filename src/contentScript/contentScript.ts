@@ -35,6 +35,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (!Email) {
       console.log("Please Google Login");
     }
+    chrome.storage.local.get(['toggleState'], function(result) {
+      const toggleState = result.toggleState;
+      if (toggleState === true || toggleState === undefined) {
+        checkInputFields();
+      }
+    });
   }
 
   if (request.action === 'urlChangedAfterPost') {
