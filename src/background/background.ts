@@ -1,7 +1,7 @@
 let userEmail = '';
 let lastFilledFields = null;
-// const url = "http://localhost:5000/api/details/extension/filledFields" 
-const url = "https://api.autofilljobs.com/details/extension/filledFields"
+const url = "http://localhost:5000/api/details/extension/filledFields" 
+// const url = "https://api.autofilljobs.com/details/extension/filledFields"
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
@@ -124,6 +124,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Handle the received data here
   }
 });
+
+chrome.runtime.onInstalled.addListener(function(details){
+  
+   if (details.reason == "update") {
+      var thisVersion = chrome.runtime.getManifest().version;
+      console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
+      // Notify users about the update without additional actions like opening a new tab
+      chrome.notifications.create('', {
+        type: 'basic',
+        title: 'Extension Updated',
+        message: 'Your extension was updated successfully.',
+        iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
+      });
+  }
+});
+
 
 
 
