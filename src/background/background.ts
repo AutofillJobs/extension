@@ -126,19 +126,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.runtime.onInstalled.addListener(function(details){
-  
-   if (details.reason == "update") {
-      var thisVersion = chrome.runtime.getManifest().version;
-      console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
-      // Notify users about the update without additional actions like opening a new tab
-      chrome.notifications.create('', {
-        type: 'basic',
-        title: 'Extension Updated',
-        message: 'Your extension was updated successfully.',
-        iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
-      });
+  if (details.reason == "update") {
+    var thisVersion = chrome.runtime.getManifest().version;
+    console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
+    
+    // Notify users about the update
+    chrome.notifications.create('', {
+      type: 'basic',
+      title: 'Extension Updated',
+      message: 'Your extension was updated successfully.',
+      iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
+    });
+
+    // Redirect to a specific URL upon update
+    chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/autofilljobs/naoicaidphmpfebbgmeoflipdnkcfjck' });
   }
 });
+
 
 
 
