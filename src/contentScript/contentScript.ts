@@ -12,37 +12,31 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 
 
-document.addEventListener('contextmenu', (event) => {
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-    const uniqueId = Date.now().toString();
-    event.target.setAttribute('data-extension-id', uniqueId);
-    chrome.storage.local.set({ 'currentElementId': uniqueId });
-  }
-});
-
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'fillInput') {
-    console.log("Received fillInput message");
-    fi(message.value);
+  if (message.type === 'fillField') {
+    chrome.storage.local.get('variablesFromBackend', (result) => {
+      const variables = result.variablesFromBackend;
+      const fieldValue = variables[message.field];
+      console.log(fieldValue);
+
+      if (fieldValue) {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+          const inputElement = activeElement as HTMLInputElement | HTMLTextAreaElement;
+          // Clear the input field before setting its value
+          inputElement.value = '';
+          // Set the new value
+          inputElement.value = fieldValue;
+          // Dispatch an input event to ensure any attached event listeners are triggered
+          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    });
   }
 });
 
-function fi(value) {
-  console.log(value);
-  chrome.storage.local.get('currentElementId', (result) => {
-    const elementId = result.currentElementId;
-    if (elementId) {
-      const element = document.querySelector(`[data-extension-id="${elementId}"]`) as HTMLInputElement | HTMLTextAreaElement;
-      if (element) {
-        element.value = ''; // Clear the field first
-        element.value = value; // Set new value
-        const event = new Event('input', { bubbles: true });
-        element.dispatchEvent(event);
-      }
-    }
-  });
-}
+
+
 
 
 

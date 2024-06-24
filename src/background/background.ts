@@ -144,93 +144,143 @@ chrome.runtime.onInstalled.addListener(function(details){
 });
 
 
-//Context menu 
-chrome.runtime.onInstalled.addListener(() => {
+// background.js
+
+// Function to create the context menu
+function createContextMenu() {
+  // Parent menu item
   chrome.contextMenus.create({
-    id: "fillThis",
-    title: "Fill This",
-    contexts: ["editable"]
+      id: 'fillThis',
+      title: 'Fill This',
+      contexts: ['editable']
   });
-});
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "fillThis") {
-    // Store the tab information in storage
-    chrome.storage.local.set({ originalTabId: tab?.id });
+  // Personal sub-menu
+  chrome.contextMenus.create({
+      id: 'personal',
+      title: 'Personal',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
 
-    // Simulate fetching variables from backend
-    const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
-    fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-type": "application/json",
-      },
-    })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.error !== "no error") {
-        console.log("Please Register in Website");
-      } else {
-        const variablesFromBackend = data.data.details;
-        // Store variables in storage
-        chrome.storage.local.set({ variablesFromBackend }, () => {
-          // Open the custom popup
-          chrome.windows.create({
-            url: chrome.runtime.getURL('variablepopup.html'),
-            type: 'popup',
-            width: 300,
-            height: 400
-          });
-        });
-      }
-    })
-    .catch((error) => {
-      console.error("Error fetching data from the backend", error);
-      console.log("Server Down");
-    });
-  }
-});
+  const personalItems = [
+      'Full Name', 'First Name', 'Middle Name', 'Last Name', 'Family Name', 
+      'Preferred Name', 'Marital Status', 'Gender', 'Prefix', 'DoB', 
+      'Contact Number', 'Alternative Contact Number'
+  ];
 
+  personalItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.replace(/\s+/g, ''),
+          title: item,
+          parentId: 'personal',
+          contexts: ['editable']
+      });
+  });
 
+  // Address sub-menu
+  chrome.contextMenus.create({
+      id: 'address',
+      title: 'Address',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
 
+  const addressItems = [
+      'Address Line 1', 'Address Line 2', 'Apartment', 'Building', 'Floor', 
+      'Street', 'City', 'State/Province', 'Country', 'Nationality', 
+      'Zip/Postal Code'
+  ];
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'fillInput') {
-    chrome.storage.local.get(['selectedVariable', 'originalTabId'], (result) => {
-      console.log(result);
-      const selectedVariable = result['selectedVariable'];
-      const originalTabId = result['originalTabId'];
-      if (selectedVariable && originalTabId) {
-        console.log("Original tab ID: ", originalTabId);
-        chrome.tabs.sendMessage(originalTabId, { action: 'fillInput', value: selectedVariable });
-      }
-    });
-  }
-});
+  addressItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.replace(/\s+/g, ''),
+          title: item,
+          parentId: 'address',
+          contexts: ['editable']
+      });
+  });
 
+  // Credentials sub-menu
+  chrome.contextMenus.create({
+      id: 'credentials',
+      title: 'Credentials',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
 
+  const credentialsItems = [
+      'User Name', 'Password', 'LinkedIn URL', 'GitHub URL', 'Twitter URL', 
+      'Email ID', 'Alternative Email ID', 'Worked Previously', 'Expected Salary', 
+      'Gross Salary', 'Notice Period'
+  ];
 
-
-function fii(value) {
-  console.log(`back${value}`);
-  chrome.storage.local.get('currentElementId', (result) => {
-    const elementId = result.currentElementId;
-    if (elementId) {
-      const element = document.querySelector(`[data-extension-id="${elementId}"]`) as HTMLInputElement | HTMLTextAreaElement;
-      if (element) {
-        element.value = ''; // Clear the field first
-        element.value = value; // Set new value
-        const event = new Event('input', { bubbles: true });
-        element.dispatchEvent(event);
-      }
-    }
+  credentialsItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.replace(/\s+/g, ''),
+          title: item,
+          parentId: 'credentials',
+          contexts: ['editable']
+      });
   });
 }
+
+// Handle click events
+
+
+// Create the context menu when the extension is installed or updated
+chrome.runtime.onInstalled.addListener(createContextMenu);
+
+
+
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.parentMenuItemId === "personal" || info.parentMenuItemId === "address" || info.parentMenuItemId === "credentials") {
+      // Store the tab information in storage
+      console.log(info.menuItemId);
+      chrome.storage.local.set({ originalTabId: tab?.id });
+
+      // Simulate fetching variables from backend
+      const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
+      fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-type": "application/json",
+        },
+      })
+      .then((response) => {
+          if (!response.ok) {
+              throw new Error("Network response was not ok");
+          }
+          return response.json();
+      })
+      .then((data) => {
+          if (data.error !== "no error") {
+              console.log("Please Register in Website");
+          } else {
+              const variablesFromBackend = data.data.details;
+              // Store variables in storage
+              chrome.storage.local.set({ variablesFromBackend }, () => {
+                  chrome.tabs.sendMessage(tab.id, {
+                      type: 'fillField',
+                      field: info.menuItemId
+                  });
+              });
+          }
+      })
+      .catch((error) => {
+          console.error("Error fetching data from the backend", error);
+          console.log("Server Down");
+      });
+  }
+});
+
+
+
+
+
+
+
 
 
 
