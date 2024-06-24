@@ -12,6 +12,40 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 
 
+document.addEventListener('contextmenu', (event) => {
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    const uniqueId = Date.now().toString();
+    event.target.setAttribute('data-extension-id', uniqueId);
+    chrome.storage.local.set({ 'currentElementId': uniqueId });
+  }
+});
+
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'fillInput') {
+    console.log("Received fillInput message");
+    fi(message.value);
+  }
+});
+
+function fi(value) {
+  console.log(value);
+  chrome.storage.local.get('currentElementId', (result) => {
+    const elementId = result.currentElementId;
+    if (elementId) {
+      const element = document.querySelector(`[data-extension-id="${elementId}"]`) as HTMLInputElement | HTMLTextAreaElement;
+      if (element) {
+        element.value = ''; // Clear the field first
+        element.value = value; // Set new value
+        const event = new Event('input', { bubbles: true });
+        element.dispatchEvent(event);
+      }
+    }
+  });
+}
+
+
+
 
 
 

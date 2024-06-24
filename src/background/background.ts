@@ -1,7 +1,7 @@
 let userEmail = '';
 let lastFilledFields = null;
-const url = "http://localhost:5000/api/details/extension/filledFields" 
-// const url = "https://api.autofilljobs.com/details/extension/filledFields"
+// const url = "http://localhost:5000/api/details/extension/filledFields" 
+const url = "https://api.autofilljobs.com/details/extension/filledFields"
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
@@ -144,6 +144,93 @@ chrome.runtime.onInstalled.addListener(function(details){
 });
 
 
+//Context menu 
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "fillThis",
+    title: "Fill This",
+    contexts: ["editable"]
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "fillThis") {
+    // Store the tab information in storage
+    chrome.storage.local.set({ originalTabId: tab?.id });
+
+    // Simulate fetching variables from backend
+    const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
+    fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-type": "application/json",
+      },
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.error !== "no error") {
+        console.log("Please Register in Website");
+      } else {
+        const variablesFromBackend = data.data.details;
+        // Store variables in storage
+        chrome.storage.local.set({ variablesFromBackend }, () => {
+          // Open the custom popup
+          chrome.windows.create({
+            url: chrome.runtime.getURL('variablepopup.html'),
+            type: 'popup',
+            width: 300,
+            height: 400
+          });
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching data from the backend", error);
+      console.log("Server Down");
+    });
+  }
+});
+
+
+
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'fillInput') {
+    chrome.storage.local.get(['selectedVariable', 'originalTabId'], (result) => {
+      console.log(result);
+      const selectedVariable = result['selectedVariable'];
+      const originalTabId = result['originalTabId'];
+      if (selectedVariable && originalTabId) {
+        console.log("Original tab ID: ", originalTabId);
+        chrome.tabs.sendMessage(originalTabId, { action: 'fillInput', value: selectedVariable });
+      }
+    });
+  }
+});
+
+
+
+
+function fii(value) {
+  console.log(`back${value}`);
+  chrome.storage.local.get('currentElementId', (result) => {
+    const elementId = result.currentElementId;
+    if (elementId) {
+      const element = document.querySelector(`[data-extension-id="${elementId}"]`) as HTMLInputElement | HTMLTextAreaElement;
+      if (element) {
+        element.value = ''; // Clear the field first
+        element.value = value; // Set new value
+        const event = new Event('input', { bubbles: true });
+        element.dispatchEvent(event);
+      }
+    }
+  });
+}
 
 
 

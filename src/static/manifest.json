@@ -17,7 +17,8 @@
     "tabs",
     "scripting",
     "webRequest",
-    "notifications"
+    "notifications",
+    "contextMenus"
   ],
   "icons": {
     "16": "icon.png",
@@ -45,6 +46,8 @@
     
     {
       "resources": [
+        "variablepopup.html",
+    "variablepopup.js",
         "assets/Tom_George.pdf",
         "src/assets/settings.png"
       ],

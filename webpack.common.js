@@ -11,6 +11,7 @@ module.exports = {
     options: path.resolve("src/options/index.tsx"),
     background: path.resolve("src/background/background.ts"),
     contentScript: path.resolve("src/contentScript/contentScript.ts"),
+    variablepopup: path.resolve("src/variablepopup/index.tsx"),
   },
   module: {
     rules: [
@@ -63,7 +64,7 @@ module.exports = {
       },
       ],
     }),
-    ...getHtmlPlugins(["popup", "options"]),
+    ...getHtmlPlugins(["popup", "options","variablepopup"]),
   ],
   resolve: {
     extensions: [".tsx", ".js", ".ts"],
