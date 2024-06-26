@@ -164,15 +164,24 @@ function createContextMenu() {
   });
 
   const personalItems = [
-      'Full Name', 'First Name', 'Middle Name', 'Last Name', 'Family Name', 
-      'Preferred Name', 'Marital Status', 'Gender', 'Prefix', 'DoB', 
-      'Contact Number', 'Alternative Contact Number'
+      { id: 'fullName', title: 'Full Name' },
+      { id: 'firstName', title: 'First Name' },
+      { id: 'middleName', title: 'Middle Name' },
+      { id: 'lastName', title: 'Last Name' },
+      { id: 'familyName', title: 'Family Name' },
+      { id: 'preferredName', title: 'Preferred Name' },
+      { id: 'maritalStatus', title: 'Marital Status' },
+      { id: 'gender', title: 'Gender' },
+      { id: 'prefix', title: 'Prefix' },
+      { id: 'DoB', title: 'DoB' },
+      { id: 'phoneNumber', title: 'Contact Number' },
+      { id: 'phoneAlternativeNumber', title: 'Alternative Contact Number' }
   ];
 
   personalItems.forEach(item => {
       chrome.contextMenus.create({
-          id: item.replace(/\s+/g, ''),
-          title: item,
+          id: item.id,
+          title: item.title,
           parentId: 'personal',
           contexts: ['editable']
       });
@@ -187,15 +196,23 @@ function createContextMenu() {
   });
 
   const addressItems = [
-      'Address Line 1', 'Address Line 2', 'Apartment', 'Building', 'Floor', 
-      'Street', 'City', 'State/Province', 'Country', 'Nationality', 
-      'Zip/Postal Code'
+      { id: 'address1', title: 'Address Line 1' },
+      { id: 'address2', title: 'Address Line 2' },
+      { id: 'apartment', title: 'Apartment' },
+      { id: 'building', title: 'Building' },
+      { id: 'floor', title: 'Floor' },
+      { id: 'street', title: 'Street' },
+      { id: 'city', title: 'City' },
+      { id: 'state', title: 'State/Province' },
+      { id: 'country', title: 'Country' },
+      { id: 'nationality', title: 'Nationality' },
+      { id: 'zip', title: 'Zip/Postal Code' }
   ];
 
   addressItems.forEach(item => {
       chrome.contextMenus.create({
-          id: item.replace(/\s+/g, ''),
-          title: item,
+          id: item.id,
+          title: item.title,
           parentId: 'address',
           contexts: ['editable']
       });
@@ -210,20 +227,30 @@ function createContextMenu() {
   });
 
   const credentialsItems = [
-      'User Name', 'Password', 'LinkedIn URL', 'GitHub URL', 'Twitter URL', 
-      'Email ID', 'Alternative Email ID', 'Worked Previously', 'Expected Salary', 
-      'Gross Salary', 'Notice Period'
+      { id: 'userName', title: 'User Name' },
+      { id: 'password', title: 'Password' },
+      { id: 'linkedinUrl', title: 'LinkedIn URL' },
+      { id: 'githubUrl', title: 'GitHub URL' },
+      { id: 'twitterUrl', title: 'Twitter URL' },
+      { id: 'email', title: 'Email ID' },
+      { id: 'emailAlternative', title: 'Alternative Email ID' },
+      { id: 'workedPreviously', title: 'Worked Previously' },
+      { id: 'expectedSalary', title: 'Expected Salary' },
+      { id: 'grossSalary', title: 'Gross Salary' },
+      { id: 'noticePeriod', title: 'Notice Period' }
   ];
 
   credentialsItems.forEach(item => {
       chrome.contextMenus.create({
-          id: item.replace(/\s+/g, ''),
-          title: item,
+          id: item.id,
+          title: item.title,
           parentId: 'credentials',
           contexts: ['editable']
       });
   });
 }
+
+
 
 // Handle click events
 

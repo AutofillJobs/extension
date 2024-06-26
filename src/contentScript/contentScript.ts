@@ -16,6 +16,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'fillField') {
     chrome.storage.local.get('variablesFromBackend', (result) => {
       const variables = result.variablesFromBackend;
+      console.log(variables);
       const fieldValue = variables[message.field];
       console.log(fieldValue);
 
@@ -294,8 +295,8 @@ const mapDetailRegex = {
   middleName: /middle[-_ ]?name|mname|m[_]*name|initial|middle[_ ]?initial/gi,
   lastName:
     /last[-_ ]?name|lname|l[_]*name|surname|family[_ ]?name|paternal[-_ ]?name|sir[_ ]?name/gi,
-  fullName:
-    /(^|\b)full[\s-_]?name\b|(^|\b)user[\s-_]?name\b|given[\s-_]?name\(s\)?|(^|\b)complete[\s-_]?name\b|full[_ ]?legal[_ ]?name/gi,
+  fullName: 
+    /(^|\b)full[\s-_]?name\b|(^|\b)user[\s-_]?name\b|given[\s-_]?name\(s\)?|(^|\b)complete[\s-_]?name\b|legal[_ ]?name|legal[\s-_ ]?name\s?\(first,middle,last\)/gi, // Updated regex to include "Legal name (first,middle,last)"
   preferredName:
     /preferred[-_ ]?name|nickname|alias|preferred[_ ]?first[_ ]?name/gi,
   familyName: /family[-_ ]?name|last[-_ ]?name/gi,
@@ -319,7 +320,7 @@ const mapDetailRegex = {
   building: /building|complex|building[_ ]?name/gi,
   twitterUrl: /twitter[-_ ]?url|twitter[_ ]?account|@[\w]+/gi,
   linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile/gi,
-  githubUrl: /github[-_ ]?url|github[_ ]?account/gi,
+  githubUrl: /github[-_ ]?url|github[_ ]?account|website/gi,
   expectedSalary:
     /expected[-_ ]?(salary|pay|compensation|wage(s)?)|salary[-_ ]?(expectation(s)?|range|desired|requirement(s)?)|desired[-_ ]?(salary|pay|compensation|wage(s)?)|compensation[_ ]?expectations/gi,
   password: /password|passcode|pwd/gi,
@@ -349,7 +350,7 @@ const mapDetailRegex = {
     /phone[_ ]?device[_ ]?type|mobile[_ ]?model|cell[_ ]?phone[_ ]?kind/gi,
   nationality:
     /nationality|citizen(ship)?|country[_\s-]?of[_\s-]?origin|passport[_\s-]?country/gi,
-  prefix: /prefix|title|salutation|(mr|ms|mrs|miss|dr|prof)\.?/gi,
+  prefix: /^(mr|ms|mrs|miss|dr|prof)\.?|prefix|title|salutation/gi,
   countryRegion:
     /country[_\s-]?region|region|area|location[_\s-]?code|geo(graphical)?[_\s-]?area|place[_\s-]?of[_\s-]?residence|residential[_\s-]?area|living[_\s-]?area|habitation[_\s-]?area|domicile/gi,
 };
@@ -1249,75 +1250,76 @@ const fillDetails = (userDetails, regexMap) => {
   }
 
   const fillSelectField = (userDetails, regexMap) => {
-    const selectElements = document.querySelectorAll("select");
-
+    const selectElements = document.querySelectorAll<HTMLSelectElement>('select, [role="option"], [role="listbox"], [role="generic"]');
+    console.log("Select elements found:", selectElements);
+  
     selectElements.forEach((select) => {
       let matchFound = false;
       let matchedKey = null;
-      if (select.value) {
-        return;
-      }
+  
       // First, check the select element's attributes for a regex match
       for (let key in regexMap) {
         if (matchFound) break; // If a match is found, exit the loop
-
+  
         // Check various attributes of the select element
-        const attributesToCheck = [
-          "name",
-          "id",
-          "class",
-          "title",
-          "placeholder",
-        ];
+        const attributesToCheck = ["name", "id", "class", "title", "placeholder"];
         attributesToCheck.some((attr) => {
           const value = select.getAttribute(attr);
-          // console.log("select.getAttribute",value);
+          if (value) {
+            console.log(`Checking attribute ${attr} with value ${value} against regex for key ${key}`);
+          }
           if (value && regexMap[key].test(value)) {
+            console.log(`Match found for key ${key} on attribute ${attr} with value ${value}`);
             matchFound = true;
             matchedKey = key;
             return true; // Match found, break the some() loop
           }
           return false; // No match, continue the some() loop
         });
-
+  
         // Check the associated label if a match hasn't been found
         if (!matchFound && select.id) {
           const label = document.querySelector(`label[for="${select.id}"]`);
-          // console.log("labels: " + label);
+          if (label) {
+            console.log(`Checking label for select with id ${select.id} and text ${label.textContent}`);
+          }
           if (label && regexMap[key].test(label.textContent)) {
+            console.log(`Match found for key ${key} on label with text ${label.textContent}`);
             matchFound = true;
             matchedKey = key;
-            // No need to return true here as we're not in a some() loop
           }
         }
       }
-
+  
       if (!matchFound) {
         let parentElement = select.parentElement;
         while (!matchFound && parentElement) {
           const lines = getTextLines(parentElement); // Get text lines from parent element
-          // console.log("lines",lines);
+          console.log(`Checking parent element with lines: ${lines}`);
           if (lines.length > 2) break; // If too many lines, it's probably not a label
-
+  
           for (let key in regexMap) {
-            // console.log("lines",lines);
             const lineMatch = lines.find((line) => regexMap[key].test(line));
             if (lineMatch) {
+              console.log(`Match found for key ${key} on parent element with line: ${lineMatch}`);
               matchFound = true;
               matchedKey = key;
               break; // Match found, break the loop
             }
           }
-
+  
           parentElement = parentElement.parentElement; // Check the next parent
         }
       }
-
+  
       // If a match is found, set the value of the select element
       if (matchFound && matchedKey && userDetails[matchedKey]) {
         const selectValue = userDetails[matchedKey];
+        console.log(`Setting select value for key ${matchedKey} with value ${selectValue}`);
         Array.from(select.options).forEach((option) => {
+          console.log(`Checking option with text ${option.text} and value ${option.value}`);
           if (option.text === selectValue || option.value === selectValue) {
+            console.log(`Match found. Setting select value to ${option.value}`);
             select.value = option.value;
             // Trigger change and input events
             select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1328,6 +1330,7 @@ const fillDetails = (userDetails, regexMap) => {
       }
     });
   };
+  
   fillSelectField(userDetails, selectInputRegex);
 
   function matchIgnoringExtras(value1, value2) {
