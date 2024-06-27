@@ -201,55 +201,111 @@ function handleInputChange(event) {
 //For URL Generation 
 
 // Find all button elements on the page
-
 function checkInputFields() {
-  // console.log("to fetch");
   const inputFields = document.querySelectorAll("input");
   const selectFields = document.querySelectorAll("select");
-  const count = inputFields.length + selectFields.length;
-  // inputFields.forEach((divElement) => {
-  //   divElement.style.backgroundColor = 'green';
-  // });
-  // const inputFields = document.querySelectorAll('div[data-automation-id] input[type="text"], div[data-automation-id] input[type="checkbox"], div[data-automation-id] input[type="radio"]');
-  console.log("inputFields", inputFields);
-  if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
-    console.log("to fetch", Email);
-    // const url = "http://localhost:5000/api/details/extension/" + Email;
-    const url = "https://api.autofilljobs.com/details/extension/" + Email;
-    fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        // console.log("response",response.json());
-        return response.json();
-      })
-      .then((data) => {
-        // Process the data received from the backend
-        // console.log("data", data);
 
-        if (data.error != "no error") {
-          // createErrorFloatingPopup(0, "Please Register in Website", 10000);
-          console.log("Please Register in Website");
-        } else {
-          userData = data.data;
-          // createFloatingPopup(count);
-          dataFill(data.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching data from the backend", error);
-        // Assuming the response will have an email field
-        // createErrorFloatingPopup(0, "Server Down", 20000); // Show for 10 seconds
-        console.log("Server Down");
-      });
+  if (inputFields.length > 0 || selectFields.length > 0) {
+    const cachedData = localStorage.getItem("userData");
+    if (cachedData) {
+      console.log("Using cached data");
+      checkForBackendUpdate(JSON.parse(cachedData));
+    } else {
+      console.log("No cached data found, fetching from backend");
+      fetchDataFromBackend();
+    }
   }
 }
+
+function checkForBackendUpdate(cachedData) {
+  const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
+  // const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
+
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-type": "application/json",
+    },
+  })
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (data.data) {
+      const lastUpdate = new Date(data.data);
+      console.log("Backend last update:", lastUpdate);
+
+      if (!cachedData.lastUpdate) {
+        console.error("Cached data does not contain lastUpdate field");
+        fetchDataFromBackend();
+        return;
+      }
+
+      const cachedLastUpdate = new Date(cachedData.lastUpdate);
+      if (isNaN(cachedLastUpdate.getTime())) {
+        console.error("Cached last update is invalid: ", cachedData.lastUpdate);
+        fetchDataFromBackend();
+        return;
+      }
+
+      console.log("Cached last update:", cachedLastUpdate);
+
+      if (lastUpdate > cachedLastUpdate) {
+        console.log("Data has been updated on the backend, fetching new data");
+        fetchDataFromBackend();
+      } else {
+        console.log("Cached data is up to date");
+        dataFill(cachedData);
+      }
+    } else {
+      console.error("No lastUpdate field in the response");
+    }
+  })
+  .catch((error) => {
+    console.error("Error checking backend for updates", error);
+    console.log("Server Down");
+  });
+}
+
+function fetchDataFromBackend() {
+  const url = "http://localhost:5000/api/details/extension/" + Email;
+  // const url = "https://api.autofilljobs.com/details/extension/" + Email;
+
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-type": "application/json",
+    },
+  })
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (data.error !== "no error") {
+      console.log("Please Register in Website");
+    } else {
+      const updatedData = { ...data.data, lastUpdate: data.data.details.updatedAt };
+      localStorage.setItem("userData", JSON.stringify(updatedData));
+      dataFill(updatedData);
+    }
+  })
+  .catch((error) => {
+    console.error("Error fetching data from the backend", error);
+    console.log("Server Down");
+  });
+}
+
+
+
+
+
+
 document.addEventListener(
   "mousedown",
   function (event) {
@@ -1251,8 +1307,7 @@ const fillDetails = (userDetails, regexMap) => {
 
   const fillSelectField = (userDetails, regexMap) => {
     const selectElements = document.querySelectorAll<HTMLSelectElement>('select, [role="option"], [role="listbox"], [role="generic"]');
-    console.log("Select elements found:", selectElements);
-  
+    
     selectElements.forEach((select) => {
       let matchFound = false;
       let matchedKey = null;
@@ -1265,11 +1320,7 @@ const fillDetails = (userDetails, regexMap) => {
         const attributesToCheck = ["name", "id", "class", "title", "placeholder"];
         attributesToCheck.some((attr) => {
           const value = select.getAttribute(attr);
-          if (value) {
-            console.log(`Checking attribute ${attr} with value ${value} against regex for key ${key}`);
-          }
           if (value && regexMap[key].test(value)) {
-            console.log(`Match found for key ${key} on attribute ${attr} with value ${value}`);
             matchFound = true;
             matchedKey = key;
             return true; // Match found, break the some() loop
@@ -1280,11 +1331,7 @@ const fillDetails = (userDetails, regexMap) => {
         // Check the associated label if a match hasn't been found
         if (!matchFound && select.id) {
           const label = document.querySelector(`label[for="${select.id}"]`);
-          if (label) {
-            console.log(`Checking label for select with id ${select.id} and text ${label.textContent}`);
-          }
           if (label && regexMap[key].test(label.textContent)) {
-            console.log(`Match found for key ${key} on label with text ${label.textContent}`);
             matchFound = true;
             matchedKey = key;
           }
@@ -1295,13 +1342,11 @@ const fillDetails = (userDetails, regexMap) => {
         let parentElement = select.parentElement;
         while (!matchFound && parentElement) {
           const lines = getTextLines(parentElement); // Get text lines from parent element
-          console.log(`Checking parent element with lines: ${lines}`);
           if (lines.length > 2) break; // If too many lines, it's probably not a label
   
           for (let key in regexMap) {
             const lineMatch = lines.find((line) => regexMap[key].test(line));
             if (lineMatch) {
-              console.log(`Match found for key ${key} on parent element with line: ${lineMatch}`);
               matchFound = true;
               matchedKey = key;
               break; // Match found, break the loop
@@ -1315,11 +1360,8 @@ const fillDetails = (userDetails, regexMap) => {
       // If a match is found, set the value of the select element
       if (matchFound && matchedKey && userDetails[matchedKey]) {
         const selectValue = userDetails[matchedKey];
-        console.log(`Setting select value for key ${matchedKey} with value ${selectValue}`);
         Array.from(select.options).forEach((option) => {
-          console.log(`Checking option with text ${option.text} and value ${option.value}`);
           if (option.text === selectValue || option.value === selectValue) {
-            console.log(`Match found. Setting select value to ${option.value}`);
             select.value = option.value;
             // Trigger change and input events
             select.dispatchEvent(new Event("change", { bubbles: true }));
