@@ -28,6 +28,22 @@ window.addEventListener("load", initialize);
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.email) {
+    // Handle the received email ID
+    Email = request.email;
+    console.log("Received email ID:", Email);
+    
+    if (!Email) {
+      console.log("Please Google Login");
+    }
+    chrome.storage.local.get(['toggleState'], function(result) {
+      const toggleState = result.toggleState;
+      if (toggleState === true || toggleState === undefined) {
+        checkInputFields();
+      }
+    });
+  }
+
   if (request.action === 'urlChangedAfterPost') {
     console.log('URL changed after POST request:', request.url);
     // Perform further actions, like notifying the user or storing data
@@ -112,7 +128,6 @@ if (request.action === "refetchData") {
     console.log("no email");
   }
 }
-
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -171,8 +186,8 @@ function checkInputFields() {
   console.log("inputFields", inputFields);
   if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
     console.log("to fetch", Email);
-    const url = "http://localhost:5000/api/details/extension/" + Email;
-    // const url = "https://api.autofilljobs.com/details/extension/" + Email;
+    // const url = "http://localhost:5000/api/details/extension/" + Email;
+    const url = "https://api.autofilljobs.com/details/extension/" + Email;
     fetch(url, {
       method: "GET",
       headers: {
@@ -996,9 +1011,19 @@ const dataFill = (data) => {
 }
 
 
-async function fetchSasToken(blobName) {
-  const url = "http://localhost:5000/api/sas/extension/" + blobName;
-    // const url = "https://api.autofilljobs.com/sas/extension" + blobName;
+async function fetchSasToken(blobName,type) {
+  let url;
+
+  if(type==='cv'){
+     // const url = "http://localhost:5000/api/details/extension/sas/cv/" + blobName;
+     url = "https://api.autofilljobs.com/details/extension/sas/cv/" + blobName;
+
+   }
+   else{
+    // const url = "http://localhost:5000/api/details/extension/sas/resume/" + blobName;
+     url = "https://api.autofilljobs.com/details/extension/sas/resume/" + blobName;
+
+   }
   
   
    try {
@@ -1025,9 +1050,9 @@ async function fetchSasToken(blobName) {
 
 //Resume fill
 async function fillResume() {
-  const resumename = generateFileName(Email, 'resume');
-  const blobpath="resumes%2F"+resumename;
-  const sasresume = await fetchSasToken(blobpath);
+  const resumename = generateFileName(Email,'resume');
+  const sasresume = await fetchSasToken(resumename,'resume');
+  console.log('sasresume',sasresume);
   const link = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/resumes/" + resumename + "?" + sasresume;
   console.log("Resume URL:", link);
   uploadFile(
@@ -1039,8 +1064,7 @@ async function fillResume() {
 
 async function fillCV() {
   const cvname = generateFileName(Email, 'cv');
-  const blobpath="cvs%2F"+cvname;
-  const sascv = await fetchSasToken(blobpath);
+  const sascv = await fetchSasToken(cvname,'cv');
   const link1 = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/cvs/" + cvname + "?" + sascv;
   console.log("CV URL:", link1);
   uploadFile(
