@@ -27,6 +27,7 @@
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.18.0",
     "autoprefixer": "^10.4.7",
     "axios": "^1.6.2",
     "postcss": "^8.4.14",

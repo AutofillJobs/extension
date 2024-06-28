@@ -1,41 +1,118 @@
-//TO DO : remove the jobify
-// remove the 10sec delay
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage:', result.toggleState);
-  if (result.toggleState || result.toggleState===undefined) {
-    initializeScript();
-  }
+  
 });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
   if (namespace === 'local' && changes.toggleState) {
     const newValue = changes.toggleState.newValue;
     console.log('Toggle state changed to:', newValue);
-    if (newValue) {
-      initializeScript();
-    } else {
-      // Optionally handle the case when the toggle state is turned off
-      console.log('Toggle state is off. Script will not execute.');
-    }
   }
 });
 
 
-function initializeScript(){
+
+
+
+
 var Email = "";
 console.log("here")
 // to check if the website have be fully loaded
-window.onload = (event) => {
+function initialize() {
   chrome.runtime.sendMessage({ message: "getLoginEmail" });
   console.log("page is fully loaded");
+}
 
-  // setTimeout(checkInputFields, 10000000);   //wait for 10 sec
-};
+window.addEventListener("load", initialize);
 
-window.addEventListener("load", function () {
-  // console.log("Everything is fully loaded.");
-  setTimeout(checkInputFields, 5000);
-  // Actions that require all resources to be fully loaded
+
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'urlChangedAfterPost') {
+    console.log('URL changed after POST request:', request.url);
+    // Perform further actions, like notifying the user or storing data
+  }
+
+
+if (request.action === "refetchData") {
+  console.log("refetchData");
+  // Clear all text-based input fields
+  // = document.querySelectorAll("input");
+  const inputFields = document.querySelectorAll<HTMLInputElement>("input");
+  // inputFields.forEach((input) => {
+  //   // console.log("Clear input",input);
+  //   input.value = "";
+  // });
+  inputFields.forEach((input) => {
+    // Check if the input does not have the class 'css-77hcv'
+    if (!input.classList.contains('css-77hcv')) {
+      // console.log("Clear input", input);
+      input.value = "";  // Clear the input only if it does not have the class
+    }
+  });
+  
+
+  // check all checkboxes
+  document
+    .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+    .forEach((checkbox) => {
+      // console.log("Checking unchecked",checkbox);
+      // console.log("Checking unchecked",checkbox.selected);
+      checkbox.checked = true;
+    });
+
+  // Reset radio buttons - You might want to handle this differently based on your requirements
+  document
+    .querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    .forEach((radio) => {
+      // radio.checked = false; // or set a specific radio button in a group to checked based on your needs
+      // console.log("Checking radio",radio);
+    });
+
+  // Reset select dropdowns to their first option or a default value
+  document.querySelectorAll("select").forEach((select) => {
+    select.selectedIndex = 0; // or set it to a specific index that represents the default value
+  });
+
+  document.querySelectorAll("form").forEach((form) => {
+    form.reset();
+  });
+  console.log("here");
+  console.log("email", Email);
+  // Fetch email id from background script
+
+  // chrome.runtime.sendMessage(
+  //   { message: "getLoginEmail" },
+  //   function (response) {
+  //     console.log("response: " + response)
+  //     if (response.email) {
+  //       Email = response.email; // Assuming the background script sends back an object with an email property
+  //       console.log("Email received from background:", Email);
+
+  //       // checkInputFields() // no need Implement this function to fetch data from server and fill form fields
+  //       window.addEventListener("load", function () {
+  //         // console.log("Everything is fully loaded. 2");
+  //         // Actions that require all resources to be fully loaded
+  //         checkInputFields();
+  //       });
+  //     } else {
+  //       // createErrorFloatingPopup(0, "Please Google Login", 10000); // no need
+  //       console.log("please Google Login");
+  //     }
+  //   }
+  // );
+  if (Email) {
+    console.log("here", Email)
+    // window.addEventListener("load", function () {
+      console.log("Everything is fully loaded. 2");
+      // Actions that require all resources to be fully loaded
+      checkInputFields();
+    // });
+  } else {
+    console.log("no email");
+  }
+}
+
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -45,11 +122,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("Received email ID:", request.email);
 
     // setTimeout(checkInputFields, 10000);
-    window.addEventListener("load", function () {
-      // console.log("Everything is fully loaded. 1");
-      // Actions that require all resources to be fully loaded
-      checkInputFields();
-    });
   }
   if (Email == null) {
     // createErrorFloatingPopup(0, "Please Google  Login", 1000);
@@ -62,89 +134,6 @@ var userData;
 
 //handle popup refetch button click
 // In contentScript.js
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if(request.type=="TOGGLE_STATE_CHANGED"){
-    console.log(request.value);
-  }
-  if (request.action === "refetchData") {
-    console.log("refetchData");
-    // Clear all text-based input fields
-    // = document.querySelectorAll("input");
-    const inputFields = document.querySelectorAll<HTMLInputElement>("input");
-    // inputFields.forEach((input) => {
-    //   // console.log("Clear input",input);
-    //   input.value = "";
-    // });
-    inputFields.forEach((input) => {
-      // Check if the input does not have the class 'css-77hcv'
-      if (!input.classList.contains('css-77hcv')) {
-        // console.log("Clear input", input);
-        input.value = "";  // Clear the input only if it does not have the class
-      }
-    });
-    
-
-    // check all checkboxes
-    document
-      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
-      .forEach((checkbox) => {
-        // console.log("Checking unchecked",checkbox);
-        // console.log("Checking unchecked",checkbox.selected);
-        checkbox.checked = true;
-      });
-
-    // Reset radio buttons - You might want to handle this differently based on your requirements
-    document
-      .querySelectorAll<HTMLInputElement>('input[type="radio"]')
-      .forEach((radio) => {
-        // radio.checked = false; // or set a specific radio button in a group to checked based on your needs
-        // console.log("Checking radio",radio);
-      });
-
-    // Reset select dropdowns to their first option or a default value
-    document.querySelectorAll("select").forEach((select) => {
-      select.selectedIndex = 0; // or set it to a specific index that represents the default value
-    });
-
-    document.querySelectorAll("form").forEach((form) => {
-      form.reset();
-    });
-    console.log("here");
-    console.log("email", Email);
-    // Fetch email id from background script
-
-    // chrome.runtime.sendMessage(
-    //   { message: "getLoginEmail" },
-    //   function (response) {
-    //     console.log("response: " + response)
-    //     if (response.email) {
-    //       Email = response.email; // Assuming the background script sends back an object with an email property
-    //       console.log("Email received from background:", Email);
-
-    //       // checkInputFields() // no need Implement this function to fetch data from server and fill form fields
-    //       window.addEventListener("load", function () {
-    //         // console.log("Everything is fully loaded. 2");
-    //         // Actions that require all resources to be fully loaded
-    //         checkInputFields();
-    //       });
-    //     } else {
-    //       // createErrorFloatingPopup(0, "Please Google Login", 10000); // no need
-    //       console.log("please Google Login");
-    //     }
-    //   }
-    // );
-    if (Email) {
-      console.log("here", Email)
-      // window.addEventListener("load", function () {
-        console.log("Everything is fully loaded. 2");
-        // Actions that require all resources to be fully loaded
-        checkInputFields();
-      // });
-    } else {
-      console.log("no email");
-    }
-  }
-});
 
 // Function to handle button clicks
 function handleButtonClick(event) {
@@ -166,6 +155,8 @@ function handleInputChange(event) {
   // Perform other actions as needed
 }
 
+//For URL Generation 
+
 // Find all button elements on the page
 
 function checkInputFields() {
@@ -180,8 +171,8 @@ function checkInputFields() {
   console.log("inputFields", inputFields);
   if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
     console.log("to fetch", Email);
-    // const url = "http://localhost:5000/api/details/extension/" + Email;
-    const url = "https://api.autofilljobs.com/details/extension/" + Email;
+    const url = "http://localhost:5000/api/details/extension/" + Email;
+    // const url = "https://api.autofilljobs.com/details/extension/" + Email;
     fetch(url, {
       method: "GET",
       headers: {
@@ -405,6 +396,7 @@ const educationExperienceRegex = {
 };
 
 const dataFill = (data) => {
+  console.log(data);
   // console.log("data", data);
   const userDetails = data.details;
   const userWorkExperience = data.workExperiences;
@@ -422,7 +414,7 @@ const dataFill = (data) => {
   const educationExperienceRegexPattern =
     /\b(education[_ -]?experience|Education|academic[_ -]?background|educational[_ -]?history|studies)\b/i;
   const projectExperienceRegexPattern =
-    /\b(project[_ -]?experience|project|portfolio|project[_ -]?history)\b/i;
+    /\b(project[_ -]?experience|project|portfolio|project[_ -]?histoconry)\b/i;
 
   function findElementByText(searchText, rootElement) {
     const lowerSearchText = searchText.toLowerCase();
@@ -940,32 +932,131 @@ const dataFill = (data) => {
   const cvField = document.querySelector('input[type="file"][name="resume"]');
 
   // Function to fetch and upload a file from a remote URL
-  function uploadFile(inputSelector, fileUrl, fileName) {
-    fetch(fileUrl)
-      .then((resp) => resp.blob()) // Convert the response to a blob
-      .then((blob) => {
-        const file = new File([blob], fileName, { type: "application/pdf" }); // Create a file in memory
-        const dt = new DataTransfer(); // Create a DataTransfer object
-        dt.items.add(file); // Add the file to the DataTransfer object
-
-        const inputElement = document.querySelector(inputSelector); // Get the file input on the page
-        inputElement.files = dt.files; // Set the files property with our DataTransfer files list
-
+  async function uploadFile(inputSelector, blobStorageUrl, fileName) {
+    try {
+        // Fetch the file from the blob storage URL
+        const response = await fetch(blobStorageUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/octet-stream'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Network response was not ok ${response.statusText}`);
+        }
+        
+        // Convert the response to a blob
+        const blob = await response.blob();
+        
+        // Create a file in memory
+        const file = new File([blob], fileName, { type: blob.type });
+        
+        // Create a DataTransfer object
+        const dt = new DataTransfer();
+        
+        // Add the file to the DataTransfer object
+        dt.items.add(file);
+        
+        // Get the file input element on the page
+        const inputElement = document.querySelector(inputSelector);
+        
+        if (!inputElement) {
+            throw new Error("File input element not found");
+        }
+        
+        // Set the files property with our DataTransfer files list
+        inputElement.files = dt.files;
+        
         // Dispatch a 'change' event on the input to trigger any event handlers
         const event = new Event("change", { bubbles: true });
         inputElement.dispatchEvent(event);
-      })
-      .catch((error) => console.error("File upload failed:", error));
+        
+        console.log("File upload successful");
+    } catch (error) {
+        console.error("File upload failed:", error);
+    }
+}
+
+
+
+  function generateFileName(email, fileType) {
+    // Ensure the fileType is either 'cv' or 'resume'
+    if (fileType !== 'cv' && fileType !== 'resume') {
+        throw new Error("fileType must be either 'cv' or 'resume'");
+    }
+    
+    // Determine the file extension based on the file type
+    const extension = '.pdf';
+    
+    // Generate the file name
+    const fileName = `${email}${fileType}${extension}`;
+    
+    return fileName;
+}
+
+
+async function fetchSasToken(blobName) {
+  const url = "http://localhost:5000/api/sas/extension/" + blobName;
+    // const url = "https://api.autofilljobs.com/sas/extension" + blobName;
+  
+  
+   try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Network response was not ok ${response.statusText}`);
+    }
+
+    const sasToken = await response.text(); // Treat the response as text
+    return sasToken;
+  } catch (error) {
+    console.error("There has been a problem with your fetch operation:", error);
+  }
   }
 
-  // Call the function with the selector for your file input, the URL of the file, and the desired file name
+
+
+
+//Resume fill
+async function fillResume() {
+  const resumename = generateFileName(Email, 'resume');
+  const blobpath="resumes%2F"+resumename;
+  const sasresume = await fetchSasToken(blobpath);
+  const link = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/resumes/" + resumename + "?" + sasresume;
+  console.log("Resume URL:", link);
   uploadFile(
     'input[type="file"][name="resume"]',
-    "https://example.com/path/to/your/file.pdf",
-    "MyResume.pdf"
+    link,
+    resumename
   );
+}
+
+async function fillCV() {
+  const cvname = generateFileName(Email, 'cv');
+  const blobpath="cvs%2F"+cvname;
+  const sascv = await fetchSasToken(blobpath);
+  const link1 = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/cvs/" + cvname + "?" + sascv;
+  console.log("CV URL:", link1);
+  uploadFile(
+    'input[type="file"][name="cv"]',
+    link1,
+    cvname
+  );
+}
+
+fillCV();
+fillResume();
+
+ 
 
   fillDetails(userDetails, mapDetailRegex);
+  
 
   return;
 };
@@ -974,6 +1065,7 @@ const fillDetails = (userDetails, regexMap) => {
   const inputElements = document.querySelectorAll<HTMLInputElement>("input");
   const selectFields = document.querySelectorAll<HTMLSelectElement>("select");
   console.log("fields:", inputElements);
+  const filledFields = {};
   const fillInputField = (userDetails, regexMap) => {
     // const inputElements = document.querySelectorAll("input[type='text'], input:not([type])");
 
@@ -1057,8 +1149,10 @@ const fillDetails = (userDetails, regexMap) => {
         // Trigger change and input events
         input.dispatchEvent(new Event("change", { bubbles: true }));
         input.dispatchEvent(new Event("input", { bubbles: true }));
+        filledFields[matchedKey] = userDetails[matchedKey];
         delete userDetails[matchedKey];
       }
+     
     });
   };
 
@@ -1177,6 +1271,7 @@ const fillDetails = (userDetails, regexMap) => {
             // Trigger change and input events
             select.dispatchEvent(new Event("change", { bubbles: true }));
             select.dispatchEvent(new Event("input", { bubbles: true }));
+            filledFields[matchedKey] = userDetails[matchedKey];
           }
         });
       }
@@ -1235,6 +1330,7 @@ const fillDetails = (userDetails, regexMap) => {
           radio.checked = true;
           // Trigger the 'change' event to ensure any associated event handlers are activated
           radio.dispatchEvent(new Event("change", { bubbles: true }));
+          filledFields[matchedKey] = userDetails[matchedKey];
         }
       }
     });
@@ -1307,11 +1403,20 @@ const fillDetails = (userDetails, regexMap) => {
         // Trigger change and input events
         input.dispatchEvent(new Event("change", { bubbles: true }));
         input.dispatchEvent(new Event("input", { bubbles: true }));
+
+        filledFields[matchedKey] = userDetails[matchedKey];
       }
     });
   };
 
   fillDateField(userDetails, dateInputRegex);
+  console.log("All filled fields:", filledFields); // Log all filled fields
+
+  // Send filled fields to background.js
+  if (Object.keys(filledFields).length > 0) {
+    chrome.runtime.sendMessage({ action: 'filledFields', data: filledFields });
+  }
+  
 };
 
 function createFloatingPopup(count: number) {
@@ -1413,4 +1518,3 @@ chrome.runtime.sendMessage(
   { message: "getLoginEmail" },
   function (response) {}
 );
-}
