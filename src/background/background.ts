@@ -1,7 +1,7 @@
 let userEmail = '';
 let lastFilledFields = null;
-const url = "http://localhost:5000/api/details/extension/filledFields" 
-// const url = "https://api.autofilljobs.com/details/extension/filledFields"
+// const url = "http://localhost:5000/api/details/extension/filledFields" 
+const url = "https://api.autofilljobs.com/details/extension/filledFields"
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
@@ -125,23 +125,187 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(function(details){
-  if (details.reason == "update") {
-    var thisVersion = chrome.runtime.getManifest().version;
-    console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
+// chrome.runtime.onInstalled.addListener(function(details){
+//   if (details.reason == "update") {
+//     var thisVersion = chrome.runtime.getManifest().version;
+//     console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
     
-    // Notify users about the update
-    chrome.notifications.create('', {
-      type: 'basic',
-      title: 'Extension Updated',
-      message: 'Your extension was updated successfully.',
-      iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
-    });
+//     // Notify users about the update
+//     chrome.notifications.create('', {
+//       type: 'basic',
+//       title: 'Extension Updated',
+//       message: 'Your extension was updated successfully.',
+//       iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
+//     });
 
-    // Redirect to a specific URL upon update
-    chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/autofilljobs/naoicaidphmpfebbgmeoflipdnkcfjck' });
+//     // Redirect to a specific URL upon update
+//     chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/autofilljobs/naoicaidphmpfebbgmeoflipdnkcfjck' });
+//   }
+// });
+
+
+// background.js
+
+// Function to create the context menu
+function createContextMenu() {
+  // Parent menu item
+  chrome.contextMenus.create({
+      id: 'fillThis',
+      title: 'Fill This',
+      contexts: ['editable']
+  });
+
+  // Personal sub-menu
+  chrome.contextMenus.create({
+      id: 'personal',
+      title: 'Personal',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
+
+  const personalItems = [
+      { id: 'fullName', title: 'Full Name' },
+      { id: 'firstName', title: 'First Name' },
+      { id: 'middleName', title: 'Middle Name' },
+      { id: 'lastName', title: 'Last Name' },
+      { id: 'familyName', title: 'Family Name' },
+      { id: 'preferredName', title: 'Preferred Name' },
+      { id: 'maritalStatus', title: 'Marital Status' },
+      { id: 'gender', title: 'Gender' },
+      { id: 'prefix', title: 'Prefix' },
+      { id: 'DoB', title: 'DoB' },
+      { id: 'phoneNumber', title: 'Contact Number' },
+      { id: 'phoneAlternativeNumber', title: 'Alternative Contact Number' }
+  ];
+
+  personalItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.id,
+          title: item.title,
+          parentId: 'personal',
+          contexts: ['editable']
+      });
+  });
+
+  // Address sub-menu
+  chrome.contextMenus.create({
+      id: 'address',
+      title: 'Address',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
+
+  const addressItems = [
+      { id: 'address1', title: 'Address Line 1' },
+      { id: 'address2', title: 'Address Line 2' },
+      { id: 'apartment', title: 'Apartment' },
+      { id: 'building', title: 'Building' },
+      { id: 'floor', title: 'Floor' },
+      { id: 'street', title: 'Street' },
+      { id: 'city', title: 'City' },
+      { id: 'state', title: 'State/Province' },
+      { id: 'country', title: 'Country' },
+      { id: 'nationality', title: 'Nationality' },
+      { id: 'zip', title: 'Zip/Postal Code' }
+  ];
+
+  addressItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.id,
+          title: item.title,
+          parentId: 'address',
+          contexts: ['editable']
+      });
+  });
+
+  // Credentials sub-menu
+  chrome.contextMenus.create({
+      id: 'credentials',
+      title: 'Credentials',
+      parentId: 'fillThis',
+      contexts: ['editable']
+  });
+
+  const credentialsItems = [
+      { id: 'userName', title: 'User Name' },
+      { id: 'password', title: 'Password' },
+      { id: 'linkedinUrl', title: 'LinkedIn URL' },
+      { id: 'githubUrl', title: 'GitHub URL' },
+      { id: 'twitterUrl', title: 'Twitter URL' },
+      { id: 'email', title: 'Email ID' },
+      { id: 'emailAlternative', title: 'Alternative Email ID' },
+      { id: 'workedPreviously', title: 'Worked Previously' },
+      { id: 'expectedSalary', title: 'Expected Salary' },
+      { id: 'grossSalary', title: 'Gross Salary' },
+      { id: 'noticePeriod', title: 'Notice Period' }
+  ];
+
+  credentialsItems.forEach(item => {
+      chrome.contextMenus.create({
+          id: item.id,
+          title: item.title,
+          parentId: 'credentials',
+          contexts: ['editable']
+      });
+  });
+}
+
+
+
+// Handle click events
+
+
+// Create the context menu when the extension is installed or updated
+chrome.runtime.onInstalled.addListener(createContextMenu);
+
+
+
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.parentMenuItemId === "personal" || info.parentMenuItemId === "address" || info.parentMenuItemId === "credentials") {
+      // Store the tab information in storage
+      console.log(info.menuItemId);
+      chrome.storage.local.set({ originalTabId: tab?.id });
+
+      // Simulate fetching variables from backend
+      const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
+      fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-type": "application/json",
+        },
+      })
+      .then((response) => {
+          if (!response.ok) {
+              throw new Error("Network response was not ok");
+          }
+          return response.json();
+      })
+      .then((data) => {
+          if (data.error !== "no error") {
+              console.log("Please Register in Website");
+          } else {
+              const variablesFromBackend = data.data.details;
+              // Store variables in storage
+              chrome.storage.local.set({ variablesFromBackend }, () => {
+                  chrome.tabs.sendMessage(tab.id, {
+                      type: 'fillField',
+                      field: info.menuItemId
+                  });
+              });
+          }
+      })
+      .catch((error) => {
+          console.error("Error fetching data from the backend", error);
+          console.log("Server Down");
+      });
   }
 });
+
+
+
+
+
 
 
 

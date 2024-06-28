@@ -12,11 +12,39 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'fillField') {
+    chrome.storage.local.get('variablesFromBackend', (result) => {
+      const variables = result.variablesFromBackend;
+      console.log(variables);
+      const fieldValue = variables[message.field];
+      console.log(fieldValue);
+
+      if (fieldValue) {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+          const inputElement = activeElement as HTMLInputElement | HTMLTextAreaElement;
+          // Clear the input field before setting its value
+          inputElement.value = '';
+          // Set the new value
+          inputElement.value = fieldValue;
+          // Dispatch an input event to ensure any attached event listeners are triggered
+          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    });
+  }
+});
+
+
+
+
+
+
 
 
 
 var Email = "";
-console.log("here")
 // to check if the website have be fully loaded
 function initialize() {
   chrome.runtime.sendMessage({ message: "getLoginEmail" });
@@ -134,7 +162,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.email) {
     // Handle the received email ID
     Email = request.email;
-    console.log("Received email ID:", request.email);
+    // console.log("Received email ID:", request.email);
 
     // setTimeout(checkInputFields, 10000);
   }
@@ -173,55 +201,111 @@ function handleInputChange(event) {
 //For URL Generation 
 
 // Find all button elements on the page
-
 function checkInputFields() {
-  // console.log("to fetch");
   const inputFields = document.querySelectorAll("input");
   const selectFields = document.querySelectorAll("select");
-  const count = inputFields.length + selectFields.length;
-  // inputFields.forEach((divElement) => {
-  //   divElement.style.backgroundColor = 'green';
-  // });
-  // const inputFields = document.querySelectorAll('div[data-automation-id] input[type="text"], div[data-automation-id] input[type="checkbox"], div[data-automation-id] input[type="radio"]');
-  console.log("inputFields", inputFields);
-  if (inputFields.length > 0 || (selectFields.length > 0 && Email.length > 0)) {
-    console.log("to fetch", Email);
-    // const url = "http://localhost:5000/api/details/extension/" + Email;
-    const url = "https://api.autofilljobs.com/details/extension/" + Email;
-    fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        // console.log("response",response.json());
-        return response.json();
-      })
-      .then((data) => {
-        // Process the data received from the backend
-        console.log("data", data);
 
-        if (data.error != "no error") {
-          // createErrorFloatingPopup(0, "Please Register in Website", 10000);
-          console.log("Please Register in Website");
-        } else {
-          userData = data.data;
-          // createFloatingPopup(count);
-          dataFill(data.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching data from the backend", error);
-        // Assuming the response will have an email field
-        // createErrorFloatingPopup(0, "Server Down", 20000); // Show for 10 seconds
-        console.log("Server Down");
-      });
+  if (inputFields.length > 0 || selectFields.length > 0) {
+    const cachedData = localStorage.getItem("userData");
+    if (cachedData) {
+      console.log("Using cached data");
+      checkForBackendUpdate(JSON.parse(cachedData));
+    } else {
+      console.log("No cached data found, fetching from backend");
+      fetchDataFromBackend();
+    }
   }
 }
+
+function checkForBackendUpdate(cachedData) {
+//   const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
+  const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
+
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-type": "application/json",
+    },
+  })
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (data.data) {
+      const lastUpdate = new Date(data.data);
+      console.log("Backend last update:", lastUpdate);
+
+      if (!cachedData.lastUpdate) {
+        console.error("Cached data does not contain lastUpdate field");
+        fetchDataFromBackend();
+        return;
+      }
+
+      const cachedLastUpdate = new Date(cachedData.lastUpdate);
+      if (isNaN(cachedLastUpdate.getTime())) {
+        console.error("Cached last update is invalid: ", cachedData.lastUpdate);
+        fetchDataFromBackend();
+        return;
+      }
+
+      console.log("Cached last update:", cachedLastUpdate);
+
+      if (lastUpdate > cachedLastUpdate) {
+        console.log("Data has been updated on the backend, fetching new data");
+        fetchDataFromBackend();
+      } else {
+        console.log("Cached data is up to date");
+        dataFill(cachedData);
+      }
+    } else {
+      console.error("No lastUpdate field in the response");
+    }
+  })
+  .catch((error) => {
+    console.error("Error checking backend for updates", error);
+    console.log("Server Down");
+  });
+}
+
+function fetchDataFromBackend() {
+//   const url = "http://localhost:5000/api/details/extension/" + Email;
+  const url = "https://api.autofilljobs.com/details/extension/" + Email;
+
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-type": "application/json",
+    },
+  })
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (data.error !== "no error") {
+      console.log("Please Register in Website");
+    } else {
+      const updatedData = { ...data.data, lastUpdate: data.data.details.updatedAt };
+      localStorage.setItem("userData", JSON.stringify(updatedData));
+      dataFill(updatedData);
+    }
+  })
+  .catch((error) => {
+    console.error("Error fetching data from the backend", error);
+    console.log("Server Down");
+  });
+}
+
+
+
+
+
+
 document.addEventListener(
   "mousedown",
   function (event) {
@@ -267,8 +351,8 @@ const mapDetailRegex = {
   middleName: /middle[-_ ]?name|mname|m[_]*name|initial|middle[_ ]?initial/gi,
   lastName:
     /last[-_ ]?name|lname|l[_]*name|surname|family[_ ]?name|paternal[-_ ]?name|sir[_ ]?name/gi,
-  fullName:
-    /(^|\b)full[\s-_]?name\b|(^|\b)user[\s-_]?name\b|given[\s-_]?name\(s\)?|(^|\b)complete[\s-_]?name\b|full[_ ]?legal[_ ]?name/gi,
+  fullName: 
+    /(^|\b)full[\s-_]?name\b|(^|\b)user[\s-_]?name\b|given[\s-_]?name\(s\)?|(^|\b)complete[\s-_]?name\b|legal[_ ]?name|legal[\s-_ ]?name\s?\(first,middle,last\)/gi, // Updated regex to include "Legal name (first,middle,last)"
   preferredName:
     /preferred[-_ ]?name|nickname|alias|preferred[_ ]?first[_ ]?name/gi,
   familyName: /family[-_ ]?name|last[-_ ]?name/gi,
@@ -292,7 +376,7 @@ const mapDetailRegex = {
   building: /building|complex|building[_ ]?name/gi,
   twitterUrl: /twitter[-_ ]?url|twitter[_ ]?account|@[\w]+/gi,
   linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile/gi,
-  githubUrl: /github[-_ ]?url|github[_ ]?account/gi,
+  githubUrl: /github[-_ ]?url|github[_ ]?account|website/gi,
   expectedSalary:
     /expected[-_ ]?(salary|pay|compensation|wage(s)?)|salary[-_ ]?(expectation(s)?|range|desired|requirement(s)?)|desired[-_ ]?(salary|pay|compensation|wage(s)?)|compensation[_ ]?expectations/gi,
   password: /password|passcode|pwd/gi,
@@ -322,7 +406,7 @@ const mapDetailRegex = {
     /phone[_ ]?device[_ ]?type|mobile[_ ]?model|cell[_ ]?phone[_ ]?kind/gi,
   nationality:
     /nationality|citizen(ship)?|country[_\s-]?of[_\s-]?origin|passport[_\s-]?country/gi,
-  prefix: /prefix|title|salutation|(mr|ms|mrs|miss|dr|prof)\.?/gi,
+  prefix: /^(mr|ms|mrs|miss|dr|prof)\.?|prefix|title|salutation/gi,
   countryRegion:
     /country[_\s-]?region|region|area|location[_\s-]?code|geo(graphical)?[_\s-]?area|place[_\s-]?of[_\s-]?residence|residential[_\s-]?area|living[_\s-]?area|habitation[_\s-]?area|domicile/gi,
 };
@@ -1222,29 +1306,20 @@ const fillDetails = (userDetails, regexMap) => {
   }
 
   const fillSelectField = (userDetails, regexMap) => {
-    const selectElements = document.querySelectorAll("select");
-
+    const selectElements = document.querySelectorAll<HTMLSelectElement>('select, [role="option"], [role="listbox"], [role="generic"]');
+    
     selectElements.forEach((select) => {
       let matchFound = false;
       let matchedKey = null;
-      if (select.value) {
-        return;
-      }
+  
       // First, check the select element's attributes for a regex match
       for (let key in regexMap) {
         if (matchFound) break; // If a match is found, exit the loop
-
+  
         // Check various attributes of the select element
-        const attributesToCheck = [
-          "name",
-          "id",
-          "class",
-          "title",
-          "placeholder",
-        ];
+        const attributesToCheck = ["name", "id", "class", "title", "placeholder"];
         attributesToCheck.some((attr) => {
           const value = select.getAttribute(attr);
-          // console.log("select.getAttribute",value);
           if (value && regexMap[key].test(value)) {
             matchFound = true;
             matchedKey = key;
@@ -1252,28 +1327,24 @@ const fillDetails = (userDetails, regexMap) => {
           }
           return false; // No match, continue the some() loop
         });
-
+  
         // Check the associated label if a match hasn't been found
         if (!matchFound && select.id) {
           const label = document.querySelector(`label[for="${select.id}"]`);
-          // console.log("labels: " + label);
           if (label && regexMap[key].test(label.textContent)) {
             matchFound = true;
             matchedKey = key;
-            // No need to return true here as we're not in a some() loop
           }
         }
       }
-
+  
       if (!matchFound) {
         let parentElement = select.parentElement;
         while (!matchFound && parentElement) {
           const lines = getTextLines(parentElement); // Get text lines from parent element
-          // console.log("lines",lines);
           if (lines.length > 2) break; // If too many lines, it's probably not a label
-
+  
           for (let key in regexMap) {
-            // console.log("lines",lines);
             const lineMatch = lines.find((line) => regexMap[key].test(line));
             if (lineMatch) {
               matchFound = true;
@@ -1281,11 +1352,11 @@ const fillDetails = (userDetails, regexMap) => {
               break; // Match found, break the loop
             }
           }
-
+  
           parentElement = parentElement.parentElement; // Check the next parent
         }
       }
-
+  
       // If a match is found, set the value of the select element
       if (matchFound && matchedKey && userDetails[matchedKey]) {
         const selectValue = userDetails[matchedKey];
@@ -1301,6 +1372,7 @@ const fillDetails = (userDetails, regexMap) => {
       }
     });
   };
+  
   fillSelectField(userDetails, selectInputRegex);
 
   function matchIgnoringExtras(value1, value2) {
