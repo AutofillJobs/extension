@@ -218,8 +218,8 @@ function checkInputFields() {
 }
 
 function checkForBackendUpdate(cachedData) {
-  const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
-  // const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
+//   const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
+  const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
 
   fetch(url, {
     method: "GET",
@@ -271,8 +271,8 @@ function checkForBackendUpdate(cachedData) {
 }
 
 function fetchDataFromBackend() {
-  const url = "http://localhost:5000/api/details/extension/" + Email;
-  // const url = "https://api.autofilljobs.com/details/extension/" + Email;
+//   const url = "http://localhost:5000/api/details/extension/" + Email;
+  const url = "https://api.autofilljobs.com/details/extension/" + Email;
 
   fetch(url, {
     method: "GET",
