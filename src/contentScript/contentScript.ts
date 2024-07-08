@@ -200,110 +200,26 @@ function handleInputChange(event) {
 
 //For URL Generation 
 
+
+
+
 // Find all button elements on the page
 function checkInputFields() {
   const inputFields = document.querySelectorAll("input");
   const selectFields = document.querySelectorAll("select");
 
   if (inputFields.length > 0 || selectFields.length > 0) {
-    const cachedData = localStorage.getItem("userData");
-    if (cachedData) {
-      console.log("Using cached data");
-      checkForBackendUpdate(JSON.parse(cachedData));
-    } else {
-      console.log("No cached data found, fetching from backend");
-      fetchDataFromBackend();
-    }
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData) {
+        console.log(result.formData);
+        dataFill(result.formData.data)
+      }
+      else {
+        console.log("No data found");
+      }
+    });
   }
 }
-
-function checkForBackendUpdate(cachedData) {
-  const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
-  // const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
-
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-type": "application/json",
-    },
-  })
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  })
-  .then((data) => {
-    if (data.data) {
-      const lastUpdate = new Date(data.data);
-      console.log("Backend last update:", lastUpdate);
-
-      if (!cachedData.lastUpdate) {
-        console.error("Cached data does not contain lastUpdate field");
-        fetchDataFromBackend();
-        return;
-      }
-
-      const cachedLastUpdate = new Date(cachedData.lastUpdate);
-      if (isNaN(cachedLastUpdate.getTime())) {
-        console.error("Cached last update is invalid: ", cachedData.lastUpdate);
-        fetchDataFromBackend();
-        return;
-      }
-
-      console.log("Cached last update:", cachedLastUpdate);
-
-      if (lastUpdate > cachedLastUpdate) {
-        console.log("Data has been updated on the backend, fetching new data");
-        fetchDataFromBackend();
-      } else {
-        console.log("Cached data is up to date");
-        dataFill(cachedData);
-      }
-    } else {
-      console.error("No lastUpdate field in the response");
-    }
-  })
-  .catch((error) => {
-    console.error("Error checking backend for updates", error);
-    console.log("Server Down");
-  });
-}
-
-function fetchDataFromBackend() {
-  const url = "http://localhost:5000/api/details/extension/" + Email;
-  // const url = "https://api.autofilljobs.com/details/extension/" + Email;
-
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-type": "application/json",
-    },
-  })
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  })
-  .then((data) => {
-    if (data.error !== "no error") {
-      console.log("Please Register in Website");
-    } else {
-      const updatedData = { ...data.data, lastUpdate: data.data.details.updatedAt };
-      localStorage.setItem("userData", JSON.stringify(updatedData));
-      dataFill(updatedData);
-    }
-  })
-  .catch((error) => {
-    console.error("Error fetching data from the backend", error);
-    console.log("Server Down");
-  });
-}
-
-
-
-
 
 
 document.addEventListener(
@@ -1174,10 +1090,11 @@ const fillDetails = (userDetails, regexMap) => {
   const selectFields = document.querySelectorAll<HTMLSelectElement>("select");
   console.log("fields:", inputElements);
   const filledFields = {};
+  const fieldMappings = {};
   const fillInputField = (userDetails, regexMap) => {
     // const inputElements = document.querySelectorAll("input[type='text'], input:not([type])");
 
-    inputElements.forEach((input) => {
+    inputElements.forEach((input,index) => {
       let matchFound = false;
       let matchedKey = null;
 
@@ -1258,6 +1175,9 @@ const fillDetails = (userDetails, regexMap) => {
         input.dispatchEvent(new Event("change", { bubbles: true }));
         input.dispatchEvent(new Event("input", { bubbles: true }));
         filledFields[matchedKey] = userDetails[matchedKey];
+        fieldMappings[matchedKey] = { index: index };
+
+        console.log(fieldMappings);
         delete userDetails[matchedKey];
       }
      
@@ -1265,6 +1185,17 @@ const fillDetails = (userDetails, regexMap) => {
   };
 
   fillInputField(userDetails, regexMap);
+  const isEmptyObject = (obj) => {
+    return Object.keys(obj).length === 0;
+  };
+  
+  // Check if fieldMappings is not empty before saving to localStorage
+  if (!isEmptyObject(fieldMappings)) {
+    localStorage.setItem('fieldMappings', JSON.stringify(fieldMappings));
+    console.log('fieldMappings saved to localStorage:', fieldMappings);
+  } else {
+    console.log('fieldMappings is empty, not saving to localStorage');
+  }
 
   function getTextLines(element) {
     let lines = [];
