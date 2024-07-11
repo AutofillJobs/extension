@@ -106,14 +106,14 @@ const [cvUrl, setCvUrl] = useState('');
   function saveFileToLocalStorage(file, location) {
     if (file) {
       const reader = new FileReader();
-
+  
       reader.onload = function(event) {
-        const fileContent = event.target?.result as string | ArrayBuffer | null;
+        const fileContent = event.target?.result;
         const fileName = file.name;
-        if (typeof fileContent === 'string') {
+        if (fileContent) {
           const blob = new Blob([fileContent], { type: file.type });
           const fileUrl = URL.createObjectURL(blob);
-
+  
           if (location === 'resume') {
             setResumeUrl(fileUrl);
             setResumeName(fileName);
@@ -123,38 +123,21 @@ const [cvUrl, setCvUrl] = useState('');
             setCvName(fileName);
             chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName });
           }
-
+  
           chrome.storage.local.set({ [location]: fileContent }, () => {
-            console.log(`File ${location} saved to chrome storage.`);
-          });
-        } else if (fileContent instanceof ArrayBuffer) {
-          const convertedFileContent = String.fromCharCode.apply(null, new Uint16Array(fileContent));
-          const blob = new Blob([convertedFileContent], { type: file.type });
-          const fileUrl = URL.createObjectURL(blob);
-
-          if (location === 'resume') {
-            setResumeUrl(fileUrl);
-            setResumeName(fileName);
-            chrome.storage.local.set({ resumeUrl: fileUrl, resumeName: fileName });
-          } else if (location === 'cv') {
-            setCvUrl(fileUrl);
-            setCvName(fileName);
-            chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName });
-          }
-
-          chrome.storage.local.set({ [location]: convertedFileContent }, () => {
             console.log(`File ${location} saved to chrome storage.`);
           });
         } else {
           alert('Error reading file');
         }
       };
-
-      reader.readAsDataURL(file); // Read file as Base64 string
+  
+      reader.readAsArrayBuffer(file); // Read file as ArrayBuffer
     } else {
       alert('No file selected');
     }
   }
+  
 
   
   
