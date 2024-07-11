@@ -12,6 +12,7 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 
 
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'fillField') {
     chrome.storage.local.get('variablesFromBackend', (result) => {
@@ -951,131 +952,95 @@ const dataFill = (data) => {
   const cvField = document.querySelector('input[type="file"][name="resume"]');
 
   // Function to fetch and upload a file from a remote URL
-  async function uploadFile(inputSelector, blobStorageUrl, fileName) {
-    try {
-        // Fetch the file from the blob storage URL
-        const response = await fetch(blobStorageUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/octet-stream'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Network response was not ok ${response.statusText}`);
-        }
-        
-        // Convert the response to a blob
-        const blob = await response.blob();
-        
-        // Create a file in memory
-        const file = new File([blob], fileName, { type: blob.type });
-        
-        // Create a DataTransfer object
-        const dt = new DataTransfer();
-        
-        // Add the file to the DataTransfer object
-        dt.items.add(file);
-        
-        // Get the file input element on the page
-        const inputElement = document.querySelector(inputSelector);
-        
-        if (!inputElement) {
-            throw new Error("File input element not found");
-        }
-        
-        // Set the files property with our DataTransfer files list
-        inputElement.files = dt.files;
-        
-        // Dispatch a 'change' event on the input to trigger any event handlers
-        const event = new Event("change", { bubbles: true });
-        inputElement.dispatchEvent(event);
-        
-        console.log("File upload successful");
-    } catch (error) {
-        console.error("File upload failed:", error);
-    }
-}
-
-
-
-  function generateFileName(email, fileType) {
-    // Ensure the fileType is either 'cv' or 'resume'
-    if (fileType !== 'cv' && fileType !== 'resume') {
-        throw new Error("fileType must be either 'cv' or 'resume'");
-    }
-    
-    // Determine the file extension based on the file type
-    const extension = '.pdf';
-    
-    // Generate the file name
-    const fileName = `${email}${fileType}${extension}`;
-    
-    return fileName;
-}
-
-
-async function fetchSasToken(blobName,type) {
-  let url;
-
-  if(type==='cv'){
-     // const url = "http://localhost:5000/api/details/extension/sas/cv/" + blobName;
-     url = "https://api.autofilljobs.com/details/extension/sas/cv/" + blobName;
-
-   }
-   else{
-    // const url = "http://localhost:5000/api/details/extension/sas/resume/" + blobName;
-     url = "https://api.autofilljobs.com/details/extension/sas/resume/" + blobName;
-
-   }
-  
-  
-   try {
-    const response = await fetch(url, {
-      method: "GET",
+// Function to fetch and upload a file from a remote URL
+async function uploadFile(inputSelector, blobStorageUrl, fileName) {
+  try {
+    // Fetch the file from the blob storage URL
+    const response = await fetch(blobStorageUrl, {
+      method: 'GET',
       headers: {
-        "Content-type": "application/json",
-      },
+        'Content-Type': 'application/octet-stream'
+      }
     });
 
     if (!response.ok) {
       throw new Error(`Network response was not ok ${response.statusText}`);
     }
 
-    const sasToken = await response.text(); // Treat the response as text
-    return sasToken;
+    // Convert the response to a blob
+    const blob = await response.blob();
+
+    // Create a file in memory
+    const file = new File([blob], fileName, { type: blob.type });
+
+    // Create a DataTransfer object
+    const dt = new DataTransfer();
+
+    // Add the file to the DataTransfer object
+    dt.items.add(file);
+
+    // Get the file input element on the page
+    const inputElement = document.querySelector(inputSelector);
+
+    if (!inputElement) {
+      throw new Error("File input element not found");
+    }
+
+    // Set the files property with our DataTransfer files list
+    inputElement.files = dt.files;
+
+    // Dispatch a 'change' event on the input to trigger any event handlers
+    const event = new Event("change", { bubbles: true });
+    inputElement.dispatchEvent(event);
+
+    console.log("File upload successful");
   } catch (error) {
-    console.error("There has been a problem with your fetch operation:", error);
+    console.error("File upload failed:", error);
   }
-  }
-
-
-
-
-//Resume fill
-async function fillResume() {
-  const resumename = generateFileName(Email,'resume');
-  const sasresume = await fetchSasToken(resumename,'resume');
-  console.log('sasresume',sasresume);
-  const link = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/resumes/" + resumename + "?" + sasresume;
-  console.log("Resume URL:", link);
-  uploadFile(
-    'input[type="file"][name="resume"]',
-    link,
-    resumename
-  );
 }
 
+// Resume fill function
+async function fillResume() {
+  try {
+    chrome.storage.local.get(['resumeBase64'], async (result) => {
+      if (result.resumeBase64) {
+        const resumeUrl = `data:application/pdf;base64,${result.resumeBase64}`;
+        // console.log('Resume URL:', resumeUrl);
+
+        await uploadFile(
+          'input[type="file"][name="resume"]',
+          resumeUrl,
+          'resume.pdf'
+        );
+      } else {
+        console.error("Resume Base64 string not found in storage");
+      }
+    });
+  } catch (error) {
+    console.error("Error in fillResume:", error);
+  }
+}
+
+
 async function fillCV() {
-  const cvname = generateFileName(Email, 'cv');
-  const sascv = await fetchSasToken(cvname,'cv');
-  const link1 = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/cvs/" + cvname + "?" + sascv;
-  console.log("CV URL:", link1);
-  uploadFile(
-    'input[type="file"][name="cv"]',
-    link1,
-    cvname
-  );
+  try {
+    chrome.storage.local.get(['cvBase64'], async (result) => {
+      if (result.cvBase64) {
+        const cvUrl = `data:application/pdf;base64,${result.cvBase64}`;
+        // console.log('Resume URL:', cvUrl);
+
+        await uploadFile(
+          'input[type="file"][name="cv"]',
+          cvUrl,
+          'cv.pdf'
+        );
+      } else {
+        console.error("Cv Base64 string not found in storage");
+      }
+    });
+  } catch (error) {
+    console.error("Error in fillResume:", error);
+  }
 }
 
 fillCV();

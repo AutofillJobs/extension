@@ -111,17 +111,18 @@ const [cvUrl, setCvUrl] = useState('');
         const fileContent = event.target?.result;
         const fileName = file.name;
         if (fileContent) {
+          const base64String = arrayBufferToBase64(fileContent);
           const blob = new Blob([fileContent], { type: file.type });
-          const fileUrl = URL.createObjectURL(blob);
+          const fileUrl = `data:application/pdf;base64,${base64String}`
   
           if (location === 'resume') {
             setResumeUrl(fileUrl);
             setResumeName(fileName);
-            chrome.storage.local.set({ resumeUrl: fileUrl, resumeName: fileName });
+            chrome.storage.local.set({ resumeUrl: fileUrl, resumeName: fileName,resumeBase64: base64String});
           } else if (location === 'cv') {
             setCvUrl(fileUrl);
             setCvName(fileName);
-            chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName });
+            chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName,cvBase64: base64String});
           }
   
           chrome.storage.local.set({ [location]: fileContent }, () => {
@@ -138,6 +139,15 @@ const [cvUrl, setCvUrl] = useState('');
     }
   }
   
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  }
 
   
   
