@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const WorkExperiencePopup = ({ onClose, mode }) => {
-  const [showSkillInput, setShowSkillInput] = useState(false);
+const WorkExperiencePopup = ({ onClose, mode ,onSave}) => {
+  // const [showSkillInput, setShowSkillInput] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
   const [workData, setWorkData] = useState({
@@ -16,62 +16,60 @@ const WorkExperiencePopup = ({ onClose, mode }) => {
   });
   const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(workData.stillWorking);
 
-  useEffect(() => {
-    chrome.storage.local.get('formData', (result) => {
-      if (result.formData) {
-        const existingWorkExperiences = result.formData.workExperiences || [];
-        if (existingWorkExperiences.length > 0) {
-          setWorkData(existingWorkExperiences[existingWorkExperiences.length - 1]);
-          setSkills(existingWorkExperiences[existingWorkExperiences.length - 1].skills || []);
-          setIsCurrentlyWorking(existingWorkExperiences[existingWorkExperiences.length - 1].stillWorking);
-        }
-      }
-    });
-  }, []);
 
   const handleCurrentlyWorkingChange = (e) => {
     setIsCurrentlyWorking(e.target.checked);
     setWorkData({ ...workData, stillWorking: e.target.checked });
   };
 
-  const handleAddSkillClick = () => {
-    setShowSkillInput(true);
-  };
-
+  // const handleAddSkillClick = () => {
+  //   setShowSkillInput(true);
+  // };
   const handleChangeSkill = (e) => {
+    e.preventDefault();
     setNewSkill(e.target.value);
-  };
+  }
 
   const handleSkillInputChange = (e) => {
+    e.preventDefault();
+    // Add the skill to the skills array when user inputs a skill and presses Enter or clicks Add
     if (e.key === 'Enter' || e.type === 'click') {
+      console.log("e",e)
       setSkills([...skills, newSkill]);
-      setNewSkill('');
-      setShowSkillInput(false);
+      setNewSkill("");
+      // setShowSkillInput(false);
     }
   };
 
   const handleRemoveSkill = (index) => {
+    // Remove the selected skill from the skills array
     const updatedSkills = skills.filter((_, i) => i !== index);
     setSkills(updatedSkills);
   };
-
-  const handleSave = () => {
+  const handleSave = (event) => {
+    event.preventDefault();
     const updatedWorkData = {
       ...workData,
       skills: skills,
+      id: Date.now(), 
     };
 
-    chrome.storage.local.get('formData', (result) => {
-      const existingFormData = result.formData || {};
-      const existingWorkExperiences = existingFormData.workExperiences || [];
+    chrome.storage.local.get(['formData'], (result) => {
+      const existingdata = result.formData.data || {};
+      console.log("existing",existingdata);
+      const existingWorkExperiences = existingdata.workExperiences || [];
       
-      const updatedFormData = {
-        ...existingFormData,
-        workExperiences: [...existingWorkExperiences, updatedWorkData],
+      const updateddata = {
+        data: {
+          ...existingdata,
+          workExperiences: [...existingdata.workExperiences, updatedWorkData],
+        }
       };
 
-      chrome.storage.local.set({ 'formData': updatedFormData }, () => {
+      chrome.storage.local.set({ ['formData']: updateddata }, () => {
+        console.log("update",updateddata);
         console.log('Work experience data saved');
+        onSave();
         onClose();
       });
     });
@@ -134,12 +132,9 @@ const WorkExperiencePopup = ({ onClose, mode }) => {
           onChange={(e) => setWorkData({ ...workData, companyName: e.target.value })}
         />
 
-        <button
-          onClick={handleAddSkillClick}
-          className="text-grey-400 text-sm mb-4"
-        >
-          <span className="text-lg">+</span> Add Skill 
-        </button>
+<h3 className="text-gray-600 text-sm font-semibold mb-2">
+  Skills
+</h3>
 
         <div className="w-full mb-4 flex flex-wrap">
           {skills?.map((skill, index) => (
@@ -158,7 +153,7 @@ const WorkExperiencePopup = ({ onClose, mode }) => {
           ))}
         </div>
 
-        {showSkillInput && (
+       
           <div className="mb-4 flex flex-wrap">
             <input
               type="text"
@@ -173,7 +168,7 @@ const WorkExperiencePopup = ({ onClose, mode }) => {
               Add
             </button>
           </div>
-        )}
+        
 
         <textarea 
           placeholder="Description" 

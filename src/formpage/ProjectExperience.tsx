@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const ProjectExperiencePopup = ({ onClose, mode }) => {
-  const [showSkillInput, setShowSkillInput] = useState(false);
+const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
+  // const [showSkillInput, setShowSkillInput] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
   const [projectData, setProjectData] = useState({
@@ -29,19 +29,23 @@ const ProjectExperiencePopup = ({ onClose, mode }) => {
     setProjectData({ ...projectData, stillWorking: e.target.checked });
   };
 
-  const handleAddSkillClick = () => {
-    setShowSkillInput(true);
-  };
+  // const handleAddSkillClick = () => {
+  //   setShowSkillInput(true);
+  // };
 
   const handleChangeSkill = (e) => {
+    e.preventDefault();
     setNewSkill(e.target.value);
-  };
+  }
 
   const handleSkillInputChange = (e) => {
-    if (e.key === "Enter" || e.type === "click") {
+    e.preventDefault();
+    // Add the skill to the skills array when user inputs a skill and presses Enter or clicks Add
+    if (e.key === 'Enter' || e.type === 'click') {
+      console.log("e",e)
       setSkills([...skills, newSkill]);
       setNewSkill("");
-      setShowSkillInput(false);
+      // setShowSkillInput(false);
     }
   };
 
@@ -50,24 +54,28 @@ const ProjectExperiencePopup = ({ onClose, mode }) => {
     setSkills(updatedSkills);
   };
 
-  const handleSave = () => {
+  const handleSave = (event) => {
+    event.preventDefault();
     const updatedProjectData = {
       ...projectData,
       skills: skills,
-      id: Date.now(), // Generate a unique ID
+      id: Date.now(), 
     };
 
     chrome.storage.local.get('formData', (result) => {
-      const existingFormData = result.formData || {};
+      const existingFormData = result.formData.data || {};
       const existingProjectExperiences = existingFormData.projectExperiences || [];
       
       const updatedFormData = {
+        data:{
         ...existingFormData,
         projectExperiences: [...existingProjectExperiences, updatedProjectData],
+        }
       };
 
       chrome.storage.local.set({ 'formData': updatedFormData }, () => {
         console.log('Project experience data saved');
+        onSave();
         onClose();
       });
     });
@@ -129,12 +137,9 @@ const ProjectExperiencePopup = ({ onClose, mode }) => {
           }
         />
 
-        <button
-          onClick={handleAddSkillClick}
-          className="text-grey-400 text-sm mb-4"
-        >
-          <span className="text-lg">+</span> Add Skill
-        </button>
+<h3 className="text-gray-600 text-sm font-semibold mb-2">
+  Skills
+</h3>
         <div className="w-full mb-4 flex flex-wrap">
           {skills.map((skill, index) => (
             <div
@@ -151,7 +156,7 @@ const ProjectExperiencePopup = ({ onClose, mode }) => {
             </div>
           ))}
         </div>
-        {showSkillInput && (
+   
           <div className="mb-4 flex flex-wrap">
             <input
               type="text"
@@ -166,7 +171,7 @@ const ProjectExperiencePopup = ({ onClose, mode }) => {
               Add
             </button>
           </div>
-        )}
+      
         <textarea
           placeholder="Description"
           className="w-full mb-4 p-2 border"

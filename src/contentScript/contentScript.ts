@@ -273,8 +273,10 @@ const mapDetailRegex = {
     /preferred[-_ ]?name|nickname|alias|preferred[_ ]?first[_ ]?name/gi,
   familyName: /family[-_ ]?name|last[-_ ]?name/gi,
   zip: /zip(code)?|postal[-_ ]?code|post[_ ]?code/gi,
+  phoneCode:
+  /\b(?:country[_ ]?code|country[_ ]?phone|international[_ ]?code|intl[_ ]?code|dialing[_ ]?code)\b/gi,
   phoneNumber:
-    /phone[-_ ]?(number)?\*?|mobile[-_ ]?(number)?\*?|telephone\*?|contact[_ ]?number/gi,
+    /phone[-_ ]?(number)?\*?|mobile[-_ ]?(number)?\*?|telephone\*?|contact[_ ]?number|phone number/gi,
   email: /e[-_ ]?mail|email[-_ ]?address|email/gi,
   phoneAlternativeNumber:
     /alternate[-_ ]?phone|secondary[-_ ]?phone|alternative[_ ]?contact[_ ]?number/gi,
@@ -291,7 +293,7 @@ const mapDetailRegex = {
   floor: /floor|level|floor[_ ]?number/gi,
   building: /building|complex|building[_ ]?name/gi,
   twitterUrl: /twitter[-_ ]?url|twitter[_ ]?account|@[\w]+/gi,
-  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile/gi,
+  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile|social network urls|Please provide a link to your LinkedIn profile:/gi,
   githubUrl: /github[-_ ]?url|github[_ ]?account|website/gi,
   expectedSalary:
     /expected[-_ ]?(salary|pay|compensation|wage(s)?)|salary[-_ ]?(expectation(s)?|range|desired|requirement(s)?)|desired[-_ ]?(salary|pay|compensation|wage(s)?)|compensation[_ ]?expectations/gi,
@@ -372,13 +374,14 @@ const workExperienceRegex = {
   jobTitle: /job title|Job[_ -]?Title/gi,
   companyName: /company[_ -]?name|company/gi,
   description:
-    /description|[a-zA-z*0-9]*role[a-zA-z*0-9]* description[a-zA-z*0-9]*/gi,
+    /description|[a-zA-Z*0-9]*role[a-zA-Z*0-9]*description[a-zA-Z*0-9]*|role description/gi,
   location: /location|country|region|candidate-location/gi,
   stillWorking: /[a-zA-z*0-9]*still[_ -]working[a-zA-z*0-9]*/gi,
   startDate:
     /[a-zA-z*0-9]*start[_ -]?date[a-zA-z*0-9]*|[a-zA-z*0-9]*from[a-zA-z*0-9]*/gi,
   endDate: /[a-zA-z*0-9]*end[- _]?date[a-zA-z*0-9]*|to[a-zA-z*0-9]*/gi,
   skills: /skills/gi,
+  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile|social network urls|Please provide a link to your LinkedIn profile:/gi,
 };
 const projectExperienceRegex = {
   projectName: /project[_ -]?name|project/gi,
@@ -582,6 +585,7 @@ const dataFill = (data) => {
             buttons[0],
             function () {
               // Education Experience has finished, you can continue with other tasks or call another function here
+              fillDetails(userDetails, mapDetailRegex);
               fillEducationDetails();
             }
           );
@@ -1086,7 +1090,7 @@ fillResume();
 };
 
 const fillDetails = (userDetails, regexMap) => {
-  const inputElements = document.querySelectorAll<HTMLInputElement>("input");
+  const inputElements = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea");
   const selectFields = document.querySelectorAll<HTMLSelectElement>("select");
   console.log("fields:", inputElements);
   const filledFields = {};

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import WorkExperiencePopup from './WorkExperiencepopup';
+import WorkExperiencePopup from './WorkExperiencePopup';
 import ProjectExperience from "./ProjectExperience";
 import EducationExperiencePopup from './EducationExperience';
 import ProjectExperienceDisplay from "./ProjectExperienceDisplay";
 import WorkExperienceDisplay from "./WorkExperienceDisplay";
 import EducationExperienceDisplay from "./EducationExperienceDisplay";
-
-export default function Educational({ mode, userData, setUserData }) {
+import './Experience.css'
+export default function Educational({}) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [experience, setExperience] = useState(null);
@@ -16,25 +16,27 @@ export default function Educational({ mode, userData, setUserData }) {
     selected: false,
   });
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    console.log("change");
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
+
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
 
   const userId = 1;
-
-  const dataFetch = () => {
-    chrome.storage.local.get(['experience'], (result) => {
-      if (result.experience) {
-        setExperience(result.experience);
+  useEffect(() => {
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData) {
+        setExperience(result.formData.data);
       }
     });
-  };
+  }, [refreshKey]);
 
-  useEffect(() => {
-    if (userId) {
-      dataFetch();
-    }
-  }, [userId]);
+  
 
   const handleOptionClick = (option) => {
     setSelectedOption(option);
@@ -43,8 +45,8 @@ export default function Educational({ mode, userData, setUserData }) {
   };
 
   return (
-    <div className="w-full md:w-96 md:max-w-full mx-auto shadow-2xl shadow-zinc-800">
-      <div className="p-6 border border-gray-300 sm:rounded-md">
+  <div className="w-full md:w-96 md:max-w-full mx-auto">
+  <div className="p-6">
         <div className="relative inline-block text-left">
           <div>
             <button
@@ -173,8 +175,9 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedDisplayOption({ selected: false, id: "", type: "" });
-            dataFetch();
+           
           }}
+          onSave={handleRefresh}
         />
       )}
       {selectedDisplayOption.selected && selectedDisplayOption?.type === "Work" && (
@@ -183,8 +186,9 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedDisplayOption({ selected: false, id: "", type: "" });
-            dataFetch();
+           
           }}
+          onSave={handleRefresh}
         />
       )}
       {selectedDisplayOption.selected && selectedDisplayOption?.type === "Education" && (
@@ -193,8 +197,9 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedDisplayOption({ selected: false, id: "", type: "" });
-            dataFetch();
+         
           }}
+          onSave={handleRefresh}
         />
       )}
 
@@ -203,8 +208,9 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedOption(null);
-            dataFetch();
+           
           }}
+          onSave={handleRefresh}
         />
       )}
       {selectedOption === "Education" && (
@@ -212,8 +218,9 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedOption(null);
-            dataFetch();
+          
           }}
+          onSave={handleRefresh}
         />
       )}
       {selectedOption === "Project" && (
@@ -221,8 +228,8 @@ export default function Educational({ mode, userData, setUserData }) {
           mode={true}
           onClose={() => {
             setSelectedOption(null);
-            dataFetch();
           }}
+          onSave={handleRefresh}
         />
       )}
     </div>

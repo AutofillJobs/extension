@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-const EducationExperienceDisplay = ({ onClose, mode, id }) => {
+const EducationExperienceDisplay = ({ onClose, mode, id ,onSave}) => {
   const [educationData, setEducationData] = useState({
     courseName: "",
     field: "",
@@ -15,31 +15,43 @@ const EducationExperienceDisplay = ({ onClose, mode, id }) => {
   });
 
   useEffect(() => {
-    chrome.storage.local.get('formData', (result) => {
-      if (result.formData && result.formData.educationExperiences) {
-        const experience = result.formData.educationExperiences.find(exp => exp.id === id);
+    console.log(id);
+    chrome.storage.local.get(['formData'], (result) => {
+      console.log("Stored data:", result);
+      if (result.formData && result.formData.data.educationExperiences) {
+        const experience = result.formData.data.educationExperiences.find(exp => exp.id === id);
         if (experience) {
           setEducationData(experience);
+        } else {
+          console.log("No experience found with the provided ID");
         }
+      } else {
+        console.log("No work experiences found in formData");
       }
     });
   }, [id]);
 
-  const handleDiscard = () => {
-    chrome.storage.local.get('formData', (result) => {
-      if (result.formData && result.formData.educationExperiences) {
-        const updatedExperiences = result.formData.educationExperiences.filter(exp => exp.id !== id);
-        const updatedFormData = {
-          ...result.formData,
-          educationExperiences: updatedExperiences
-        };
-        chrome.storage.local.set({ 'formData': updatedFormData }, () => {
-          console.log('Education Experience deleted successfully');
-          onClose();
-        });
-      }
-    });
-  };
+
+    const handleDiscard = (event) => {
+      event.preventDefault();
+      chrome.storage.local.get(['formData'], (result) => {
+        if (result.formData && result.formData.data.educationExperiences) {
+          const updatedExperiences = result.formData.data.educationExperiences.filter(exp => exp.id !== id);
+          const updatedData = {
+            data:{
+            ...result.formData.data,
+            educationExperiences: updatedExperiences
+            }
+          };
+          chrome.storage.local.set({ formData: updatedData }, () => {
+            console.log('Education Experience deleted successfully');
+            onClose();
+            onSave()
+          });
+        }
+      });
+    };
+  
 
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">

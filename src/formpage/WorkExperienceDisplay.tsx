@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-const WorkExperienceDisplay = ({ onClose, mode, id }) => {
+
+const WorkExperienceDisplay = ({ onClose, mode, id,onSave }) => {
   const [workData, setWorkData] = useState({
     projectName: "",
     startDate: "",
@@ -16,27 +17,35 @@ const WorkExperienceDisplay = ({ onClose, mode, id }) => {
   });
 
   useEffect(() => {
-    chrome.storage.local.get('data', (result) => {
-        console.log(result);
-      if (result.data && result.data.workExperiences) {
-        const experience = result.data.workExperiences.find(exp => exp.id === id);
+    chrome.storage.local.get(['formData'], (result) => {
+      console.log("Stored data:", result);
+      if (result.formData && result.formData.data.workExperiences) {
+        const experience = result.formData.data.workExperiences.find(exp => exp.id === id);
         if (experience) {
           setWorkData(experience);
+        } else {
+          console.log("No experience found with the provided ID");
         }
+      } else {
+        console.log("No work experiences found in formData");
       }
     });
   }, [id]);
 
-  const handleDiscard = () => {
-    chrome.storage.local.get('data', (result) => {
-      if (result.data && result.data.workExperiences) {
-        const updatedExperiences = result.data.workExperiences.filter(exp => exp.id !== id);
-        const updateddata = {
-          ...result.data,
+  const handleDiscard = (event) => {
+    event.preventDefault();
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData && result.formData.data.workExperiences) {
+        const updatedExperiences = result.formData.data.workExperiences.filter(exp => exp.id !== id);
+        const updatedData = {
+          data:{
+          ...result.formData.data,
           workExperiences: updatedExperiences
+          }
         };
-        chrome.storage.local.set({ 'data': updateddata }, () => {
+        chrome.storage.local.set({ formData: updatedData }, () => {
           console.log('Work Experience deleted successfully');
+          onSave();
           onClose();
         });
       }

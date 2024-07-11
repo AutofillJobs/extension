@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import FormPage from "./formpage";
-
+import './index.css'
 function init() {
     const appContainer = document.createElement('div')
     document.body.appendChild(appContainer)

@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import "react-phone-number-input/style.css";
 import PhoneInput from "react-phone-number-input";
 import "./formpage.css";
 import Educational from './Experience';
+import {
+  getCountryCallingCode,
+  parsePhoneNumber,
+} from "react-phone-number-input";
 const FormPage = () => {
+  console.log('FormPage rendering');
   const [formData, setFormData] = useState({
     fullName: "",
     firstName: "",
@@ -80,36 +85,59 @@ const FormPage = () => {
     }]
   });
 
+  const clearStorage = () => {
+    chrome.storage.local.clear(() => {
+      console.log('Chrome storage cleared.');
+    });
+  };
+
+  useEffect(() => {
+    // Initialize resume and cv from localStorage if available
+    const storedResume = localStorage.getItem('resume');
+    const storedCv = localStorage.getItem('cv');
+    if (storedResume) {
+      setResume(storedResume);
+    }
+    if (storedCv) {
+      setCv(storedCv);
+    }
+  }, []);
+
+  
+
+ 
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isEditable, setIsEditable] = useState(true);
   const [resume, setResume] = useState(localStorage.getItem('resume') || '');
   const [cv, setCv] = useState(localStorage.getItem('cv') || '');
-  function saveFileToLocalStorage(file,location) {
-    const fileInput = document.getElementById('fileInput');
-
+  function saveFileToLocalStorage(file, location) {
     if (file) {
-        const reader = new FileReader();
-
-        reader.onload = function(event) {
-          const fileContent = event.target?.result as string | ArrayBuffer | null;
-          if (typeof fileContent === 'string') {
-              localStorage.setItem(location, fileContent);
-              alert('File saved to local storage!');
-          } else if (fileContent instanceof ArrayBuffer) {
-              // Convert ArrayBuffer to string if needed
-              const convertedFileContent = String.fromCharCode.apply(null, new Uint16Array(fileContent));
-              localStorage.setItem(location, convertedFileContent);
-              alert('File saved to local storage!');
-          } else {
-              alert('Error reading file');
-          }
+      const reader = new FileReader();
+  
+      reader.onload = function(event) {
+        const fileContent = event.target?.result as string | ArrayBuffer | null;
+        if (typeof fileContent === 'string') {
+          chrome.storage.local.set({ [location]: fileContent }, () => {
+            console.log(`File ${location} saved to chrome storage.`);
+          });
+        } else if (fileContent instanceof ArrayBuffer) {
+          // Convert ArrayBuffer to string if needed
+          const convertedFileContent = String.fromCharCode.apply(null, new Uint16Array(fileContent));
+          chrome.storage.local.set({ [location]: convertedFileContent }, () => {
+            console.log(`File ${location} saved to chrome storage.`);
+          });
+        } else {
+          alert('Error reading file');
+        }
       };
-
-        reader.readAsDataURL(file); // Read file as Base64 string
+  
+      reader.readAsDataURL(file); // Read file as Base64 string
     } else {
-        alert('No file selected');
+      alert('No file selected');
     }
-}
+  }
+  
 
   useEffect(() => {
     // Save to local storage whenever resume or cv changes
@@ -129,6 +157,8 @@ const FormPage = () => {
     setCv(file ? file.name : '');
   };
 
+  const memoizedFormData = useMemo(() => formData, [formData]);
+
   useEffect(() => {
     chrome.storage.local.get(['formData'], (result) => {
       if (result.formData) {
@@ -147,23 +177,58 @@ const FormPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const output = {
-      data: {
-        details: {
-          ...formData,
+    chrome.storage.local.get('formData', (result) => {
+      const previousData = result.formData || { data: {} };
+      console.log("previous",previousData);
+      const previousDetails = previousData.data || {};
+
+      let updates = {phoneCode:"",phoneNumber:"",phoneAlternativeNumber:""};
+
+
+      if (formData.phoneNumber) {
+        const phoneNumberObj = parsePhoneNumber(formData.phoneNumber);
+        if (phoneNumberObj) {
+          const countryCallingCode = getCountryCallingCode(phoneNumberObj.country);
+          updates.phoneCode = `+${countryCallingCode}`;
+          updates.phoneNumber = phoneNumberObj.nationalNumber.toString();
+        }
+      }
+  
+      // Similar logic for alternative phone number
+      if (formData.phoneAlternativeNumber) {
+        const phoneAltObj = parsePhoneNumber(formData.phoneAlternativeNumber);
+        if (phoneAltObj) {
+          // Assuming you want to keep the same country code logic for alternative numbers
+          updates.phoneAlternativeNumber = phoneAltObj.nationalNumber.toString();
+          // If you need a separate field for the alternative phone's country code, add it here
+        }
+      }
+
+      console.log("updates",updates);
+  
+      const updatedData = {
+        data: {
+          ...previousDetails,
+          details: {
+            ...formData,
+            ...updates
+          },
+          workExperiences: previousDetails.workExperiences || [],
+          projectExperiences: previousDetails.projectExperiences || [],
+          educationExperiences: previousDetails.educationExperiences || []
         },
-        workExperiences: [],
-        projectExperiences: [],
-        educationExperiences: []
-      },
-      error: "no error"
-    };
-    console.log(output);
-    chrome.storage.local.set({ 'formData': output }, () => {
-      console.log('Form data saved');
-      setIsEditable(false);
+        error: "no error"
+      };
+  
+      chrome.storage.local.set({ 'formData': updatedData }, () => {
+        console.log('Form data saved');
+        console.log(updatedData);
+        setIsEditable(false);
+      });
     });
   };
+  
+  
 
   const handleEdit = (e) => {
     e.preventDefault()
@@ -191,7 +256,7 @@ const FormPage = () => {
               <h2 className="text-xl font-bold mb-4">Personal Information</h2>
               <div>
                 {isEditable ? (
-                  <button type="submit" className="btn-primary mr-2">Save</button>
+                  <button type="submit" onClick={handleSubmit} className="btn-primary mr-2">Save</button>
                 ) : (
                   <button type="button" onClick={handleEdit} className="btn-primary mr-2">Edit</button>
                 )}
@@ -258,7 +323,7 @@ const FormPage = () => {
               <h2 className="text-xl font-bold mb-4">Address Information</h2>
               <div>
                 {isEditable ? (
-                  <button type="submit" className="btn-primary mr-2">Save</button>
+                  <button type="submit" onClick={handleSubmit} className="btn-primary mr-2">Save</button>
                 ) : (
                   <button type="button" onClick={handleEdit} className="btn-primary mr-2">Edit</button>
                 )}
@@ -294,7 +359,7 @@ const FormPage = () => {
               <h2 className="text-xl font-bold mb-4">Credentials</h2>
               <div>
                 {isEditable ? (
-                  <button type="submit" className="btn-primary mr-2">Save</button>
+                  <button type="submit" onClick={handleSubmit} className="btn-primary mr-2">Save</button>
                 ) : (
                   <button type="button" onClick={handleEdit} className="btn-primary mr-2">Edit</button>
                 )}
@@ -323,27 +388,41 @@ const FormPage = () => {
             </div>
           </div>
         );
-      case 4:
-        return (
-          <div>
-            <Educational
-              mode={isEditable}
-              userData={formData}
-              setUserData={setFormData} 
-            />
-            <input
-        type="file"
-        onChange={handleResumeChange}
-       
-      />
-      <br />
-      <input
-        type="file"
-        onChange={handleCvChange}
-    
-      />
-          </div>
-        );
+        case 4:
+          return (
+            <div>
+              <div className="education-section">
+                <Educational />
+              </div>
+              <div className="file-upload-section">
+                <h3 className="file-upload-heading">Upload Documents</h3>
+                <div className="file-input-container">
+                  <div className="file-input-wrapper">
+                    <label htmlFor="resumeInput" className="file-input-label">Resume</label>
+                    <input
+                      id="resumeInput"
+                      type="file"
+                      onChange={handleResumeChange}
+                      className="file-input"
+                      accept=".pdf,.doc,.docx"
+                    />
+                  </div>
+                  <div className="file-input-wrapper">
+                    <label htmlFor="cvInput" className="file-input-label">Cover Letter</label>
+                    <input
+                      id="cvInput"
+                      type="file"
+                      onChange={handleCvChange}
+                      className="file-input"
+                      accept=".pdf,.doc,.docx"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+
+        
       default:
         return null;
     }
@@ -355,10 +434,11 @@ const FormPage = () => {
         <h3 className="subheading" onClick={() => goToStep(1)}>Personal Information</h3>
         <h3 className="subheading" onClick={() => goToStep(2)}>Address Information</h3>
         <h3 className="subheading" onClick={() => goToStep(3)}>Credentials</h3>
+        <h3 className="subheading" onClick={() => goToStep(4)}>Experience</h3>
         {/* Add more subheadings for additional steps */}
       </div>
     <div className="container mx-auto p-4">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form  className="space-y-6">
         {renderStep()}
       </form>
       {currentStep > 1 && (
@@ -372,4 +452,4 @@ const FormPage = () => {
   );
 };
 
-export default FormPage;
+export default React.memo(FormPage);

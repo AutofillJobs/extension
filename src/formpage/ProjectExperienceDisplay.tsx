@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const ProjectExperienceDisplay = ({ onClose, mode, id }) => {
+const ProjectExperienceDisplay = ({ onClose, mode, id ,onSave}) => {
   const [projectData, setProjectData] = useState({
     userId: "",
     projectName: "",
@@ -14,26 +14,41 @@ const ProjectExperienceDisplay = ({ onClose, mode, id }) => {
   });
 
   useEffect(() => {
-    // Fetch project data from Chrome local storage
-    chrome.storage.local.get(['projectExperiences'], (result) => {
-      const experiences = result.projectExperiences || [];
-      const project = experiences.find(exp => exp.id === id);
-      if (project) {
-        setProjectData(project);
+    chrome.storage.local.get(['formData'], (result) => {
+      console.log("Stored data:", result);
+      if (result.formData && result.formData.data.projectExperiences) {
+        const experience = result.formData.data.projectExperiences.find(exp => exp.id === id);
+        if (experience) {
+          setProjectData(experience);
+        } else {
+          console.log("No experience found with the provided ID");
+        }
+      } else {
+        console.log("No work experiences found in formData");
       }
     });
   }, [id]);
 
-  const handleDiscard = () => {
-    chrome.storage.local.get(['projectExperiences'], (result) => {
-      const experiences = result.projectExperiences || [];
-      const updatedExperiences = experiences.filter(exp => exp.id !== id);
-      chrome.storage.local.set({ 'projectExperiences': updatedExperiences }, () => {
-        console.log("Project Experience deleted successfully");
-        onClose();
-      });
+  const handleDiscard = (event) => {
+    event.preventDefault();
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData && result.formData.data.projectExperiences) {
+        const updatedExperiences = result.formData.data.projectExperiences.filter(exp => exp.id !== id);
+        const updatedData = {
+          data:{
+          ...result.formData.data,
+          projectExperiences: updatedExperiences
+          }
+        };
+        chrome.storage.local.set({ formData: updatedData }, () => {
+          console.log('Project Experience deleted successfully');
+          onClose();
+          onSave();
+        });
+      }
     });
   };
+
 
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const EducationExperiencePopup = ({ onClose, mode }) => {
-  const [showSkillInput, setShowSkillInput] = useState(false);
+const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
+  // const [showSkillInput, setShowSkillInput] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
   const [educationData, setEducationData] = useState({
@@ -32,19 +32,23 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
     setEducationData({ ...educationData, stillStudying: e.target.checked });
   };
 
-  const handleAddSkillClick = () => {
-    setShowSkillInput(true);
-  };
+  // const handleAddSkillClick = () => {
+  //   setShowSkillInput(true);
+  // };
 
   const handleChangeSkill = (e) => {
+    e.preventDefault();
     setNewSkill(e.target.value);
-  };
+  }
 
   const handleSkillInputChange = (e) => {
-    if (e.key === "Enter" || e.type === "click") {
+    e.preventDefault();
+    // Add the skill to the skills array when user inputs a skill and presses Enter or clicks Add
+    if (e.key === 'Enter' || e.type === 'click') {
+      console.log("e",e)
       setSkills([...skills, newSkill]);
       setNewSkill("");
-      setShowSkillInput(false);
+      // setShowSkillInput(false);
     }
   };
 
@@ -53,7 +57,8 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
     setSkills(updatedSkills);
   };
 
-  const handleSave = () => {
+  const handleSave = (event) => {
+    event.preventDefault();
     const updatedEducationData = {
       ...educationData,
       skills: skills,
@@ -61,17 +66,20 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
     };
 
     chrome.storage.local.get('formData', (result) => {
-      const existingFormData = result.formData || {};
+      const existingFormData = result.formData.data || {};
       const existingEducationExperiences = existingFormData.educationExperiences || [];
       
       const updatedFormData = {
+        data:{
         ...existingFormData,
         educationExperiences: [...existingEducationExperiences, updatedEducationData],
+        }
       };
 
       chrome.storage.local.set({ 'formData': updatedFormData }, () => {
         console.log('Education experience data saved');
         onClose();
+        onSave();
       });
     });
   };
@@ -191,12 +199,9 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
           />
         )}
 
-        <button
-          onClick={handleAddSkillClick}
-          className="text-grey-400 text-sm mb-4"
-        >
-          <span className="text-lg">+</span> Add Skill 
-        </button>
+<h3 className="text-gray-600 text-sm font-semibold mb-2">
+  Skills
+</h3>
         <div className="w-full mb-4 flex flex-wrap">
           {skills.map((skill, index) => (
             <div
@@ -213,7 +218,7 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
             </div>
           ))}
         </div>
-        {showSkillInput && (
+      
           <div className="mb-4 flex flex-wrap">
             <input
               type="text"
@@ -228,7 +233,7 @@ const EducationExperiencePopup = ({ onClose, mode }) => {
               Add
             </button>
           </div>
-        )}
+        
 
         <div className="flex justify-between">
           <button
