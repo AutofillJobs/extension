@@ -9,6 +9,9 @@ import {
 } from "react-phone-number-input";
 const FormPage = () => {
   console.log('FormPage rendering');
+  const [resumeUrl, setResumeUrl] = useState('');
+const [cvUrl, setCvUrl] = useState('');
+
   const [formData, setFormData] = useState({
     fullName: "",
     firstName: "",
@@ -91,39 +94,54 @@ const FormPage = () => {
     });
   };
 
-  useEffect(() => {
-    // Initialize resume and cv from localStorage if available
-    const storedResume = localStorage.getItem('resume');
-    const storedCv = localStorage.getItem('cv');
-    if (storedResume) {
-      setResume(storedResume);
-    }
-    if (storedCv) {
-      setCv(storedCv);
-    }
-  }, []);
-
+ 
   
 
  
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isEditable, setIsEditable] = useState(true);
-  const [resume, setResume] = useState(localStorage.getItem('resume') || '');
-  const [cv, setCv] = useState(localStorage.getItem('cv') || '');
+  const [resumeName, setResumeName] = useState('');
+  const [cvName, setCvName] = useState('');
   function saveFileToLocalStorage(file, location) {
     if (file) {
       const reader = new FileReader();
-  
+
       reader.onload = function(event) {
         const fileContent = event.target?.result as string | ArrayBuffer | null;
+        const fileName = file.name;
         if (typeof fileContent === 'string') {
+          const blob = new Blob([fileContent], { type: file.type });
+          const fileUrl = URL.createObjectURL(blob);
+
+          if (location === 'resume') {
+            setResumeUrl(fileUrl);
+            setResumeName(fileName);
+            chrome.storage.local.set({ resumeUrl: fileUrl, resumeName: fileName });
+          } else if (location === 'cv') {
+            setCvUrl(fileUrl);
+            setCvName(fileName);
+            chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName });
+          }
+
           chrome.storage.local.set({ [location]: fileContent }, () => {
             console.log(`File ${location} saved to chrome storage.`);
           });
         } else if (fileContent instanceof ArrayBuffer) {
-          // Convert ArrayBuffer to string if needed
           const convertedFileContent = String.fromCharCode.apply(null, new Uint16Array(fileContent));
+          const blob = new Blob([convertedFileContent], { type: file.type });
+          const fileUrl = URL.createObjectURL(blob);
+
+          if (location === 'resume') {
+            setResumeUrl(fileUrl);
+            setResumeName(fileName);
+            chrome.storage.local.set({ resumeUrl: fileUrl, resumeName: fileName });
+          } else if (location === 'cv') {
+            setCvUrl(fileUrl);
+            setCvName(fileName);
+            chrome.storage.local.set({ cvUrl: fileUrl, cvName: fileName });
+          }
+
           chrome.storage.local.set({ [location]: convertedFileContent }, () => {
             console.log(`File ${location} saved to chrome storage.`);
           });
@@ -131,30 +149,45 @@ const FormPage = () => {
           alert('Error reading file');
         }
       };
-  
+
       reader.readAsDataURL(file); // Read file as Base64 string
     } else {
       alert('No file selected');
     }
   }
+
+  
+  
   
 
   useEffect(() => {
-    // Save to local storage whenever resume or cv changes
-    localStorage.setItem('resume', resume);
-    localStorage.setItem('cv', cv);
-  }, [resume, cv]);
+    chrome.storage.local.get(['resumeUrl', 'resumeName', 'cvUrl', 'cvName'], (result) => {
+      if (result.resumeUrl) {
+        setResumeUrl(result.resumeUrl);
+      }
+      if (result.resumeName) {
+        setResumeName(result.resumeName);
+      }
+      if (result.cvUrl) {
+        setCvUrl(result.cvUrl);
+      }
+      if (result.cvName) {
+        setCvName(result.cvName);
+      }
+    });
+  }, []);
 
   const handleResumeChange = (e) => {
+    e.preventDefault();
     const file = e.target.files[0];
     saveFileToLocalStorage(file,'resume');
-    setResume(file ? file.name : '');
+   
   };
 
   const handleCvChange = (e) => {
+    e.preventDefault();
     const file = e.target.files[0];
     saveFileToLocalStorage(file,'cv');
-    setCv(file ? file.name : '');
   };
 
   const memoizedFormData = useMemo(() => formData, [formData]);
@@ -395,30 +428,40 @@ const FormPage = () => {
                 <Educational />
               </div>
               <div className="file-upload-section">
-                <h3 className="file-upload-heading">Upload Documents</h3>
-                <div className="file-input-container">
-                  <div className="file-input-wrapper">
-                    <label htmlFor="resumeInput" className="file-input-label">Resume</label>
+              <h3 className="file-upload-heading">Upload Documents</h3>
+              <div className="file-input-container">
+                <div className="file-input-wrapper">
+                  <label htmlFor="resumeInput" className="file-input-label">Resume</label>
+                  <div className="custom-file-input">
                     <input
                       id="resumeInput"
                       type="file"
                       onChange={handleResumeChange}
-                      className="file-input"
                       accept=".pdf,.doc,.docx"
                     />
+                    <span className="file-name">{resumeName || 'No file chosen'}</span>
                   </div>
-                  <div className="file-input-wrapper">
-                    <label htmlFor="cvInput" className="file-input-label">Cover Letter</label>
+                  {resumeUrl && (
+                    <a href={resumeUrl} download="resume" className="download-link">Download Resume</a>
+                  )}
+                </div>
+                <div className="file-input-wrapper">
+                  <label htmlFor="cvInput" className="file-input-label">Cover Letter</label>
+                  <div className="custom-file-input">
                     <input
                       id="cvInput"
                       type="file"
                       onChange={handleCvChange}
-                      className="file-input"
                       accept=".pdf,.doc,.docx"
                     />
+                    <span className="file-name">{cvName || 'No file chosen'}</span>
                   </div>
+                  {cvUrl && (
+                    <a href={cvUrl} download="cover_letter" className="download-link">Download Cover Letter</a>
+                  )}
                 </div>
               </div>
+            </div>
             </div>
           );
 
