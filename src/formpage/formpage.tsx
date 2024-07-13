@@ -7,6 +7,7 @@ import {
   getCountryCallingCode,
   parsePhoneNumber,
 } from "react-phone-number-input";
+import PdfBar from "./PdfBar"
 const FormPage = () => {
   console.log('FormPage rendering');
   const [resumeUrl, setResumeUrl] = useState('');
@@ -424,6 +425,9 @@ const [cvUrl, setCvUrl] = useState('');
               <h3 className="file-upload-heading">Upload Documents</h3>
               <div className="file-input-container">
                 <div className="file-input-wrapper">
+                {resumeUrl&& (
+                 <PdfBar fileName={"Resume"} fileUrl={resumeUrl} type={'resume'} />
+              )}
                   <label htmlFor="resumeInput" className="file-input-label">Resume</label>
                   <div className="custom-file-input">
                     <input
@@ -432,13 +436,15 @@ const [cvUrl, setCvUrl] = useState('');
                       onChange={handleResumeChange}
                       accept=".pdf,.doc,.docx"
                     />
-                    <span className="file-name">{resumeName || 'No file chosen'}</span>
+                    
                   </div>
-                  {resumeUrl && (
-                    <a href={resumeUrl} download="resume" className="download-link">Download Resume</a>
-                  )}
+                  
                 </div>
+                
                 <div className="file-input-wrapper">
+                {cvUrl&& (
+                 <PdfBar fileName={"CoverLetter"} fileUrl={cvUrl} type={'Coverletter'} />
+              )}
                   <label htmlFor="cvInput" className="file-input-label">Cover Letter</label>
                   <div className="custom-file-input">
                     <input
@@ -447,11 +453,9 @@ const [cvUrl, setCvUrl] = useState('');
                       onChange={handleCvChange}
                       accept=".pdf,.doc,.docx"
                     />
-                    <span className="file-name">{cvName || 'No file chosen'}</span>
+                    
                   </div>
-                  {cvUrl && (
-                    <a href={cvUrl} download="cover_letter" className="download-link">Download Cover Letter</a>
-                  )}
+                  
                 </div>
               </div>
             </div>
