@@ -10,8 +10,21 @@ chrome.identity.getProfileUserInfo(function(userInfo) {
   if (userInfo.email) {
     userEmail = userInfo.email;
     console.log('User Email:', userInfo.email);
+    chrome.storage.local.set({ userEmail: userEmail }, function() {
+      console.log('User email has been saved to local storage:', userEmail);
+    });
   }
 });
+
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GET_USER_EMAIL') {
+    console.log(userEmail);
+      sendResponse({ email: userEmail });
+    return true; // Keep the message channel open for sendResponse
+  }
+});
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.message === "getLoginEmail") {

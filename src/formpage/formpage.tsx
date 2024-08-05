@@ -10,8 +10,10 @@ import {
 import PdfBar from "./PdfBar"
 const FormPage = () => {
   console.log('FormPage rendering');
-  const [resumeUrl, setResumeUrl] = useState('');
-const [cvUrl, setCvUrl] = useState('');
+  const [resumeUrl, setResumeUrl] = useState(null);
+const [cvUrl, setCvUrl] = useState(null);
+const [email, setEmail] = useState('');
+const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -95,6 +97,8 @@ const [cvUrl, setCvUrl] = useState('');
     });
   };
 
+  // clearStorage();
+
  
   
 
@@ -151,6 +155,34 @@ const [cvUrl, setCvUrl] = useState('');
   }
 
   
+  const seturlresume = async (email) => {
+    if (email) {
+      try {
+        const response = await fetch(`https://api.autofilljobs.com/details/extension/${email}`);
+        const res = await response.json();
+        if (res.data.details.resumeUrl !== undefined) {
+          setResumeName(res.data.details.resumeUrl);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+  const seturlcv = async (email) => {
+    if (email) {
+      
+      try {
+        const response = await fetch(`https://api.autofilljobs.com/details/extension/${email}`);
+        const res = await response.json();
+        if (res.data.details.cvUrl !== undefined) {
+          setCvName(res.data.details.cvUrl);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+  
   
   
 
@@ -158,18 +190,22 @@ const [cvUrl, setCvUrl] = useState('');
     chrome.storage.local.get(['resumeUrl', 'resumeName', 'cvUrl', 'cvName'], (result) => {
       if (result.resumeUrl) {
         setResumeUrl(result.resumeUrl);
-      }
-      if (result.resumeName) {
         setResumeName(result.resumeName);
       }
+      else{
+        seturlresume(email)
+      }
+      
       if (result.cvUrl) {
         setCvUrl(result.cvUrl);
-      }
-      if (result.cvName) {
         setCvName(result.cvName);
       }
+      else{
+        seturlcv(email);
+      }
+      
     });
-  }, []);
+  }, [email]);
 
   const handleResumeChange = (e) => {
     e.preventDefault();
@@ -185,14 +221,55 @@ const [cvUrl, setCvUrl] = useState('');
   };
 
   const memoizedFormData = useMemo(() => formData, [formData]);
-
   useEffect(() => {
-    chrome.storage.local.get(['formData'], (result) => {
-      if (result.formData) {
-        setFormData(result.formData.data.details);
+    chrome.storage.local.get(['userEmail'], (result) => {
+      if (result.userEmail) {
+        setEmail(result.userEmail);
+      } else {
+        console.log('No user email found in local storage.');
+        setLoading(false);
       }
     });
   }, []);
+
+  // Fetch formData based on email
+  useEffect(() => {
+    if (email) { // Run this effect only if email is not an empty string
+      console.log(email);
+      // Retrieve formData from local storage
+      chrome.storage.local.get(['formData'], (result) => {
+        if (result.formData) {
+          console.log('hii', result.formData);
+setFormData(result.formData.data.details);
+setLoading(false);
+        } else {
+          // Fetch data from the backend using userEmail
+          fetch(`https://api.autofilljobs.com/details/extension/${email}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.error === "no error") {
+                setFormData(data.data.details);
+
+                // Save fetched data to local storage
+                chrome.storage.local.set({ 'formData': data }, () => {
+                  console.log('Form data has been saved to local storage:',  data);
+                });
+              } else {
+                console.log('Error:', data.error);
+              }
+              setLoading(false);
+            })
+            .catch(error => {
+              console.error('Error fetching data from the backend:', error);
+              setLoading(false);
+            });
+        }
+      });
+    }
+  }, [email]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -201,15 +278,39 @@ const [cvUrl, setCvUrl] = useState('');
       [name]: value
     });
   };
-
-  const handleSubmit = (e) => {
+  const getUserIdByEmail = async (email) => {
+    try {
+      const response = await fetch(`https://api.autofilljobs.com/details/extension/idbyemail/${email}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      if (data.id) {
+        return data.id;
+      } else {
+        console.error('Error:', data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching user ID:', error);
+      return null;
+    }
+  };
+  
+  interface Updates {
+    phoneCode?: string;
+    phoneNumber?: string;
+    phoneAlternativeNumber?: string;
+  }
+  
+  const handleSubmit = async(e) => {
     e.preventDefault();
-    chrome.storage.local.get('formData', (result) => {
+    chrome.storage.local.get('formData', async (result) => {
       const previousData = result.formData || { data: {} };
       console.log("previous",previousData);
       const previousDetails = previousData.data || {};
 
-      let updates = {phoneCode:"",phoneNumber:"",phoneAlternativeNumber:""};
+       let updates: Updates = {};
 
 
       if (formData.phoneNumber) {
@@ -225,7 +326,8 @@ const [cvUrl, setCvUrl] = useState('');
       if (formData.phoneAlternativeNumber) {
         const phoneAltObj = parsePhoneNumber(formData.phoneAlternativeNumber);
         if (phoneAltObj) {
-          // Assuming you want to keep the same country code logic for alternative numbers
+          const countryCallingCode = getCountryCallingCode(phoneAltObj.country);
+          updates.phoneCode = `+${countryCallingCode}`;
           updates.phoneAlternativeNumber = phoneAltObj.nationalNumber.toString();
           // If you need a separate field for the alternative phone's country code, add it here
         }
@@ -246,15 +348,33 @@ const [cvUrl, setCvUrl] = useState('');
         },
         error: "no error"
       };
+
+      const userId = await getUserIdByEmail(email);
+    console.log("User ID:", userId);
   
       chrome.storage.local.set({ 'formData': updatedData }, () => {
         console.log('Form data saved');
         console.log(updatedData);
         setIsEditable(false);
       });
+
+      const response = await fetch(`https://api.autofilljobs.com/details/extension/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedData.data.details)
+      });
+  
+      const resultData = await response.json();
+      if (response.ok) {
+        console.log('Data successfully updated in the backend:', resultData);
+      } else {
+        console.error('Error updating data in the backend:', resultData);
+      }
+   
     });
   };
-  
   
 
   const handleEdit = (e) => {
@@ -301,7 +421,7 @@ const [cvUrl, setCvUrl] = useState('');
                 { label: 'Marital Status', name: 'maritalStatus', type: 'select', options: ['Single', 'Married', 'Divorced'] },
                 { label: 'Gender', name: 'gender', type: 'select', options: ['Male', 'Female', 'Other'] },
                 { label: 'Prefix', name: 'prefix', type: 'text' },
-                { label: 'Date of Birth', name: 'DoB', type: 'text', placeholder: 'dd-mm-yyyy' },
+                { label: 'Date of Birth', name: 'DoB', type: 'date', placeholder: 'dd-mm-yyyy' },
               ].map((field, index) => (
                 <div key={index}>
                   <label htmlFor={field.name} className="block font-medium">{field.label}</label>
@@ -425,8 +545,8 @@ const [cvUrl, setCvUrl] = useState('');
               <h3 className="file-upload-heading">Upload Documents</h3>
               <div className="file-input-container">
                 <div className="file-input-wrapper">
-                {resumeUrl&& (
-                 <PdfBar fileName={"Resume"} fileUrl={resumeUrl} type={'resume'} />
+                {resumeName&& (
+                 <PdfBar email={email} fileName={"Resume"} fileUrl={resumeUrl} type={'resume'} />
               )}
                   <label htmlFor="resumeInput" className="file-input-label">Resume</label>
                   <div className="custom-file-input">
@@ -442,8 +562,8 @@ const [cvUrl, setCvUrl] = useState('');
                 </div>
                 
                 <div className="file-input-wrapper">
-                {cvUrl&& (
-                 <PdfBar fileName={"CoverLetter"} fileUrl={cvUrl} type={'Coverletter'} />
+                {cvName&& (
+                 <PdfBar email={email} fileName={"CoverLetter"} fileUrl={cvUrl} type={'Coverletter'} />
               )}
                   <label htmlFor="cvInput" className="file-input-label">Cover Letter</label>
                   <div className="custom-file-input">
