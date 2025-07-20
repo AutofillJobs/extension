@@ -1,6 +1,8 @@
 module.exports = {
   content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
+    "./src/**/Experience.{js,jsx,ts,tsx}",
+    "./src/**/popup.{js,jsx,ts,tsx}",
+    "./src/**/*Experience*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {},

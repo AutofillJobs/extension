@@ -12,6 +12,7 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 
 
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'fillField') {
     chrome.storage.local.get('variablesFromBackend', (result) => {
@@ -47,46 +48,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 var Email = "";
 // to check if the website have be fully loaded
 function initialize() {
-  chrome.runtime.sendMessage({ message: "getLoginEmail" });
+  // chrome.runtime.sendMessage({ message: "getLoginEmail" });
   console.log("page is fully loaded");
+  prefill()
 }
 
 window.addEventListener("load", initialize);
 
+function prefill(){
+    const inputFields = document.querySelectorAll<HTMLInputElement>("input");
 
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.email) {
-    // Handle the received email ID
-    Email = request.email;
-    console.log("Received email ID:", Email);
-    
-    if (!Email) {
-      console.log("Please Google Login");
-    }
-    chrome.storage.local.get(['toggleState'], function(result) {
-      const toggleState = result.toggleState;
-      if (toggleState === true || toggleState === undefined) {
-        checkInputFields();
-      }
-    });
-  }
-
-  if (request.action === 'urlChangedAfterPost') {
-    console.log('URL changed after POST request:', request.url);
-    // Perform further actions, like notifying the user or storing data
-  }
-
-
-if (request.action === "refetchData") {
-  console.log("refetchData");
-  // Clear all text-based input fields
-  // = document.querySelectorAll("input");
-  const inputFields = document.querySelectorAll<HTMLInputElement>("input");
-  // inputFields.forEach((input) => {
-  //   // console.log("Clear input",input);
-  //   input.value = "";
-  // });
   inputFields.forEach((input) => {
     // Check if the input does not have the class 'css-77hcv'
     if (!input.classList.contains('css-77hcv')) {
@@ -121,42 +92,13 @@ if (request.action === "refetchData") {
   document.querySelectorAll("form").forEach((form) => {
     form.reset();
   });
-  console.log("here");
-  console.log("email", Email);
-  // Fetch email id from background script
 
-  // chrome.runtime.sendMessage(
-  //   { message: "getLoginEmail" },
-  //   function (response) {
-  //     console.log("response: " + response)
-  //     if (response.email) {
-  //       Email = response.email; // Assuming the background script sends back an object with an email property
-  //       console.log("Email received from background:", Email);
+  checkInputFields();
 
-  //       // checkInputFields() // no need Implement this function to fetch data from server and fill form fields
-  //       window.addEventListener("load", function () {
-  //         // console.log("Everything is fully loaded. 2");
-  //         // Actions that require all resources to be fully loaded
-  //         checkInputFields();
-  //       });
-  //     } else {
-  //       // createErrorFloatingPopup(0, "Please Google Login", 10000); // no need
-  //       console.log("please Google Login");
-  //     }
-  //   }
-  // );
-  if (Email) {
-    console.log("here", Email)
-    // window.addEventListener("load", function () {
-      console.log("Everything is fully loaded. 2");
-      // Actions that require all resources to be fully loaded
-      checkInputFields();
-    // });
-  } else {
-    console.log("no email");
-  }
+
 }
-});
+
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.email) {
@@ -200,120 +142,36 @@ function handleInputChange(event) {
 
 //For URL Generation 
 
+
+
+
 // Find all button elements on the page
 function checkInputFields() {
   const inputFields = document.querySelectorAll("input");
   const selectFields = document.querySelectorAll("select");
 
   if (inputFields.length > 0 || selectFields.length > 0) {
-    const cachedData = localStorage.getItem("userData");
-    if (cachedData) {
-      console.log("Using cached data");
-      checkForBackendUpdate(JSON.parse(cachedData));
-    } else {
-      console.log("No cached data found, fetching from backend");
-      fetchDataFromBackend();
-    }
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData) {
+        console.log(result.formData);
+        dataFill(result.formData.data)
+      }
+      else {
+        console.log("No data found");
+      }
+    });
   }
 }
-
-function checkForBackendUpdate(cachedData) {
-//   const url = "http://localhost:5000/api/details/extension/lastupdate/" + Email;
-  const url = "https://api.autofilljobs.com/details/extension/lastupdate/" + Email;
-
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-type": "application/json",
-    },
-  })
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  })
-  .then((data) => {
-    if (data.data) {
-      const lastUpdate = new Date(data.data);
-      console.log("Backend last update:", lastUpdate);
-
-      if (!cachedData.lastUpdate) {
-        console.error("Cached data does not contain lastUpdate field");
-        fetchDataFromBackend();
-        return;
-      }
-
-      const cachedLastUpdate = new Date(cachedData.lastUpdate);
-      if (isNaN(cachedLastUpdate.getTime())) {
-        console.error("Cached last update is invalid: ", cachedData.lastUpdate);
-        fetchDataFromBackend();
-        return;
-      }
-
-      console.log("Cached last update:", cachedLastUpdate);
-
-      if (lastUpdate > cachedLastUpdate) {
-        console.log("Data has been updated on the backend, fetching new data");
-        fetchDataFromBackend();
-      } else {
-        console.log("Cached data is up to date");
-        dataFill(cachedData);
-      }
-    } else {
-      console.error("No lastUpdate field in the response");
-    }
-  })
-  .catch((error) => {
-    console.error("Error checking backend for updates", error);
-    console.log("Server Down");
-  });
-}
-
-function fetchDataFromBackend() {
-//   const url = "http://localhost:5000/api/details/extension/" + Email;
-  const url = "https://api.autofilljobs.com/details/extension/" + Email;
-
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-type": "application/json",
-    },
-  })
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  })
-  .then((data) => {
-    if (data.error !== "no error") {
-      console.log("Please Register in Website");
-    } else {
-      const updatedData = { ...data.data, lastUpdate: data.data.details.updatedAt };
-      localStorage.setItem("userData", JSON.stringify(updatedData));
-      dataFill(updatedData);
-    }
-  })
-  .catch((error) => {
-    console.error("Error fetching data from the backend", error);
-    console.log("Server Down");
-  });
-}
-
-
-
-
 
 
 document.addEventListener(
   "mousedown",
   function (event) {
-    // console.log("event", event);
+
     if (event.button === 2) {
       // Right mouse button
       const lastClickedElement = event.target;
-      // console.log("lastClickedElement", lastClickedElement);
+
       dataFill(userData);
     }
   },
@@ -321,29 +179,10 @@ document.addEventListener(
 );
 
 function onPopButtonClick() {
-  // console.log("onPopButtonClick");
+
   dataFill(userData);
-  // window.addEventListener('load', function() {
-  //   console.log('Everything is fully loaded. 3');
-  //   // Actions that require all resources to be fully loaded
-  // });
+
 }
-// checkInputFields();
-var personDetails = {
-  name: "Amal Jose Vallavanthara",
-  firstname: "Amal",
-  middlename: "Jose",
-  lastname: "Vallavanthara",
-  location: "Germany",
-  address: "Kahlhieb 2",
-  city: "Stuttgart",
-  postcode: 70499,
-  email: "emailUser",
-  phone: "017632634505",
-  code: "+49",
-  password: "Hello123@",
-  gender: "Male",
-};
 
 const mapDetailRegex = {
   firstName:
@@ -357,8 +196,10 @@ const mapDetailRegex = {
     /preferred[-_ ]?name|nickname|alias|preferred[_ ]?first[_ ]?name/gi,
   familyName: /family[-_ ]?name|last[-_ ]?name/gi,
   zip: /zip(code)?|postal[-_ ]?code|post[_ ]?code/gi,
+  phoneCode:
+  /\b(?:country[_ ]?code|country[_ ]?phone|international[_ ]?code|intl[_ ]?code|dialing[_ ]?code)\b/gi,
   phoneNumber:
-    /phone[-_ ]?(number)?\*?|mobile[-_ ]?(number)?\*?|telephone\*?|contact[_ ]?number/gi,
+    /phone[-_ ]?(number)?\*?|mobile[-_ ]?(number)?\*?|telephone\*?|contact[_ ]?number|phone number/gi,
   email: /e[-_ ]?mail|email[-_ ]?address|email/gi,
   phoneAlternativeNumber:
     /alternate[-_ ]?phone|secondary[-_ ]?phone|alternative[_ ]?contact[_ ]?number/gi,
@@ -375,7 +216,7 @@ const mapDetailRegex = {
   floor: /floor|level|floor[_ ]?number/gi,
   building: /building|complex|building[_ ]?name/gi,
   twitterUrl: /twitter[-_ ]?url|twitter[_ ]?account|@[\w]+/gi,
-  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile/gi,
+  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile|social network urls|Please provide a link to your LinkedIn profile:/gi,
   githubUrl: /github[-_ ]?url|github[_ ]?account|website/gi,
   expectedSalary:
     /expected[-_ ]?(salary|pay|compensation|wage(s)?)|salary[-_ ]?(expectation(s)?|range|desired|requirement(s)?)|desired[-_ ]?(salary|pay|compensation|wage(s)?)|compensation[_ ]?expectations/gi,
@@ -456,13 +297,14 @@ const workExperienceRegex = {
   jobTitle: /job title|Job[_ -]?Title/gi,
   companyName: /company[_ -]?name|company/gi,
   description:
-    /description|[a-zA-z*0-9]*role[a-zA-z*0-9]* description[a-zA-z*0-9]*/gi,
+    /description|[a-zA-Z*0-9]*role[a-zA-Z*0-9]*description[a-zA-Z*0-9]*|role description/gi,
   location: /location|country|region|candidate-location/gi,
   stillWorking: /[a-zA-z*0-9]*still[_ -]working[a-zA-z*0-9]*/gi,
   startDate:
     /[a-zA-z*0-9]*start[_ -]?date[a-zA-z*0-9]*|[a-zA-z*0-9]*from[a-zA-z*0-9]*/gi,
   endDate: /[a-zA-z*0-9]*end[- _]?date[a-zA-z*0-9]*|to[a-zA-z*0-9]*/gi,
   skills: /skills/gi,
+  linkedinUrl: /linkedin[-_ ]?url|linkedin[_ ]?profile|social network urls|Please provide a link to your LinkedIn profile:/gi,
 };
 const projectExperienceRegex = {
   projectName: /project[_ -]?name|project/gi,
@@ -599,9 +441,6 @@ const dataFill = (data) => {
     return buttons; // Returns all found button elements
   }
 
-  // Example usage:
-  // Assuming you have an element to start with, for example:
-  // const someElement = document.querySelector('.some-class');
 
   function programmaticallyClickButtons(timesToClick, button, callback) {
     if (timesToClick <= 0) {
@@ -666,6 +505,7 @@ const dataFill = (data) => {
             buttons[0],
             function () {
               // Education Experience has finished, you can continue with other tasks or call another function here
+              fillDetails(userDetails, mapDetailRegex);
               fillEducationDetails();
             }
           );
@@ -708,304 +548,7 @@ const dataFill = (data) => {
     });
   }
 
-  // function programmaticallyClickButtons(timesToClick, buttons) {
-  //   if (timesToClick <= 0 || !buttons.length) {
-  //       return; // Stop if no more clicks are needed or buttons are undefined
-  //   }
 
-  //   // Click the first button
-  //   buttons[0].click();
-  //   console.log('Button clicked! Remaining clicks:', timesToClick - 1);
-
-  //   // Wait for a second before the next click
-  //   setTimeout(() => {
-  //       // Recursively click the rest of the buttons
-  //       programmaticallyClickButtons(timesToClick - 1, buttons);
-  //   }, 1000);
-  // }
-
-  // // For Work Experience
-  // if (pageContent.match(workExperienceRegexPattern)) {
-  //   console.log("Work Experience content detected");
-  //   let workExpLength = userWorkExperience.length; // Correct variable for length
-  //   let foundElement=findElementByText("Work Experience",document.body);
-  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  //   //  console.log("foundElement here", foundElement);
-
-  //   if (foundElement) {
-  //     let buttons = findAllButtonsInParent(foundElement);
-  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //     if (buttons) {
-  //       let buttons = findAllButtonsInParent(foundElement);
-  //       programmaticallyClickButtons(workExpLength, buttons); // Use the recursive function
-  //     }
-  // else {
-  //       console.log("No buttons found in the parent element.");
-  //       // userWorkExperience.forEach((experience, index) => {
-  //       //   console.log("hereerer erw ",experience);
-  //       //   fillDetails(experience, workExperienceRegex);
-  //       // });
-  //       // console.log("workExperience", userWorkExperience);
-  //     }
-  //         setTimeout(() => {
-  //         userWorkExperience.forEach((experience, index) => {
-  //           console.log("hereerer erw ",experience);
-  //           fillDetails(experience, workExperienceRegex);
-  //         });
-  //       }, 3000);
-  //   }
-
-  // }
-
-  // // // For Education Experience
-  // if (pageContent.match(educationExperienceRegexPattern)) {
-  //   console.log(" education Experience content detected");
-  //   let educationExpLength = userEducationExperience.length; // Correct variable for length
-  //   let foundElement=findElementByText("Education",document.body);
-  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  //   //  console.log("foundElement here", foundElement);
-
-  //   if (foundElement) {
-  //     let buttons = findAllButtonsInParent(foundElement);
-  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //     if (buttons) {
-  //       let buttons = findAllButtonsInParent(foundElement);
-  //       programmaticallyClickButtons(educationExpLength, buttons); // Use the recursive function
-  //     }
-  //     else {
-  //       console.log("No buttons found in the parent element.");
-  //     }
-  //     setTimeout(() => {
-  //       userEducationExperience.forEach((experience, index) => {
-  //         console.log("hereerer erw ",experience);
-  //         fillDetails(experience, educationExperienceRegex);
-  //       });
-  //     }, 3000);
-  // }
-  // }
-
-  // // For Project Experience
-  // if (pageContent.match(projectExperienceRegexPattern)) {
-  //   console.log(" project Experience content detected");
-  //   let projectExpLength = userProjectExperience.length; // Correct variable for length
-  //   let foundElement=findElementByText("Project Experience",document.body);
-  //   //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  //   //  console.log("foundElement here", foundElement);
-
-  //   if (foundElement) {
-  //     let buttons = findAllButtonsInParent(foundElement);
-  //     // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //     if (buttons) {
-  //       let buttons = findAllButtonsInParent(foundElement);
-  //       programmaticallyClickButtons(projectExpLength, buttons); // Use the recursive function
-  //       setTimeout(() => {
-  //         userProjectExperience.forEach((experience, index) => {
-  //           console.log("hereerer erw ",experience);
-  //           fillDetails(experience, projectExperienceRegex);
-  //         });
-  //       }, 3000);
-  //     }
-  //     else {
-  //       console.log("No buttons found in the parent element.");
-  //       userProjectExperience.forEach((experience, index) => {
-  //         console.log("hereerer erw ",experience);
-  //         fillDetails(experience, projectExperienceRegex);
-  //       });
-  //       console.log("educationExperience", userProjectExperience);
-  //     }
-  // }
-  // }
-
-  // // Assuming pageContent is a string that contains the entire content to be checked
-  // if (pageContent.match(workExperienceRegexPattern)) {
-  //  console.log("worker content")
-  //  console.log("user work experience length: " ,userWorkExperience.length)
-  //  let length = userWorkExperience.length
-  //  let foundElement=findElementByText("Work Experience",document.body);
-  // //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  // //  console.log("foundElement here", foundElement);
-
-  //  if (foundElement) {
-  //   let buttons = findAllButtonsInParent(foundElement);
-  //   // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //   if (foundElement) {
-  //     let buttons = findAllButtonsInParent(foundElement);
-  //     if (buttons) {
-  //       buttons.forEach(button => {
-  //         // Attach a click event listener to each button
-  //         button.addEventListener('click', () => {
-  //           // console.log('Button clicked!');
-  //         });
-
-  // //         // test if the button has been clicked or not
-  // //         // Initialize a Mutation Observer to monitor DOM changes
-  // // const observer = new MutationObserver((mutations) => {
-  // //   for (let mutation of mutations) {
-  // //     if (mutation.type === 'childList') {
-  // //       console.log('Clicked and DOM changed.');
-  // //       // If you only want to log the message once after the first change,
-  // //       // you can disconnect the observer here
-  // //       // observer.disconnect();
-  // //     }
-  // //   }
-  // // });
-
-  // // // Configuration object for the observer (we're interested in child nodes being added or removed)
-  // // const config = { childList: true, subtree: true };
-
-  // // // Start observing the document body for changes
-  // // observer.observe(document.body, config);
-
-  // foundElement.addEventListener('click', function(event) {
-  //         event.stopPropagation();
-  //         console.log('Click event caught by h1, propagation stopped');
-  //     });
-
-  //         // Optionally, if you want to programmatically click the button right away
-  //         while(length > 0) {
-  //         console.log('Button clicked! its count',length);
-  //         setTimeout(()=>{
-  //           button.click();
-  //         },1000)
-  //         length -= 1;
-  //         }
-
-  //       });
-  //       console.log("these are the buttons", buttons); // Logs NodeList of found buttons
-  //       setTimeout(() => {
-  //         userWorkExperience.forEach((experience, index) => {
-  //           console.log("hereerer erw ",experience);
-  //           fillDetails(experience, workExperienceRegex);
-  //         });
-  //       }, 3000);
-
-  //     } else {
-  //       console.log("No buttons found in the parent element.");
-  //       userWorkExperience.forEach((experience, index) => {
-  //         console.log("hereerer erw ",experience);
-  //         fillDetails(experience, workExperienceRegex);
-  //       });
-  //       console.log("workExperience", userWorkExperience);
-  //     }
-  //   }
-
-  // }
-
-  // }
-
-  // if (pageContent.match(educationExperienceRegexPattern)) {
-
-  //   console.log("Education content")
-  //   console.log("user Education experience length: " ,userEducationExperience.length)
-  //   let length = userEducationExperience.length
-  //   let foundElement=findElementByText("Education",document.body);
-  //  //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  //  //  console.log("foundElement here", foundElement);
-
-  //   if (foundElement) {
-  //    const buttons = findAllButtonsInParent(foundElement);
-  //    // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //    if (foundElement) {
-  //      let  buttons = findAllButtonsInParent(foundElement);
-  //      if (buttons) {
-  //        buttons.forEach(button => {
-  //          // Attach a click event listener to each button
-  //          button.addEventListener('click', () => {
-  //            // console.log('Button clicked!');
-  //          });
-  //          foundElement.addEventListener('click', function(event) {
-  //           event.stopPropagation();
-  //           console.log('Click event caught by h1, propagation stopped');
-  //       });
-
-  //          // Optionally, if you want to programmatically click the button right away
-  //          while(length > 0) {
-  //          console.log('Button clicked!');
-  //          setTimeout(()=>{
-  //           button.click();
-  //         },1000)
-
-  //          length -= 1;
-  //          }
-
-  //        });
-  //        console.log("these are the buttons", buttons); // Logs NodeList of found buttons
-  //        setTimeout(() => {
-  //         userEducationExperience.forEach((experience, index) => {
-  //           fillDetails(experience, educationExperienceRegex);
-  //         });
-  //        }, 3000);
-
-  //      } else {
-  //        console.log("No buttons found in the parent element.");
-  //        userEducationExperience.forEach((experience, index) => {
-  //         fillDetails(experience, educationExperienceRegex);
-  //       });
-  //        console.log("educationExperience", userEducationExperience);
-  //      }
-  //    }
-
-  //  }
-
-  // }
-
-  // if (pageContent.match(projectExperienceRegexPattern)) {
-  //   console.log("Project content")
-  //   console.log("user Project experience length: " ,userProjectExperience.length)
-  //   let length = userProjectExperience.length
-  //   let  foundElement=findElementByText("Project",document.body);
-  //  //  console.log("foundElement ojogteorgt here", findElementByText("Work Experience",document.body));
-  //  //  console.log("foundElement here", foundElement);
-
-  //   if (foundElement) {
-  //     let buttons = findAllButtonsInParent(foundElement);
-  //    // console.log("these are the buttons",buttons); // Logs NodeList of found buttons or null
-  //    if (foundElement) {
-  //      let buttons = findAllButtonsInParent(foundElement);
-  //      if (buttons) {
-  //        buttons.forEach(button => {
-  //          // Attach a click event listener to each button
-  //          button.addEventListener('click', () => {
-  //            // console.log('Button clicked!');
-  //          });
-  //          foundElement.addEventListener('click', function(event) {
-  //           event.stopPropagation();
-  //           console.log('Click event caught by h1, propagation stopped');
-  //       });
-  //          // Optionally, if you want to programmatically click the button right away
-  //          while(length > 0) {
-  //          console.log('Button clicked!');
-  //          setTimeout(()=>{
-  //           button.click();
-  //         },1000)
-
-  //          length -= 1;
-  //          }
-
-  //        });
-  //        console.log("these are the buttons", buttons); // Logs NodeList of found buttons
-  //        setTimeout(() => {
-  //         userProjectExperience.forEach((experience, index) => {
-  //           fillDetails(experience, projectExperienceRegex);
-  //         });
-  //        }, 3000);
-
-  //      } else {
-  //        console.log("No buttons found in the parent element.");
-  //        userEducationExperience.forEach((experience, index) => {
-  //         fillDetails(experience, projectExperienceRegex);
-  //       });
-  //        console.log("projectExperience", userProjectExperience);
-  //      }
-  //    }
-
-  //  }
-
-  //   // userProjectExperience.forEach((experience, index) => {
-  //   //   fillDetails(experience, projectExperienceRegex);
-  //   // });
-
-  // }
 
   // Search for elements that may have a dropzone attribute
   const dropZones = document.querySelectorAll(
@@ -1019,143 +562,100 @@ const dataFill = (data) => {
   );
   console.log("Detected uploader:", uploaders);
 
-  // // Function to find all file input elements and set the file
-  // function setFileToAllFileInputs() {
-  //   const fileInputs = document.querySelectorAll('input[type="file"]');
-  //   console.log('Detected file:', fileInputs);
-  //   // fileInputs.forEach(input => simulateFileUpload(input, file));
-  // }
 
-  // setFileToAllFileInputs()
 
   const cvField = document.querySelector('input[type="file"][name="resume"]');
 
   // Function to fetch and upload a file from a remote URL
-  async function uploadFile(inputSelector, blobStorageUrl, fileName) {
-    try {
-        // Fetch the file from the blob storage URL
-        const response = await fetch(blobStorageUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/octet-stream'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Network response was not ok ${response.statusText}`);
-        }
-        
-        // Convert the response to a blob
-        const blob = await response.blob();
-        
-        // Create a file in memory
-        const file = new File([blob], fileName, { type: blob.type });
-        
-        // Create a DataTransfer object
-        const dt = new DataTransfer();
-        
-        // Add the file to the DataTransfer object
-        dt.items.add(file);
-        
-        // Get the file input element on the page
-        const inputElement = document.querySelector(inputSelector);
-        
-        if (!inputElement) {
-            throw new Error("File input element not found");
-        }
-        
-        // Set the files property with our DataTransfer files list
-        inputElement.files = dt.files;
-        
-        // Dispatch a 'change' event on the input to trigger any event handlers
-        const event = new Event("change", { bubbles: true });
-        inputElement.dispatchEvent(event);
-        
-        console.log("File upload successful");
-    } catch (error) {
-        console.error("File upload failed:", error);
-    }
-}
-
-
-
-  function generateFileName(email, fileType) {
-    // Ensure the fileType is either 'cv' or 'resume'
-    if (fileType !== 'cv' && fileType !== 'resume') {
-        throw new Error("fileType must be either 'cv' or 'resume'");
-    }
-    
-    // Determine the file extension based on the file type
-    const extension = '.pdf';
-    
-    // Generate the file name
-    const fileName = `${email}${fileType}${extension}`;
-    
-    return fileName;
-}
-
-
-async function fetchSasToken(blobName,type) {
-  let url;
-
-  if(type==='cv'){
-     // const url = "http://localhost:5000/api/details/extension/sas/cv/" + blobName;
-     url = "https://api.autofilljobs.com/details/extension/sas/cv/" + blobName;
-
-   }
-   else{
-    // const url = "http://localhost:5000/api/details/extension/sas/resume/" + blobName;
-     url = "https://api.autofilljobs.com/details/extension/sas/resume/" + blobName;
-
-   }
-  
-  
-   try {
-    const response = await fetch(url, {
-      method: "GET",
+// Function to fetch and upload a file from a remote URL
+async function uploadFile(inputSelector, blobStorageUrl, fileName) {
+  try {
+    // Fetch the file from the blob storage URL
+    const response = await fetch(blobStorageUrl, {
+      method: 'GET',
       headers: {
-        "Content-type": "application/json",
-      },
+        'Content-Type': 'application/octet-stream'
+      }
     });
 
     if (!response.ok) {
       throw new Error(`Network response was not ok ${response.statusText}`);
     }
 
-    const sasToken = await response.text(); // Treat the response as text
-    return sasToken;
+    // Convert the response to a blob
+    const blob = await response.blob();
+
+    // Create a file in memory
+    const file = new File([blob], fileName, { type: blob.type });
+
+    // Create a DataTransfer object
+    const dt = new DataTransfer();
+
+    // Add the file to the DataTransfer object
+    dt.items.add(file);
+
+    // Get the file input element on the page
+    const inputElement = document.querySelector(inputSelector);
+
+    if (!inputElement) {
+      throw new Error("File input element not found");
+    }
+
+    // Set the files property with our DataTransfer files list
+    inputElement.files = dt.files;
+
+    // Dispatch a 'change' event on the input to trigger any event handlers
+    const event = new Event("change", { bubbles: true });
+    inputElement.dispatchEvent(event);
+
+    console.log("File upload successful");
   } catch (error) {
-    console.error("There has been a problem with your fetch operation:", error);
+    console.error("File upload failed:", error);
   }
-  }
-
-
-
-
-//Resume fill
-async function fillResume() {
-  const resumename = generateFileName(Email,'resume');
-  const sasresume = await fetchSasToken(resumename,'resume');
-  console.log('sasresume',sasresume);
-  const link = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/resumes/" + resumename + "?" + sasresume;
-  console.log("Resume URL:", link);
-  uploadFile(
-    'input[type="file"][name="resume"]',
-    link,
-    resumename
-  );
 }
 
+// Resume fill function
+async function fillResume() {
+  try {
+    chrome.storage.local.get(['resumeBase64'], async (result) => {
+      if (result.resumeBase64) {
+        const resumeUrl = `data:application/pdf;base64,${result.resumeBase64}`;
+        // console.log('Resume URL:', resumeUrl);
+
+        await uploadFile(
+          'input[type="file"][name="resume"]',
+          resumeUrl,
+          'resume.pdf'
+        );
+      } else {
+        console.error("Resume Base64 string not found in storage");
+      }
+    });
+  } catch (error) {
+    console.error("Error in fillResume:", error);
+  }
+}
+
+
 async function fillCV() {
-  const cvname = generateFileName(Email, 'cv');
-  const sascv = await fetchSasToken(cvname,'cv');
-  const link1 = "https://csg10032003669092c8.blob.core.windows.net/autofilljobs/cvs/" + cvname + "?" + sascv;
-  console.log("CV URL:", link1);
-  uploadFile(
-    'input[type="file"][name="cv"]',
-    link1,
-    cvname
-  );
+  try {
+    chrome.storage.local.get(['cvBase64'], async (result) => {
+      if (result.cvBase64) {
+        const cvUrl = `data:application/pdf;base64,${result.cvBase64}`;
+        // console.log('Resume URL:', cvUrl);
+
+        await uploadFile(
+          'input[type="file"][name="cv"]',
+          cvUrl,
+          'cv.pdf'
+        );
+      } else {
+        console.error("Cv Base64 string not found in storage");
+      }
+    });
+  } catch (error) {
+    console.error("Error in fillResume:", error);
+  }
 }
 
 fillCV();
@@ -1170,14 +670,15 @@ fillResume();
 };
 
 const fillDetails = (userDetails, regexMap) => {
-  const inputElements = document.querySelectorAll<HTMLInputElement>("input");
+  const inputElements = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea");
   const selectFields = document.querySelectorAll<HTMLSelectElement>("select");
   console.log("fields:", inputElements);
   const filledFields = {};
+  const fieldMappings = {};
   const fillInputField = (userDetails, regexMap) => {
     // const inputElements = document.querySelectorAll("input[type='text'], input:not([type])");
 
-    inputElements.forEach((input) => {
+    inputElements.forEach((input,index) => {
       let matchFound = false;
       let matchedKey = null;
 
@@ -1258,6 +759,9 @@ const fillDetails = (userDetails, regexMap) => {
         input.dispatchEvent(new Event("change", { bubbles: true }));
         input.dispatchEvent(new Event("input", { bubbles: true }));
         filledFields[matchedKey] = userDetails[matchedKey];
+        fieldMappings[matchedKey] = { index: index };
+
+        console.log(fieldMappings);
         delete userDetails[matchedKey];
       }
      
@@ -1265,6 +769,17 @@ const fillDetails = (userDetails, regexMap) => {
   };
 
   fillInputField(userDetails, regexMap);
+  const isEmptyObject = (obj) => {
+    return Object.keys(obj).length === 0;
+  };
+  
+  // Check if fieldMappings is not empty before saving to localStorage
+  if (!isEmptyObject(fieldMappings)) {
+    localStorage.setItem('fieldMappings', JSON.stringify(fieldMappings));
+    console.log('fieldMappings saved to localStorage:', fieldMappings);
+  } else {
+    console.log('fieldMappings is empty, not saving to localStorage');
+  }
 
   function getTextLines(element) {
     let lines = [];

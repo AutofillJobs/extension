@@ -1,24 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Autofilljobs",
-  "description": "Automatically fill job application forms using AI"
-  "version": "1.0.3",
+  "name": "AutofillGPT",
+  "description": "Automatically fill job application forms using AI",
+  "version": "2.0.2",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Autofilljobs",
     "default_icon": "icon.png"
   },
   "permissions": [
-    "activeTab",
-    "identity",
-    "identity.email",
-    "background",
-    "storage",
-    "tabs",
-    "scripting",
-    "webRequest",
-    "notifications",
-    "contextMenus"
+        "storage",
+        "activeTab"
   ],
   "icons": {
     "16": "icon.png",
@@ -47,8 +39,7 @@
     {
       "resources": [
         "variablepopup.html",
-    "variablepopup.js",
-        "assets/Tom_George.pdf",
+        "variablepopup.js",
         "src/assets/settings.png"
       ],
       "matches": [

@@ -5,13 +5,27 @@ const url = "https://api.autofilljobs.com/details/extension/filledFields"
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
-chrome.identity.getProfileUserInfo(function(userInfo) {
-  console.log('User Info:', userInfo);
-  if (userInfo.email) {
-    userEmail = userInfo.email;
-    console.log('User Email:', userInfo.email);
+
+// chrome.identity.getProfileUserInfo(function(userInfo) {
+//   console.log('User Info:', userInfo);
+//   if (userInfo.email) {
+//     userEmail = userInfo.email;
+//     console.log('User Email:', userInfo.email);
+//     chrome.storage.local.set({ userEmail: userEmail }, function() {
+//       console.log('User email has been saved to local storage:', userEmail);
+//     });
+//   }
+// });
+
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GET_USER_EMAIL') {
+    console.log(userEmail);
+      sendResponse({ email: userEmail });
+    return true; // Keep the message channel open for sendResponse
   }
 });
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.message === "getLoginEmail") {
@@ -261,46 +275,48 @@ chrome.runtime.onInstalled.addListener(createContextMenu);
 
 
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.parentMenuItemId === "personal" || info.parentMenuItemId === "address" || info.parentMenuItemId === "credentials") {
-      // Store the tab information in storage
-      console.log(info.menuItemId);
-      chrome.storage.local.set({ originalTabId: tab?.id });
+//code to fetch personal details from the server and store into local storage
 
-      // Simulate fetching variables from backend
-      const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
-      fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-type": "application/json",
-        },
-      })
-      .then((response) => {
-          if (!response.ok) {
-              throw new Error("Network response was not ok");
-          }
-          return response.json();
-      })
-      .then((data) => {
-          if (data.error !== "no error") {
-              console.log("Please Register in Website");
-          } else {
-              const variablesFromBackend = data.data.details;
-              // Store variables in storage
-              chrome.storage.local.set({ variablesFromBackend }, () => {
-                  chrome.tabs.sendMessage(tab.id, {
-                      type: 'fillField',
-                      field: info.menuItemId
-                  });
-              });
-          }
-      })
-      .catch((error) => {
-          console.error("Error fetching data from the backend", error);
-          console.log("Server Down");
-      });
-  }
-});
+// chrome.contextMenus.onClicked.addListener((info, tab) => {
+//   if (info.parentMenuItemId === "personal" || info.parentMenuItemId === "address" || info.parentMenuItemId === "credentials") {
+//       // Store the tab information in storage
+//       console.log(info.menuItemId);
+//       chrome.storage.local.set({ originalTabId: tab?.id });
+
+//       // Simulate fetching variables from backend
+//       const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
+//       fetch(url, {
+//         method: "GET",
+//         headers: {
+//           "Content-type": "application/json",
+//         },
+//       })
+//       .then((response) => {
+//           if (!response.ok) {
+//               throw new Error("Network response was not ok");
+//           }
+//           return response.json();
+//       })
+//       .then((data) => {
+//           if (data.error !== "no error") {
+//               console.log("Please Register in Website");
+//           } else {
+//               const variablesFromBackend = data.data.details;
+//               // Store variables in storage
+//               chrome.storage.local.set({ variablesFromBackend }, () => {
+//                   chrome.tabs.sendMessage(tab.id, {
+//                       type: 'fillField',
+//                       field: info.menuItemId
+//                   });
+//               });
+//           }
+//       })
+//       .catch((error) => {
+//           console.error("Error fetching data from the backend", error);
+//           console.log("Server Down");
+//       });
+//   }
+// });
 
 
 
