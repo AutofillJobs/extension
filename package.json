@@ -6,7 +6,9 @@
   "license": "MIT",
   "scripts": {
     "watch": "webpack --watch --progress --config webpack.dev.js",
-    "build": "webpack --watch --progress --config webpack.prod.js"
+    "build": "NODE_ENV=production webpack --config webpack.prod.js",
+    "build:dev": "NODE_ENV=development webpack --config webpack.dev.js",
+    "analyze": "NODE_ENV=production webpack-bundle-analyzer dist/stats.json"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.188",
@@ -15,14 +17,17 @@
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.1",
+    "cssnano": "^6.0.1",
     "html-webpack-plugin": "^5.5.0",
     "postcss-loader": "^7.0.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "style-loader": "^3.3.1",
+    "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.5.0",
     "typescript": "^4.9.5",
     "webpack": "^5.72.1",
+    "webpack-bundle-analyzer": "^4.9.0",
     "webpack-cli": "^4.9.2",
     "webpack-merge": "^5.8.0"
   },
