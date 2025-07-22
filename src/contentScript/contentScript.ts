@@ -857,3 +857,25 @@ function createErrorFloatingPopup(count: number, message: string = "", duration:
 
 // Request login email
 chrome.runtime.sendMessage({ message: "getLoginEmail" }, function (response) {});
+
+// At the top, import the Workday form filler
+import createWorkdayFormFiller from './workdayScript';
+
+function isWorkdaySite(): boolean {
+  return window.location.hostname.includes('workday');
+}
+
+if (isWorkdaySite()) {
+  chrome.storage.local.get(['formData'], (result) => {
+    if (result.formData) {
+      const workdayFiller = createWorkdayFormFiller(result.formData.data);
+      // Option 1: If you want to fill immediately with data
+      // workdayFiller.fillApplicationForm();
+
+      // Option 2: If you want to use the full init logic (recommended)
+      workdayFiller.initFormFiller();
+    } else {
+      console.warn('[ContentScript] No formData found in storage for Workday site.');
+    }
+  });
+}
