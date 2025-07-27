@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getUserData, saveUserData } from '../utils/storageHandler';
 
 const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
   // const [showSkillInput, setShowSkillInput] = useState(false);
@@ -19,8 +20,8 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
   const [isCurrentlyStudying, setIsCurrentlyStudying] = useState(educationData.stillStudying);
 
   useEffect(() => {
-    chrome.storage.local.get('formData', (result) => {
-      if (result.formData && result.formData.educationExperiences) {
+    getUserData((userData) => {
+      if (userData && userData.educationExperiences) {
         // If you want to edit an existing experience, you would need to pass an ID prop
         // and then find the specific experience here
       }
@@ -65,8 +66,8 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
       id: Date.now(), // Generate a unique ID
     };
 
-    chrome.storage.local.get('formData', (result) => {
-      const existingFormData = result.formData.data || {};
+    getUserData((userData) => {
+      const existingFormData = userData?.data || {};
       const existingEducationExperiences = existingFormData.educationExperiences || [];
       
       const updatedFormData = {
@@ -76,10 +77,14 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
         }
       };
 
-      chrome.storage.local.set({ 'formData': updatedFormData }, () => {
-        console.log('Education experience data saved');
-        onClose();
-        onSave();
+      saveUserData(updatedFormData, (success, error) => {
+        if (success) {
+          console.log('Education experience data saved');
+          onClose();
+          onSave();
+        } else {
+          console.error('Error saving education experience:', error);
+        }
       });
     });
   };

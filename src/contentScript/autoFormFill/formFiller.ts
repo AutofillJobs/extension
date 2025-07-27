@@ -1,5 +1,5 @@
 import { Email, userData } from '../messageListener';
-import { getToggleState, getUserData } from '../utils/storageHandler';
+import { getToggleState, getUserData } from '../../utils/storageHandler';
 import { FormData } from '../utils/types';
 import { 
   mapDetailRegex, 

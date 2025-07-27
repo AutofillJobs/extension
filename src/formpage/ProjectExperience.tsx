@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getUserData, saveUserData } from '../utils/storageHandler';
 
 const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
   // const [showSkillInput, setShowSkillInput] = useState(false);
@@ -16,8 +17,8 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
   const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(projectData.stillWorking);
 
   useEffect(() => {
-    chrome.storage.local.get('formData', (result) => {
-      if (result.formData && result.formData.projectExperiences) {
+    getUserData((userData) => {
+      if (userData && userData.projectExperiences) {
         // If you want to edit an existing experience, you would need to pass an ID prop
         // and then find the specific experience here
       }
@@ -62,8 +63,8 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
       id: Date.now(), 
     };
 
-    chrome.storage.local.get('formData', (result) => {
-      const existingFormData = result.formData.data || {};
+    getUserData((userData) => {
+      const existingFormData = userData?.data || {};
       const existingProjectExperiences = existingFormData.projectExperiences || [];
       
       const updatedFormData = {
@@ -73,10 +74,14 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
         }
       };
 
-      chrome.storage.local.set({ 'formData': updatedFormData }, () => {
-        console.log('Project experience data saved');
-        onSave();
-        onClose();
+      saveUserData(updatedFormData, (success, error) => {
+        if (success) {
+          console.log('Project experience data saved');
+          onSave();
+          onClose();
+        } else {
+          console.error('Error saving project experience:', error);
+        }
       });
     });
   };

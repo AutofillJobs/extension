@@ -1,4 +1,4 @@
-import { initializeStorage, getToggleState, getUserData } from './utils/storageHandler';
+import { initializeStorage, getToggleState, getAutoClickSaveState, getUserData } from '../utils/storageHandler';
 import { setupMessageListeners } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
 import createWorkdayFormFiller from './workDay/workdayScript';
@@ -9,7 +9,7 @@ function initialize() {
   console.log("Page is fully loaded");
   initializeStorage();
   setupMessageListeners();
-  initializeFormFiller();
+  
 
   // Check if on Workday site and toggleState is enabled
   const isWorkdaySite = window.location.hostname.includes('workday');
@@ -24,6 +24,9 @@ function initialize() {
           console.warn('[ContentScript] No formData found in storage for Workday site.');
         }
       });
+    }
+    else{
+      initializeFormFiller();
     }
   });
 

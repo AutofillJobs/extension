@@ -7,7 +7,7 @@ import {
   import { fillDetails } from './fieldFiller';
   import { findElementByText, findAllButtonsInParent, programmaticallyClickButtons } from './utils';
   import { fillResume, fillCV } from './fileUploader';
-  import { getToggleState } from '../utils/storageHandler';
+  import { getToggleState } from '../../utils/storageHandler';
   
   export function dataFill(data: any) {
     console.log("Filling data:", data);
