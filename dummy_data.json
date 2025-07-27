@@ -49,7 +49,18 @@
       "description": "Developed and maintained enterprise applications.",
       "location": "New York",
       "workType": "Full-time"
-    }
+    },
+    {
+      "jobTitle": "Senior Backend Developer",
+      "companyName": "Innovatech Solutions",
+      "startDate": "2021-09-01",
+      "endDate": "2024-07-01",
+      "skills": ["Python", "Django", "PostgreSQL", "Docker", "AWS"],
+      "stillWorking": false,
+      "description": "Led the backend development team in building scalable microservices and API integrations for fintech products.",
+      "location": "San Francisco",
+      "workType": "Full-time"
+    }    
   ],
   "projectExperiences": [
     {

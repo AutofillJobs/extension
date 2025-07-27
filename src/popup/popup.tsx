@@ -24,8 +24,10 @@ const Popup = () => {
   };
 
   const toggleSwitch = () => {
-    setIsToggled(!isToggled);
-    chrome.runtime.sendMessage({ type: 'TOGGLE_STATE_CHANGED', value: !isToggled });
+    const newToggleState = !isToggled;
+    setIsToggled(newToggleState);
+    chrome.storage.local.set({ toggleState: newToggleState });
+    chrome.runtime.sendMessage({ type: 'TOGGLE_STATE_CHANGED', value: newToggleState });
   };
 
   const handleEditDetailsClick = () => {

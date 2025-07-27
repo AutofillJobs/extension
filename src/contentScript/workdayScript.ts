@@ -789,54 +789,162 @@ function createWorkdayFormFiller(userData:any) {
     }
   ];
 
-  const step2Fields: Field[] = [
-    {
-      type: 'text',
-      selector: 'input[id$="--jobTitle"][name="jobTitle"]',
-      value: 'Senior Dummy Analyst'
-    },
-    {
-      type: 'text',
-      selector: 'input[id$="--companyName"][name="companyName"]',
-      value: 'Dummy Solutions Inc.'
-    },
-    {
-      type: 'text',
-      selector: 'input[id$="--location"][name="location"]',
-      value: 'Dummyville, DS'
-    },
-    {
-      type: 'checkbox',
-      selector: 'input[id$="--currentlyWorkHere"][name="currentlyWorkHere"]',
-      check: true
-    },
-    {
-      type: 'text',
-      selector: 'input[data-automation-id="dateSectionMonth-input"][id^="workExperience-"][id*="--startDate-"]',
-      value: '06'
-    },
-    {
-      type: 'text',
-      selector: 'input[data-automation-id="dateSectionYear-input"][id^="workExperience-"][id*="--startDate-"]',
-      value: '2023'
-    },
-    {
-      type: 'date_placeholder',
-      selector: '#NEEDS_TO_DATE_INPUT_SELECTOR',
-      value: '12/2022'
-    },
-    {
-      type: 'textarea',
-      selector: 'textarea[id$="--roleDescription"]',
-      value: 'Performed various dummy tasks and achieved dummy results with great dummy success. Responsible for dummy operations and managing dummy projects.'
+  // For dynamic work experience selectors
+  const jobTitleIdSuffixes = [143, 196, 211, 230, 253]; // Extend as needed
+
+  // Helper to parse date string to {month, year}
+  function parseMonthYear(dateStr: string | undefined): { month: string, year: string } {
+    if (!dateStr) return { month: '', year: '' };
+    // Accepts 'DD-MM-YYYY', 'YYYY-MM-DD', 'MM-YYYY', 'YYYY-MM', etc.
+    let d = dateStr.trim();
+    let day = '', month = '', year = '';
+    if (/^\d{2}-\d{2}-\d{4}$/.test(d)) { // DD-MM-YYYY
+      [day, month, year] = d.split('-');
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { // YYYY-MM-DD
+      [year, month, day] = d.split('-');
+    } else if (/^\d{2}-\d{4}$/.test(d)) { // MM-YYYY
+      [month, year] = d.split('-');
+    } else if (/^\d{4}-\d{2}$/.test(d)) { // YYYY-MM
+      [year, month] = d.split('-');
     }
-  ];
+    return { month, year };
+  }
+
+  const workExperience = userData?.workExperiences?.[0];
+  let step2Fields: Field[] = [];
+  
+  // Handle case where there's no work experience
+  if (workExperience) {
+    const start = parseMonthYear(workExperience?.startDate);
+    const end = parseMonthYear(workExperience?.endDate);
+    const startMonth = workExperience?.startMonth || start?.month;
+    const startYear = workExperience?.startYear || start?.year;
+    const endMonth = workExperience?.endMonth || end?.month;
+    const endYear = workExperience?.endYear || end?.year;
+  
+    step2Fields = [
+      {
+        type: 'text',
+        selector: 'input[id$="--jobTitle"][name="jobTitle"]',
+        value: workExperience.jobTitle || null
+      },
+      {
+        type: 'text',
+        selector: 'input[id$="--companyName"][name="companyName"]',
+        value: workExperience.companyName || null
+      },
+      {
+        type: 'text',
+        selector: 'input[id$="--location"][name="location"]',
+        value: workExperience.location || null
+      },
+      {
+        type: 'checkbox',
+        selector: 'input[id$="--currentlyWorkHere"][name="currentlyWorkHere"]',
+        check: workExperience.stillWorking || false
+      },
+      {
+        type: 'text',
+        selector: 'input[data-automation-id="dateSectionMonth-input"][id^="workExperience-"][id*="--startDate-"]',
+        value: startMonth || null
+      },
+      {
+        type: 'text',
+        selector: 'input[data-automation-id="dateSectionYear-input"][id^="workExperience-"][id*="--startDate-"]',
+        value: startYear || null
+      },
+      {
+        type: 'text',
+        selector: 'input[data-automation-id="dateSectionMonth-input"][id^="workExperience-"][id*="--endDate-"]',
+        value: endMonth || null
+      },
+      {
+        type: 'text',
+        selector: 'input[data-automation-id="dateSectionYear-input"][id^="workExperience-"][id*="--endDate-"]',
+        value: endYear || null
+      },
+      {
+        type: 'date_placeholder',
+        selector: '#NEEDS_TO_DATE_INPUT_SELECTOR',
+        value: '12/2022' // Optional: Make dynamic or null
+      },
+      {
+        type: 'textarea',
+        selector: 'textarea[id$="--roleDescription"]',
+        value: workExperience.description || null
+      }
+    ];
+  }
+  
+
+
+
+
+
+  // // Dynamically generate step2Fields for each work experience
+  // const step2Fields: Field[] = (userData.workExperience || []).slice(0, jobTitleIdSuffixes.length).flatMap((exp: any, idx: number) => {
+  //   const id = jobTitleIdSuffixes[idx];
+  //   // Parse start and end dates
+  //   const start = parseMonthYear(exp.startDate);
+  //   const end = parseMonthYear(exp.endDate);
+  //   const startMonth = exp.startMonth || start.month;
+  //   const startYear = exp.startYear || start.year;
+  //   const endMonth = exp.endMonth || end.month;
+  //   const endYear = exp.endYear || end.year;
+  //   return [
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--jobTitle[name="jobTitle"]`,
+  //       value: exp.jobTitle || ''
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--companyName[name="companyName"]`,
+  //       value: exp.companyName || ''
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--location[name="location"]`,
+  //       value: exp.location || ''
+  //     },
+  //     {
+  //       type: 'checkbox',
+  //       selector: `input#workExperience-${id}--currentlyWorkHere[name="currentlyWorkHere"]`,
+  //       check: !!exp.stillWorking
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--startDate-month[data-automation-id="dateSectionMonth-input"]`,
+  //       value: startMonth || ''
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--startDate-year[data-automation-id="dateSectionYear-input"]`,
+  //       value: startYear || ''
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--endDate-month[data-automation-id="dateSectionMonth-input"]`,
+  //       value: endMonth || ''
+  //     },
+  //     {
+  //       type: 'text',
+  //       selector: `input#workExperience-${id}--endDate-year[data-automation-id="dateSectionYear-input"]`,
+  //       value: endYear || ''
+  //     },
+  //     {
+  //       type: 'textarea',
+  //       selector: `textarea#workExperience-${id}--roleDescription[name="roleDescription"]`,
+  //       value: exp.description || ''
+  //     }
+  //   ];
+  // });
 
   const step3Fields: Field[] = [
     {
       type: 'dropdown',
       selector: 'button#personalInfoPerson--gender',
-      value: 'Male'
+      value:  userData.details.gender
     },
     {
       type: 'checkbox',
