@@ -1,14 +1,26 @@
 // Chrome storage and message handling
-chrome.storage.local.get(['toggleState'], function(result) {
-  console.log('Toggle state stored in local storage:', result.toggleState);
+
+let toggleState = null;
+
+// Get the initial toggleState from local storage
+chrome.storage.local.get(['toggleState'], function (result) {
+  if (chrome.runtime.lastError) {
+    console.error('Error getting toggleState:', chrome.runtime.lastError);
+    return;
+  }
+
+  toggleState = result.toggleState;
+  console.log('Initial toggle state from local storage:', toggleState);
 });
 
-chrome.storage.onChanged.addListener(function(changes, namespace) {
-  if (namespace === 'local' && changes.toggleState) {
-    const newValue = changes.toggleState.newValue;
-    console.log('Toggle state changed to:', newValue);
+// Listen for changes to toggleState in local storage
+chrome.storage.onChanged.addListener(function (changes, areaName) {
+  if (areaName === 'local' && changes.toggleState) {
+    toggleState = changes.toggleState.newValue;
+    console.log('Toggle state updated to:', toggleState);
   }
 });
+
 
 // Message listener for field filling
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -474,13 +486,16 @@ const dataFill = (data: any) => {
       console.error("Error in fillCV:", error);
     }
   }
-
-  // Execute file uploads
+  if (toggleState){
+      // Execute file uploads
   fillCV();
   fillResume();
 
   // Fill basic details
   fillDetails(userDetails, mapDetailRegex);
+
+  }
+
 };
 
 // Enhanced field filling function
@@ -857,3 +872,29 @@ function createErrorFloatingPopup(count: number, message: string = "", duration:
 
 // Request login email
 chrome.runtime.sendMessage({ message: "getLoginEmail" }, function (response) {});
+
+// At the top, import the Workday form filler
+import createWorkdayFormFiller from './workdayScript';
+
+function isWorkdaySite(): boolean {
+  return window.location.hostname.includes('workday');
+}
+console.log("toggleState", toggleState)
+chrome.storage.local.get(['toggleState'], function (result) {
+  const toggleState = result.toggleState;
+  if (isWorkdaySite() && toggleState) {
+    console.log("filling work day form")
+    chrome.storage.local.get(['formData'], (result) => {
+      if (result.formData) {
+        const workdayFiller = createWorkdayFormFiller(result.formData.data);
+        // Option 1: If you want to fill immediately with data
+        // workdayFiller.fillApplicationForm();
+
+        // Option 2: If you want to use the full init logic (recommended)
+        workdayFiller.initFormFiller();
+      } else {
+        console.warn('[ContentScript] No formData found in storage for Workday site.');
+      }
+    });
+  }
+});

@@ -57,11 +57,6 @@ module.exports = {
           from: path.resolve("src/static"),
           to: path.resolve("dist"),
         },
-         // Add this pattern to copy your PDF file
-      {
-        from: path.resolve("src/assets/Tom_George.pdf"),
-        to: path.resolve("dist/assets/Tom_George.pdf"),
-      },
       ],
     }),
     ...getHtmlPlugins(["popup", "options" ,"formpage"]),
