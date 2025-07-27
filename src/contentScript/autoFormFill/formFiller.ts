@@ -576,3 +576,49 @@ export function fillDetails(userDetails: any, regexMap: any) {
     chrome.runtime.sendMessage({ action: 'filledFields', data: filledFields });
   }
 }
+
+
+
+// import { getUserData } from '../utils/storageHandler';
+// import { prefill } from './prefill';
+// import { dataFill } from './dataFiller';
+
+// export function initializeFormFiller() {
+//   prefill();
+//   checkInputFields();
+
+//   // Right-click handler for manual data filling
+//   document.addEventListener(
+//     "mousedown",
+//     (event) => {
+//       // Check if the right mouse button was clicked
+//       if (event.button === 2) {
+//         getUserData((userData) => {
+//           if (userData?.data) {
+//             console.log("Form data found:", userData);
+//             dataFill(userData.data);
+//           } else {
+//             console.log("No data found");
+//           }
+//         });
+//       }
+//     },
+//     true // Use capture phase
+//   );
+// }
+
+// function checkInputFields() {
+//   const inputFields = document.querySelectorAll("input");
+//   const selectFields = document.querySelectorAll("select");
+
+//   if (inputFields.length > 0 || selectFields.length > 0) {
+//     getUserData((userData) => {
+//       if (userData) {
+//         console.log("Form data found:", userData);
+//         dataFill(userData.data);
+//       } else {
+//         console.log("No data found");
+//       }
+//     });
+//   }
+// }

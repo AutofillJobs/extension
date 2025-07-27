@@ -1,4 +1,3 @@
-import { fillDetails } from './autoFormFill/formFiller';
 import { FormData } from './utils/types';
 
 let Email: string = "";
