@@ -20,7 +20,7 @@
   "street": "Main Street",
   "city": "San Francisco",
   "state": "California",
-  "gender": "male",
+  "gender": "Male",
   "country": "USA",
   "linkedinUrl": "https://linkedin.com/in/johndoe",
   "twitterUrl": "https://twitter.com/johndoe",
@@ -38,6 +38,12 @@
   "phoneDeviceType": "iPhone",
   "expectedSalary": "100000",
   "zip": "94105",
+  "workAuthorization": "Yes",
+  "visaSponsorship": "No",
+  "disability": "No",
+  "veteran": "No",
+  "ethnicity": "White",
+  "age": "35",
   "workExperiences": [
     {
       "jobTitle": "Software Engineer",

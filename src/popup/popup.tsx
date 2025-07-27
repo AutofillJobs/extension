@@ -38,7 +38,7 @@ const Popup = () => {
     <div className="w-full p-8 relative">
       <div className="header-container mb-8">
         <a href="https://autofilljobs.com" target="_blank" className="text-3xl font-extrabold text-[#4FC3F7]">
-          Auto<span className="text-[#0A2540]">Fill</span>Gpt
+        Apply<span className="text-[#0A2540]">GOAT</span>
         </a>
         <span className="toggle-switch">
           <label className="switch">

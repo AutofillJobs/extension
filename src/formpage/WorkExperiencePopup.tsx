@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getUserData, saveUserData } from '../utils/storageHandler';
 
 const WorkExperiencePopup = ({ onClose, mode ,onSave}) => {
   // const [showSkillInput, setShowSkillInput] = useState(false);
@@ -54,8 +55,8 @@ const handleSave = (event) => {
         id: Date.now(), 
     };
 
-    chrome.storage.local.get(['formData'], (result) => {
-        const existingData = result.formData?.data || {};
+    getUserData((userData) => {
+        const existingData = userData?.data || {};
         const existingDetails = existingData.details || {};
         const existingWorkExperiences = existingDetails.workExperiences || [];
 
@@ -72,10 +73,14 @@ const handleSave = (event) => {
             error: "no error"
         };
 
-        chrome.storage.local.set({ formData: updatedData }, () => {
-            console.log("Updated data saved:", updatedData);
-            onSave();
-            onClose();
+        saveUserData(updatedData, (success, error) => {
+            if (success) {
+                console.log("Updated data saved:", updatedData);
+                onSave();
+                onClose();
+            } else {
+                console.error('Error saving work experience:', error);
+            }
         });
     });
 };

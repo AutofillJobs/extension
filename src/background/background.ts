@@ -1,21 +1,10 @@
 let userEmail = '';
 let lastFilledFields = null;
-// const url = "http://localhost:5000/api/details/extension/filledFields" 
-const url = "https://api.autofilljobs.com/details/extension/filledFields"
+
 chrome.storage.local.get(['toggleState'], function(result) {
   console.log('Toggle state stored in local storage1:', result.toggleState);
 });
 
-// chrome.identity.getProfileUserInfo(function(userInfo) {
-//   console.log('User Info:', userInfo);
-//   if (userInfo.email) {
-//     userEmail = userInfo.email;
-//     console.log('User Email:', userInfo.email);
-//     chrome.storage.local.set({ userEmail: userEmail }, function() {
-//       console.log('User email has been saved to local storage:', userEmail);
-//     });
-//   }
-// });
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -89,34 +78,34 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     console.log('Previous URL:', lastRequestUrl); // Log the URL before the POST request
     // Notify content script or perform other actions
 
-    if (lastFilledFields) {
-      console.log('Filled fields after successful POST request:', lastFilledFields);
+    // if (lastFilledFields) {
+    //   console.log('Filled fields after successful POST request:', lastFilledFields);
 
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          companyName: lastHostname,
-          filledFields: lastFilledFields,
+    //   fetch(url, {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       email: userEmail,
+    //       companyName: lastHostname,
+    //       filledFields: lastFilledFields,
           
          
-        }),
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Successfully sent filled fields to backend:', data);
-      })
-      .catch(error => {
-        console.error('Error sending filled fields to backend:', error);
-      });
+    //     }),
+    //   })
+    //   .then(response => response.json())
+    //   .then(data => {
+    //     console.log('Successfully sent filled fields to backend:', data);
+    //   })
+    //   .catch(error => {
+    //     console.error('Error sending filled fields to backend:', error);
+    //   });
 
 
 
-      lastFilledFields = null; // Clear the stored filled fields after logging
-    }
+    //   lastFilledFields = null; // Clear the stored filled fields after logging
+    // }
 
     chrome.tabs.sendMessage(tabId, { 
       action: 'urlChangedAfterPost', 
@@ -139,23 +128,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// chrome.runtime.onInstalled.addListener(function(details){
-//   if (details.reason == "update") {
-//     var thisVersion = chrome.runtime.getManifest().version;
-//     console.log("Updated from " + details.previousVersion + " to " + thisVersion + "!");
-    
-//     // Notify users about the update
-//     chrome.notifications.create('', {
-//       type: 'basic',
-//       title: 'Extension Updated',
-//       message: 'Your extension was updated successfully.',
-//       iconUrl: 'https://www.gstatic.com/webp/gallery/4.sm.jpg'
-//     });
 
-//     // Redirect to a specific URL upon update
-//     chrome.tabs.create({ url: 'https://chromewebstore.google.com/detail/autofilljobs/naoicaidphmpfebbgmeoflipdnkcfjck' });
-//   }
-// });
 
 
 // background.js
@@ -272,94 +245,3 @@ function createContextMenu() {
 // Create the context menu when the extension is installed or updated
 chrome.runtime.onInstalled.addListener(createContextMenu);
 
-
-
-
-//code to fetch personal details from the server and store into local storage
-
-// chrome.contextMenus.onClicked.addListener((info, tab) => {
-//   if (info.parentMenuItemId === "personal" || info.parentMenuItemId === "address" || info.parentMenuItemId === "credentials") {
-//       // Store the tab information in storage
-//       console.log(info.menuItemId);
-//       chrome.storage.local.set({ originalTabId: tab?.id });
-
-//       // Simulate fetching variables from backend
-//       const url = "https://api.autofilljobs.com/details/extension/" + userEmail;
-//       fetch(url, {
-//         method: "GET",
-//         headers: {
-//           "Content-type": "application/json",
-//         },
-//       })
-//       .then((response) => {
-//           if (!response.ok) {
-//               throw new Error("Network response was not ok");
-//           }
-//           return response.json();
-//       })
-//       .then((data) => {
-//           if (data.error !== "no error") {
-//               console.log("Please Register in Website");
-//           } else {
-//               const variablesFromBackend = data.data.details;
-//               // Store variables in storage
-//               chrome.storage.local.set({ variablesFromBackend }, () => {
-//                   chrome.tabs.sendMessage(tab.id, {
-//                       type: 'fillField',
-//                       field: info.menuItemId
-//                   });
-//               });
-//           }
-//       })
-//       .catch((error) => {
-//           console.error("Error fetching data from the backend", error);
-//           console.log("Server Down");
-//       });
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// chrome.tabs.getSelected(null, function(tab) {
-//   chrome.tabs.sendRequest(tab.id, {greeting: "hello"}, function(response) {
-//     console.log(response.farewell);
-//   });
-// });
-
-
-
-// chrome.tabs.onActivated.addListener((tab) => {
-//   console.log('tab', tab);
-//   if (userEmail) {
-//     setTimeout(() => {
-//       chrome.tabs.sendMessage(
-//         tab.tabId,
-//         { userEmail: userEmail }, // Sending email as an object to the content script
-//         (response) => {
-//           console.log('response', response);
-//         }
-//       );
-//     }, 2000);
-//   } else {
-//     console.log('User email not available yet.');
-//     // Handle case where user email is not available yet
-//   }
-// });
