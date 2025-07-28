@@ -3,14 +3,13 @@ import { setupMessageListeners } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
 import createWorkdayFormFiller from './workDay/workdayScript';
 import { FormData } from './utils/types';
+import fillWorkdayForm from './workDay/workdaynew';
 
 // Initialize when page is fully loaded
-function initialize() {
+async function initialize() {
   console.log("Page is fully loaded");
-  initializeStorage();
+  await initializeStorage();
   setupMessageListeners();
-  
-
   // Check if on Workday site and toggleState is enabled
   const isWorkdaySite = window.location.hostname.includes('workday');
   getToggleState((toggleState) => {
@@ -18,8 +17,9 @@ function initialize() {
       console.log("Filling Workday form");
       getUserData((userData) => {
         if (userData) {
-          const workdayFiller = createWorkdayFormFiller(userData.data);
-          workdayFiller.initFormFiller();
+          // const workdayFiller = createWorkdayFormFiller(userData.data);
+          // workdayFiller.initFormFiller();
+          fillWorkdayForm()
         } else {
           console.warn('[ContentScript] No formData found in storage for Workday site.');
         }
@@ -29,7 +29,6 @@ function initialize() {
       initializeFormFiller();
     }
   });
-
   // Request login email
   chrome.runtime.sendMessage({ message: "getLoginEmail" }, () => {});
 

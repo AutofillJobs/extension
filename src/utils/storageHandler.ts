@@ -1,34 +1,39 @@
 let toggleState: boolean | null = null;
 let autoClickSave: boolean = false; // Default to false
 
-export function initializeStorage() {
-  // Get the initial toggleState and autoClickSave from local storage
-  chrome.storage.local.get(['toggleState', 'autoClickSave'], (result: { toggleState?: boolean; autoClickSave?: boolean }) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error getting toggleState:', chrome.runtime.lastError);
-      return;
-    }
-    toggleState = result.toggleState ?? null;
-    autoClickSave = result.autoClickSave ?? false; // Default fallback
-    console.log('Initial toggle state from local storage:', toggleState);
-    console.log('Initial autoClickSave state from local storage:', autoClickSave);
-  });
+export async function initializeStorage(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    chrome.storage.local.get(['toggleState', 'autoClickSave'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error getting toggleState:', chrome.runtime.lastError);
+        reject(chrome.runtime.lastError);
+        return;
+      }
 
-  // Listen for changes to toggleState and autoClickSave in local storage
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local') {
-      if (changes.toggleState) {
-        toggleState = changes.toggleState.newValue;
-        console.log('Toggle state updated to:', toggleState);
-      }
-      if (changes.autoClickSave) {
-        autoClickSave = changes.autoClickSave.newValue;
-        console.log('AutoClickSave state updated to:', autoClickSave);
-      }
-    }
+      toggleState = result.toggleState ?? null;
+      autoClickSave = result.autoClickSave ?? false;
+
+      console.log('Initial toggle state from local storage:', toggleState);
+      console.log('Initial autoClickSave state from local storage:', autoClickSave);
+
+      // Listen for changes
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === 'local') {
+          if (changes.toggleState) {
+            toggleState = changes.toggleState.newValue;
+            console.log('Toggle state updated to:', toggleState);
+          }
+          if (changes.autoClickSave) {
+            autoClickSave = changes.autoClickSave.newValue;
+            console.log('AutoClickSave state updated to:', autoClickSave);
+          }
+        }
+      });
+
+      resolve();
+    });
   });
 }
-
 export function getToggleState(callback: (state: boolean | null) => void) {
   callback(toggleState);
 }
@@ -37,8 +42,9 @@ export function getAutoClickSaveState(callback: (state: boolean) => void) {
   callback(autoClickSave);
 }
 
-export function updateAutoClickSaveState(newState: boolean, callback?: (success: boolean, error?: string) => void) {
-  chrome.storage.local.set({ 'autoClickSave': newState }, () => {
+export async function updateAutoClickSaveState(newState: boolean, callback?: (success: boolean, error?: string) => void) {
+  return new Promise<void>((resolve, reject) => {
+    chrome.storage.local.set({ 'autoClickSave': newState }, () => {
     if (chrome.runtime.lastError) {
       console.error('Error updating autoClickSave state:', chrome.runtime.lastError);
       if (callback) {
@@ -51,7 +57,10 @@ export function updateAutoClickSaveState(newState: boolean, callback?: (success:
     if (callback) {
       callback(true);
     }
+    resolve()
   });
+
+  })
 }
 
 export function getUserData(callback: (userData: any) => void) {
