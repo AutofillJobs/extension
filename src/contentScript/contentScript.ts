@@ -1614,3 +1614,335 @@ chrome.runtime.sendMessage(
   { message: "getLoginEmail" },
   function (response) {}
 );
+
+// SuccessFactors Autofill Module
+// Author: [Your Name]
+// Description: Autofills SuccessFactors application forms with comprehensive field support
+
+/**
+ * SuccessFactors-specific autofill functionality
+ */
+class SuccessFactorsAutofill {
+  private sampleData = {
+    firstName: "John",
+    middleName: "M",
+    lastName: "Doe",
+    email: "john.doe@example.com",
+    phone: "+14155552671",
+    preferredName: "Johnny",
+    address1: "123 Main Street",
+    address2: "Suite 4B",
+    city: "San Francisco",
+    country: "United States",
+    state: "California",
+    zip: "94105",
+    travelPercentage: "0 - 100%",
+    recruiterContact: "Yes",
+    educationLevel: "Masters",
+    completionLevel: "Graduated",
+    studyRegion: "Americas",
+    studyCountry: "USA",
+    studySchool: "Massachusetts Institute Of Technology",
+    // Work Experience sample data
+    workStartDate: "01/01/2020",
+    workEndDate: "12/31/2022",
+    workEmployer: "Acme Corp",
+    workIndustry: "Software",
+    workFunctionalArea: "Engineering",
+    workPositionTitle: "Software Engineer",
+    workCountry: "United States"
+  };
+
+  /**
+   * Checks if current URL is a SuccessFactors career portal
+   */
+  private isSuccessFactorsSite(): boolean {
+    return window.location.href.includes('successfactors.eu/portalcareer') ||
+           window.location.href.includes('successfactors.com/portalcareer');
+  }
+
+  /**
+   * Fills a form field with retry logic
+   */
+  private fillField(selector: string, value: string): boolean {
+    const field = document.querySelector(selector) as HTMLInputElement;
+    if (field) {
+      field.value = value;
+      // Trigger events to notify the form
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      field.dispatchEvent(new Event('blur', { bubbles: true }));
+      console.log(`[SuccessFactors] Filled ${selector} with: ${value}`);
+      return true;
+    }
+    console.log(`[SuccessFactors] Field not found: ${selector}`);
+    return false;
+  }
+
+  /**
+   * Selects dropdown option with robust retry logic
+   */
+  private selectDropdownOption(optionText: string, dropdownSelector: string): void {
+    try {
+      console.log(`[SuccessFactors] Attempting to select: ${optionText} from ${dropdownSelector}`);
+      
+      // Try both input and button selectors for the dropdown
+      let dropdown = document.querySelector(dropdownSelector) as HTMLElement;
+      if (!dropdown && dropdownSelector.includes('124:_input')) {
+        dropdown = document.querySelector('button[id="124:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('132:_input')) {
+        dropdown = document.querySelector('button[id="132:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('144:_input')) {
+        dropdown = document.querySelector('button[id="144:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('151:_input')) {
+        dropdown = document.querySelector('button[id="151:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('158:_input')) {
+        dropdown = document.querySelector('button[id="158:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('166:_input')) {
+        dropdown = document.querySelector('button[id="166:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('173:_input')) {
+        dropdown = document.querySelector('button[id="173:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('180:_input')) {
+        dropdown = document.querySelector('button[id="180:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('187:_input')) {
+        dropdown = document.querySelector('button[id="187:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('326:_input')) {
+        dropdown = document.querySelector('button[id="326:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('333:_input')) {
+        dropdown = document.querySelector('button[id="333:_selectButton"]') as HTMLElement;
+      }
+      if (!dropdown && dropdownSelector.includes('344:_input')) {
+        dropdown = document.querySelector('button[id="344:_selectButton"]') as HTMLElement;
+      }
+      
+      if (dropdown) {
+        dropdown.click();
+        console.log(`[SuccessFactors] Clicked dropdown: ${dropdownSelector}`);
+        
+        // Wait for AJAX-loaded options and try multiple times
+        const tryFindOption = (attempt: number = 1): void => {
+          setTimeout(() => {
+            // Look for both a[role="menuitem"] and li a elements
+            const menuOptions = document.querySelectorAll('a[role="menuitem"]');
+            const listOptions = document.querySelectorAll('li a[title]');
+            const allOptions = [...Array.from(menuOptions), ...Array.from(listOptions)];
+            
+            console.log(`[SuccessFactors] Attempt ${attempt}: Found ${allOptions.length} menu options`);
+            
+            const option = allOptions.find(a => {
+              const text = a.textContent?.trim();
+              const title = (a as HTMLElement).title;
+              console.log(`[SuccessFactors] Checking option: "${text}" / "${title}"`);
+              return text === optionText || title === optionText;
+            });
+            
+            if (option) {
+              (option as HTMLElement).click();
+              console.log(`[SuccessFactors] Selected dropdown option: ${optionText}`);
+            } else if (attempt < 5) {
+              console.log(`[SuccessFactors] Option not found, retrying... (attempt ${attempt})`);
+              tryFindOption(attempt + 1);
+            } else {
+              console.log(`[SuccessFactors] Dropdown option not found after 5 attempts: ${optionText}`);
+              // Log all available options for debugging
+              allOptions.forEach(opt => console.log(`[SuccessFactors] Available: "${opt.textContent?.trim()}" / "${(opt as HTMLElement).title}"`));
+            }
+          }, 1000 * attempt); // Increase delay with each attempt
+        };
+        
+        tryFindOption();
+      } else {
+        console.log(`[SuccessFactors] Dropdown not found: ${dropdownSelector}`);
+      }
+    } catch (error) {
+      console.log(`[SuccessFactors] Error selecting dropdown option: ${error}`);
+    }
+  }
+
+  /**
+   * Expands Work Experience section by clicking Add button
+   */
+  private expandWorkExperienceSection(): void {
+    const workExpAddBtn = document.getElementById('199:_addRowBtn') as HTMLElement;
+    if (workExpAddBtn) {
+      workExpAddBtn.click();
+      console.log('[SuccessFactors] Clicked Work Experience Add button to expand section.');
+    } else {
+      console.log('[SuccessFactors] Work Experience Add button not found.');
+    }
+  }
+
+  /**
+   * Fills work experience fields including date pickers
+   */
+  private fillWorkExperienceFields(): void {
+    // Fill Employer
+    this.fillField('input[id="321:_txtFld"]', this.sampleData.workEmployer);
+    
+    // Fill Position Title
+    this.fillField('input[id="339:_txtFld"]', this.sampleData.workPositionTitle);
+    
+    // Fill Start Date (ui5-date-picker-xweb-calendar-widget)
+    const startDatePicker = document.getElementById('311:_datepicker')?.querySelector('ui5-date-picker-xweb-calendar-widget') as any;
+    if (startDatePicker) {
+      startDatePicker.value = this.sampleData.workStartDate;
+      startDatePicker.dispatchEvent(new Event('input', { bubbles: true }));
+      startDatePicker.dispatchEvent(new Event('change', { bubbles: true }));
+      startDatePicker.dispatchEvent(new Event('blur', { bubbles: true }));
+      console.log('[SuccessFactors] Filled Work Start Date:', this.sampleData.workStartDate);
+    } else {
+      console.log('[SuccessFactors] Work Start Date picker not found');
+    }
+    
+    // Fill End Date
+    const endDatePicker = document.getElementById('316:_datepicker')?.querySelector('ui5-date-picker-xweb-calendar-widget') as any;
+    if (endDatePicker) {
+      endDatePicker.value = this.sampleData.workEndDate;
+      endDatePicker.dispatchEvent(new Event('input', { bubbles: true }));
+      endDatePicker.dispatchEvent(new Event('change', { bubbles: true }));
+      endDatePicker.dispatchEvent(new Event('blur', { bubbles: true }));
+      console.log('[SuccessFactors] Filled Work End Date:', this.sampleData.workEndDate);
+    } else {
+      console.log('[SuccessFactors] Work End Date picker not found');
+    }
+    
+    // Select Work Experience dropdowns
+    setTimeout(() => this.selectDropdownOption(this.sampleData.workIndustry, 'input[id="326:_input"]'), 1000);
+    setTimeout(() => this.selectDropdownOption(this.sampleData.workFunctionalArea, 'input[id="333:_input"]'), 1500);
+    setTimeout(() => this.selectDropdownOption(this.sampleData.workCountry, 'input[id="344:_input"]'), 2000);
+  }
+
+  /**
+   * Main autofill function for SuccessFactors
+   */
+  public autofillSuccessFactorsForm(): void {
+    if (!this.isSuccessFactorsSite()) {
+      console.log('[SuccessFactors] Not a SuccessFactors site, skipping autofill');
+      return;
+    }
+
+    console.log("[SuccessFactors] Starting autofill...");
+
+    // Expand Work Experience section first
+    this.expandWorkExperienceSection();
+
+    // Autofill text fields with multiple selector attempts
+    this.fillField('input[name="firstName"]', this.sampleData.firstName) || 
+    this.fillField('input[id="75:_txtFld"]', this.sampleData.firstName);
+
+    this.fillField('input[name="middleName"]', this.sampleData.middleName) || 
+    this.fillField('input[id="80:_txtFld"]', this.sampleData.middleName);
+
+    this.fillField('input[name="lastName"]', this.sampleData.lastName) || 
+    this.fillField('input[id="85:_txtFld"]', this.sampleData.lastName);
+
+    this.fillField('input[name="contactEmail"]', this.sampleData.email) || 
+    this.fillField('input[id="90:_txtFld"]', this.sampleData.email);
+
+    this.fillField('input[name="cellPhone"]', this.sampleData.phone) || 
+    this.fillField('input[id="94:_txtFld"]', this.sampleData.phone);
+
+    this.fillField('input[name="customKnownAs"]', this.sampleData.preferredName) || 
+    this.fillField('input[id="99:_txtFld"]', this.sampleData.preferredName);
+
+    this.fillField('input[name="address"]', this.sampleData.address1) || 
+    this.fillField('input[id="111:_txtFld"]', this.sampleData.address1);
+
+    this.fillField('input[name="customAddress2"]', this.sampleData.address2) || 
+    this.fillField('input[id="115:_txtFld"]', this.sampleData.address2);
+
+    this.fillField('input[name="city"]', this.sampleData.city) || 
+    this.fillField('input[id="119:_txtFld"]', this.sampleData.city);
+
+    this.fillField('input[name="zip"]', this.sampleData.zip) || 
+    this.fillField('input[id="138:_txtFld"]', this.sampleData.zip);
+
+    // Fill Work Experience fields after a short delay
+    setTimeout(() => this.fillWorkExperienceFields(), 2000);
+
+    // Handle dropdown selections with proper sequencing
+    // First select country, then wait for states to load before selecting state
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.country, 'input[id="124:_input"]');
+      // After selecting country, wait for states to load, then select state
+      setTimeout(() => {
+        this.selectDropdownOption(this.sampleData.state, 'input[id="132:_input"]');
+      }, 3000); // Wait 3 seconds for states to load after country selection
+    }, 1000);
+
+    // Select travel percentage
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.travelPercentage, 'input[id="144:_input"]');
+    }, 2000);
+
+    // Select recruiter contact preference
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.recruiterContact, 'input[id="151:_input"]');
+    }, 2500);
+
+    // Select education level
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.educationLevel, 'input[id="158:_input"]');
+    }, 3000);
+
+    // Select completion level
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.completionLevel, 'input[id="166:_input"]');
+    }, 3500);
+
+    // Select study region with cascading dropdowns
+    setTimeout(() => {
+      this.selectDropdownOption(this.sampleData.studyRegion, 'input[id="173:_input"]');
+      // After selecting region, wait for countries to load, then select country
+      setTimeout(() => {
+        this.selectDropdownOption(this.sampleData.studyCountry, 'input[id="180:_input"]');
+        // After selecting country, wait for schools to load, then select school
+        setTimeout(() => {
+          this.selectDropdownOption(this.sampleData.studySchool, 'input[id="187:_input"]');
+        }, 2000); // Wait 2 seconds for schools to load after country selection
+      }, 2000); // Wait 2 seconds for countries to load after region selection
+    }, 4000);
+
+    console.log("[SuccessFactors] Autofill completed");
+  }
+}
+
+// Initialize SuccessFactors autofill
+const successFactorsAutofill = new SuccessFactorsAutofill();
+
+// Auto-trigger on SuccessFactors sites
+if (window.location.href.includes('successfactors.eu/portalcareer') || 
+    window.location.href.includes('successfactors.com/portalcareer')) {
+  
+  console.log("[SuccessFactors] SuccessFactors site detected, initializing autofill...");
+  
+  // Try autofill when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 1000);
+      setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 3000);
+      setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 5000);
+    });
+  } else {
+    // DOM is already loaded
+    setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 1000);
+    setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 3000);
+    setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 5000);
+  }
+
+  // Also try when page is fully loaded
+  window.addEventListener('load', () => {
+    setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 500);
+    setTimeout(() => successFactorsAutofill.autofillSuccessFactorsForm(), 2000);
+  });
+}
