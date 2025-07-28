@@ -3,7 +3,7 @@ import { setupMessageListeners } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
 import createWorkdayFormFiller from './workDay/workdayScript';
 import { FormData } from './utils/types';
-import fillWorkdayForm from './workDay/workdaynew';
+import fillWorkdayForm from './workDay/workdaynewScript';
 
 // Initialize when page is fully loaded
 async function initialize() {
@@ -18,8 +18,8 @@ async function initialize() {
       getUserData((userData) => {
         if (userData) {
           // const workdayFiller = createWorkdayFormFiller(userData.data);
-          // workdayFiller.initFormFiller();
-          fillWorkdayForm()
+          // workdayFiller.initFormFiller();          
+          fillWorkdayForm(userData)
         } else {
           console.warn('[ContentScript] No formData found in storage for Workday site.');
         }
