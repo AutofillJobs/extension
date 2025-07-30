@@ -14,55 +14,85 @@ export interface DropdownConfig {
  * @param timeout - Time to wait for dropdown to open (default: 800ms)
  */
 export function selectDropdownOption(config: DropdownConfig, timeout: number = 800): Promise<boolean> {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     const input = document.querySelector(config.inputSelector) as HTMLInputElement;
     const button = document.querySelector(config.buttonSelector) as HTMLButtonElement;
-    
+
     if (!input || !button) {
+      console.warn(`Dropdown input or button not found for selector: ${config.inputSelector}`);
       resolve(false);
       return;
     }
 
-    // Click button to open dropdown
+    // Open the dropdown
     button.click();
-    
-    setTimeout(() => {
-      // Find the option by title attribute or custom selector
-      const optionSelector = config.optionSelector || `a[title="${config.optionValue}"]`;
-      const option = document.querySelector(optionSelector) as HTMLElement;
-      
-      if (option) {
-        option.click();
-        
-        // Update input value after selection
-        setTimeout(() => {
-          const updatedInput = document.querySelector(config.inputSelector) as HTMLInputElement;
-          if (updatedInput) {
-            updatedInput.value = config.optionValue;
-            updatedInput.setAttribute('title', config.optionValue);
-            updatedInput.dispatchEvent(new Event('input', { bubbles: true }));
-            updatedInput.dispatchEvent(new Event('change', { bubbles: true }));
-            updatedInput.blur();
-          }
-          resolve(true);
-        }, 200);
-      } else {
-        resolve(false);
+    await new Promise(r => setTimeout(r, timeout));
+
+    // Type first 4 chars to trigger filtering
+    const partialText = config.optionValue.substring(0, 4);
+    input.focus();
+    input.value = partialText;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+    console.log(`🔍 Typed '${partialText}' into dropdown to filter options for "${config.optionValue}"`);
+
+    // Function to wait for the desired option
+    const waitForOption = async (maxWaitMs = 8000, pollInterval = 300): Promise<HTMLElement | null> => {
+      const start = Date.now();
+      while (Date.now() - start < maxWaitMs) {
+        const items = Array.from(
+          document.querySelectorAll(config.optionSelector || 'li[role="option"], a[role="menuitem"]')
+        ) as HTMLElement[];
+        const match = items.find(
+          el => el.textContent?.trim().toLowerCase() === config.optionValue.toLowerCase()
+        );
+        if (match) return match;
+        await new Promise(r => setTimeout(r, pollInterval));
       }
-    }, timeout);
+      return null;
+    };
+
+    const option = await waitForOption(8000, 300);
+    if (!option) {
+      console.warn(`❌ Could not find dropdown option "${config.optionValue}"`);
+      resolve(false);
+      return;
+    }
+
+    // Click the option
+    option.click();
+    await new Promise(r => setTimeout(r, 300));
+
+    // Update the input value and trigger events
+    input.value = config.optionValue;
+    input.setAttribute('title', config.optionValue);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.blur();
+
+    console.log(`✅ Selected: ${config.optionValue}`);
+    resolve(true);
   });
 }
 
+
 /**
  * Select country dropdown specifically for SuccessFactors
+ * Supports optional scoping (root element)
  * @param countryValue - The country name to select
+ * @param root - Optional root element to scope query (default is document)
  */
-export function selectCountryDropdown(countryValue: string): Promise<boolean> {
+export function selectCountryDropdown(
+  countryValue: string,
+  root: Document | HTMLElement = document
+): Promise<boolean> {
   return new Promise(async (resolve) => {
-    const input = document.querySelector('input[aria-label="More options for Country"]') as HTMLInputElement;
-    const button = document.querySelector('button[aria-label="More options for Country"]') as HTMLButtonElement;
-    
+    const input = root.querySelector('input[aria-label="More options for Country"]') as HTMLInputElement;
+    const button = root.querySelector('button[aria-label="More options for Country"]') as HTMLButtonElement;
+
     if (!input || !button) {
+      console.warn('Country dropdown input/button not found in given root.');
       resolve(false);
       return;
     }
@@ -71,22 +101,23 @@ export function selectCountryDropdown(countryValue: string): Promise<boolean> {
     input.value = '';
     input.setAttribute('title', '');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    
+
     // Click button to open dropdown
     button.click();
-    
-    // Try multiple times with increasing delays for async loading
+
     let attempts = 0;
     const maxAttempts = 3;
-    
+
     const trySelect = () => {
       attempts++;
-      const option = document.querySelector(`a[title="${countryValue}"]`) as HTMLElement;
-      
+      const option = root.querySelector(`a[title="${countryValue}"]`) as HTMLElement;
+
       if (option) {
         option.click();
         setTimeout(() => {
-          const updatedInput = document.querySelector('input[aria-label="More options for Country"]') as HTMLInputElement;
+          const updatedInput = root.querySelector(
+            'input[aria-label="More options for Country"]'
+          ) as HTMLInputElement;
           if (updatedInput) {
             updatedInput.value = countryValue;
             updatedInput.setAttribute('title', countryValue);
@@ -99,14 +130,15 @@ export function selectCountryDropdown(countryValue: string): Promise<boolean> {
       } else if (attempts < maxAttempts) {
         setTimeout(trySelect, attempts * 500); // Increasing delay
       } else {
+        console.warn(`Failed to select country: ${countryValue}`);
         resolve(false);
       }
     };
-    
-    // Start first attempt after initial delay
+
     setTimeout(trySelect, 1000);
   });
 }
+
 
 /**
  * Select recruiter contact dropdown for SuccessFactors
@@ -360,5 +392,50 @@ export function selectStudySchoolDropdown(schoolValue: string): Promise<boolean>
         setTimeout(trySelect, 500);
       }, 1000); // Wait for filtering to complete
     }, 800); // Wait for dropdown to open
+  });
+}
+
+/**
+ * Select travel percentage dropdown for SuccessFactors
+ * @param percentage - The percentage value to select (e.g., "0 - 70%")
+ */
+export function selectTravelPercentageDropdown(percentage: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const inputSelector = 'input[aria-label="More options for What percentage are you willing to travel?"]';
+    const buttonSelector = 'button[aria-label="More options for What percentage are you willing to travel?"]';
+
+    const input = document.querySelector(inputSelector) as HTMLInputElement;
+    const button = document.querySelector(buttonSelector) as HTMLButtonElement;
+
+    if (!input || !button) {
+      console.warn('Dropdown input or button not found');
+      resolve(false);
+      return;
+    }
+
+    // Open dropdown
+    button.click();
+
+    // Wait for the options to appear
+    setTimeout(() => {
+      const option = document.querySelector(`a[title="${percentage}"]`) as HTMLElement;
+      
+      if (option) {
+        option.click();
+
+        // Update input value and fire events
+        setTimeout(() => {
+          input.value = percentage;
+          input.setAttribute('title', percentage);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          input.blur();
+          resolve(true);
+        }, 200);
+      } else {
+        console.warn(`Option "${percentage}" not found`);
+        resolve(false);
+      }
+    }, 1000); // wait for list to populate
   });
 }

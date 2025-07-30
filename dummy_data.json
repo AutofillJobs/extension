@@ -23,7 +23,7 @@
   "gender": "Male",
   "country": "United States",
   "recruiterContact": "Yes",
-  "educationLevel": "Masters",
+  "educationLevel": "Bachelors",
   "completionLevel": "Graduated",
   "studyRegion": "Americas",
   "studyCountry": "USA",
@@ -50,6 +50,7 @@
   "veteran": "No",
   "ethnicity": "White",
   "age": "35",
+  "travelPercentage": "0 - 70%",
   "workExperiences": [
     {
       "jobTitle": "Software Engineer",
@@ -89,8 +90,11 @@
   "educationExperiences": [
     {
       "courseName": "Computer Science",
+      "fieldOfStudy": "Computer Science",
       "field": "Engineering",
       "collegeName": "MIT",
+      "country": "United States", 
+      "degree": "Bachelor Degree", 
       "startDate": "2010-09-01",
       "endDate": "2014-06-30",
       "skills": ["Java", "Algorithms", "Data Structures"],
@@ -100,5 +104,12 @@
       "location": "Cambridge, MA",
       "educationType": "Higher Education"
     }
+   ],
+  "skills": [
+    "Python",
+    "Java",
+    "Machine Learning",
+    "React"
   ]
+  
 }
