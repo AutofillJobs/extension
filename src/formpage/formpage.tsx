@@ -558,7 +558,6 @@ const FormPage = () => {
                       fileName="Resume" 
                       fileUrl={resumeUrl} 
                       type="resume" 
-                      email=""
                     />
                   )}
                   <label htmlFor="resumeInput" className="file-input-label">
@@ -580,7 +579,6 @@ const FormPage = () => {
                       fileName="Cover Letter" 
                       fileUrl={cvUrl} 
                       type="cv" 
-                      email=""
                     />
                   )}
                   <label htmlFor="cvInput" className="file-input-label">
