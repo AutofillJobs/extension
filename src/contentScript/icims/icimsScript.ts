@@ -4,8 +4,6 @@ import { FormData } from "../utils/types";
 export function autofillICIMS(userData: FormData, iframeDoc?: Document | null): void {
     const inputs = iframeDoc.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select');
     inputs.forEach((input) => {
-        console.log("INCOUT", input);
-        
         const fieldName = (input.name || input.id || "").toLowerCase();
         console.log(fieldName);
         
@@ -49,7 +47,7 @@ export function autofillICIMS(userData: FormData, iframeDoc?: Document | null): 
             const options = Array.from(input.querySelectorAll("option"));
             console.log(options);
             if (options.length > 1) {
-                const match = options.find(opt => opt.text.trim().toLowerCase() === userData.data.details.country.toLowerCase());
+                const match = options.find(opt => opt.text.trim().toLowerCase() === "unitedstates");
                 if (match) {
                     input.value = match.value;
                     // Dispatch events so iCIMS detects change
@@ -81,6 +79,17 @@ const observer = new MutationObserver((mutations) => {
                     iframe.addEventListener('load', () => {
                         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
                         if (!iframeDoc) return;
+                        const iframeObserver = new MutationObserver((ifrmamutes) => {
+                            ifrmamutes.forEach((iframemut) => {
+                                iframemut.addedNodes.forEach((iframeNode) => {
+                                    if(iframeNode.nodeType === Node.ELEMENT_NODE){
+                                        // console.log("SDSDS", iframeNode); 
+                                        
+                                    } 
+                                })
+                            })
+                            
+                        })
                         setTimeout(() => {
                             getUserData((userData) => {
                                 if(userData){
@@ -88,6 +97,10 @@ const observer = new MutationObserver((mutations) => {
                                 }
                             })
                         }, 500);
+                        const iframeBody = iframeDoc.body;
+                        if (iframeBody) {
+                            iframeObserver.observe(iframeBody, { childList: true, subtree: true });
+                        }
                     });
                 }
             }
