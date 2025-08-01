@@ -9,7 +9,7 @@ import {
 } from "react-phone-number-input";
 import PdfBar from "./PdfBar";
 import { downloadJSON, uploadJSON } from "./JsonImportExport";
-import { saveUserData, saveFileData, getUserData } from '../utils/storageHandler';
+import { saveUserData, saveFileData, getUserData, getFileData } from '../utils/storageHandler';
 
 const INITIAL_FORM_DATA = {
   fullName: "",
@@ -136,8 +136,7 @@ const FormPage = () => {
       const storageData = {
         [`${location}Url`]: fileUrl,
         [`${location}Name`]: fileName,
-        [`${location}Base64`]: base64String,
-        [location]: fileContent
+        [`${location}Base64`]: base64String
       };
 
       if (location === 'resume') {
@@ -172,18 +171,20 @@ const FormPage = () => {
         if (userData?.data?.details) {
           setFormData(userData.data.details);
         }
-
-        if (userData?.resumeUrl && userData?.resumeName) {
-          setResumeUrl(userData.resumeUrl);
-          setResumeName(userData.resumeName);
-        }
-
-        if (userData?.cvUrl && userData?.cvName) {
-          setCvUrl(userData.cvUrl);
-          setCvName(userData.cvName);
-        }
-
         setLoading(false);
+      });
+
+      // Load file data separately
+      getFileData((fileData) => {
+        if (fileData?.resumeUrl && fileData?.resumeName) {
+          setResumeUrl(fileData.resumeUrl);
+          setResumeName(fileData.resumeName);
+        }
+
+        if (fileData?.cvUrl && fileData?.cvName) {
+          setCvUrl(fileData.cvUrl);
+          setCvName(fileData.cvName);
+        }
       });
     };
 
@@ -557,7 +558,6 @@ const FormPage = () => {
                       fileName="Resume" 
                       fileUrl={resumeUrl} 
                       type="resume" 
-                      email=""
                     />
                   )}
                   <label htmlFor="resumeInput" className="file-input-label">
@@ -579,7 +579,6 @@ const FormPage = () => {
                       fileName="Cover Letter" 
                       fileUrl={cvUrl} 
                       type="cv" 
-                      email=""
                     />
                   )}
                   <label htmlFor="cvInput" className="file-input-label">

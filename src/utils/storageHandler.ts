@@ -105,3 +105,14 @@ export function saveFileData(fileData: { [key: string]: any }, callback?: (succe
     }
   });
 }
+
+export function getFileData(callback: (fileData: any) => void) {
+  chrome.storage.local.get(['resumeUrl', 'resumeName', 'resumeBase64', 'cvUrl', 'cvName', 'cvBase64'], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error getting file data:', chrome.runtime.lastError);
+      callback(null);
+      return;
+    }
+    callback(result);
+  });
+}
