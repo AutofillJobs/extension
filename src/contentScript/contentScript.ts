@@ -1,15 +1,12 @@
 import { initializeStorage, getToggleState, getAutoClickSaveState, getUserData } from '../utils/storageHandler';
 import { setupMessageListeners } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
+import createWorkdayFormFiller from './workDay/workdayScript';
 import { FormData } from './utils/types';
-
-// Existing Workday form filler
 import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
-import { autofillICIMS } from './icims/icimsScript'; // <-- from develop branch
-
-// NEW: Import Taleo form filler
-import fillTaleoForm from './oracleTaleo/taleoBaseScript';
+import { autofillICIMS } from './icims/icimsScript';
+import fillTaleoForm from './oracleTaleo/taleoBaseScript'; // <-- Add this line
 
 // Initialize when page is fully loaded
 async function initialize() {
@@ -17,48 +14,54 @@ async function initialize() {
   await initializeStorage();
   setupMessageListeners();
 
-  // Detect platform
   const isWorkdaySite = window.location.hostname.includes('workday');
-  const isTaleoSite = window.location.hostname.includes('taleo');
-
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
-  const icimsSite = window.location.hostname.includes('icims'); // <-- from develop branch
+  const icimsSite = window.location.hostname.includes('icims');
+  const isTaleoSite = window.location.hostname.includes('taleo'); // <-- Add this line
 
   getToggleState((toggleState) => {
-    if (toggleState) {
-      if (isWorkdaySite) {
-        console.log("Filling Workday form...");
-        getUserData((userData) => {
-          if (userData) {
-            fillWorkdayForm(userData);
-          } else {
-            console.warn('[ContentScript] No formData found in storage for Workday site.');
-          }
-        });
-      } 
-      else if (isTaleoSite) {
-        console.log("Filling Taleo form...");
-        getUserData((userData) => {
-          if (userData) {
-            fillTaleoForm();
-
-          } else {
-            console.warn('[ContentScript] No formData found in storage for Taleo site.');
-          }
-        });
-      }
-      else {
-        // For other sites fallback to generic form filler
-        initializeFormFiller();
-      }
+    if (isWorkdaySite && toggleState) {
+      console.log("Filling Workday form");
+      getUserData((userData) => {
+        if (userData) {
+          fillWorkdayForm(userData);
+        } else {
+          console.warn('[ContentScript] No formData found in storage for Workday site.');
+        }
+      });
+    } else if (isGreenhouseSite && toggleState) {
+      console.log("Filling Greenhouse form");
+      getUserData((userData) => {
+        if (userData) {
+          fillGreenhouseFields(userData);
+        } else {
+          console.warn('[ContentScript] No formData found in storage for Greenhouse site.');
+        }
+      });
+    } else if (icimsSite && toggleState) {
+      console.log("Filling ICIMS form");
+      getUserData((userData) => {
+        if (userData) {
+          autofillICIMS(null, userData);
+        } else {
+          console.warn('[ContentScript] No formData found in storage for ICIMS site.');
+        }
+      });
+    } else if (isTaleoSite && toggleState) { // <-- Add this block
+      console.log("Filling Taleo form");
+      getUserData((userData) => {
+        if (userData) {
+          fillTaleoForm();
+        } else {
+          console.warn('[ContentScript] No formData found in storage for Taleo site.');
+        }
+      });
     } else {
-      // If toggle is off, use generic filler
       initializeFormFiller();
     }
   });
 
-
-  // Request login email from background script (if needed)
+  // Request login email
   chrome.runtime.sendMessage({ message: "getLoginEmail" }, () => {});
 }
 

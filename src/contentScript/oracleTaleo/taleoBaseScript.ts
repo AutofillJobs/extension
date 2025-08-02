@@ -2,6 +2,7 @@ import { getUserData } from "../../utils/storageHandler";
 import fillPersonalInfo from "./personalInfo";
 import { fillExperienceAndEducation } from "./educationAndExperience/ExperienceHandler";
 import { fillEducation } from "./educationAndExperience/educationHandler";
+import { promptUserToUploadResume } from "./fileHandler"; // <-- Import your function
 
 function getCurrentStep(): string | null {
   const focused = document.querySelector(
@@ -15,6 +16,13 @@ function handlePageChange(userData: any) {
   const currentStep = getCurrentStep();
   if (!currentStep) return;
 
+  // Attachments step (prompt user to upload resume)
+  if (currentStep === "Attachments") {
+    promptUserToUploadResume();
+    return;
+  }
+
+  // Resume/CV Upload step (skip logic)
   if (currentStep === "Resume/CV Upload") {
     const skipResumeRadio = document.querySelector<HTMLInputElement>(
       "input[id$='ResumeParsingBlock-UploadResumeBlock-resumeSkipRadio_1']"
@@ -36,7 +44,6 @@ function handlePageChange(userData: any) {
   }
 
   if (currentStep === "Experience and Education") {
-    // Fill both work experience and education simultaneously
     fillExperienceAndEducation(userData?.data?.workExperiences || []);
     fillEducation(userData?.data?.educationExperiences || []);
     return;
