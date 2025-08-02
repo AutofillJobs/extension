@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "ApplyGOAT",
+  "name": "auto fill - applyGOAT",
   "description": "Automatically fill job application forms using AI",
   "version": "2.0.5",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Autofilljobs",
+    "default_title": "applyGOAT",
     "default_icon": "icon.png"
   },
   "permissions": [
