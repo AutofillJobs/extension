@@ -5,6 +5,8 @@ import { FormData } from './utils/types';
 
 // Existing Workday form filler
 import fillWorkdayForm from './workDay/workdaynewScript';
+import fillGreenhouseFields from './greenhouse/greenhouseScript';
+import { autofillICIMS } from './icims/icimsScript'; // <-- from develop branch
 
 // NEW: Import Taleo form filler
 import fillTaleoForm from './oracleTaleo/taleoBaseScript';
@@ -18,6 +20,9 @@ async function initialize() {
   // Detect platform
   const isWorkdaySite = window.location.hostname.includes('workday');
   const isTaleoSite = window.location.hostname.includes('taleo');
+
+  const isGreenhouseSite = window.location.hostname.includes("greenhouse");
+  const icimsSite = window.location.hostname.includes('icims'); // <-- from develop branch
 
   getToggleState((toggleState) => {
     if (toggleState) {
@@ -51,6 +56,7 @@ async function initialize() {
       initializeFormFiller();
     }
   });
+
 
   // Request login email from background script (if needed)
   chrome.runtime.sendMessage({ message: "getLoginEmail" }, () => {});
