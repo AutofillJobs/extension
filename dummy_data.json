@@ -7,7 +7,7 @@
   "familyName": "Doe Family",
   "phoneNumber": "+14155552671",
   "phoneAlternativeNumber": "+441632960961",
-  "email": "john.doe@example.com",
+  "email": "000akhil111@gmail.com",
   "emailAlternative": "johndoe.alt@example.com",
   "phoneCode": "+1",
   "DoB": "1990-01-01",
@@ -47,7 +47,7 @@
   "workExperiences": [
     {
       "jobTitle": "Software Engineer",
-      "companyName": "TechCorp Inc.",
+      "companyName": "Tata Consultancy Services",
       "startDate": "2018-06-01",
       "endDate": "2021-08-31",
       "skills": ["React", "Node.js", "SQL"],
@@ -58,7 +58,7 @@
     },
     {
       "jobTitle": "Senior Backend Developer",
-      "companyName": "Innovatech Solutions",
+      "companyName": "Deloitte Consulting LLP",
       "startDate": "2021-09-01",
       "endDate": "2024-07-01",
       "skills": ["Python", "Django", "PostgreSQL", "Docker", "AWS"],
@@ -84,7 +84,8 @@
     {
       "courseName": "Computer Science",
       "field": "Engineering",
-      "collegeName": "MIT",
+      "highestEducation": "G-Bachelor's Level Degree",
+      "collegeName": "Massachusetts Institute of Technology (MIT)",
       "startDate": "2010-09-01",
       "endDate": "2014-06-30",
       "skills": ["Java", "Algorithms", "Data Structures"],
