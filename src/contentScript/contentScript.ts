@@ -6,6 +6,7 @@ import { FormData } from './utils/types';
 import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
 import { autofillICIMS } from './icims/icimsScript'; // <-- from develop branch
+import fillZohoForm from './zoho/zohoScript';
 
 // Initialize when page is fully loaded
 async function initialize() {
@@ -16,7 +17,8 @@ async function initialize() {
   const isWorkdaySite = window.location.hostname.includes('workday');
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
   const icimsSite = window.location.hostname.includes('icims'); // <-- from develop branch
-
+  const isZohoSite = window.location.hostname.includes('zoho');
+  
   getToggleState((toggleState) => {
     if (isWorkdaySite && toggleState) {
       console.log("Filling Workday form");
@@ -45,7 +47,17 @@ async function initialize() {
           console.warn('[ContentScript] No formData found in storage for ICIMS site.');
         }
       });
-    } else {
+    }else if(isZohoSite && toggleState){
+      console.log("Filling ZOHO form");
+      getUserData((userData) => {
+        if (userData) {
+          fillZohoForm(userData);
+        } else {
+          console.warn('[ContentScript] No formData found in storage for ICIMS site.');
+        }
+      });
+    } 
+    else {
       initializeFormFiller();
     }
   });
