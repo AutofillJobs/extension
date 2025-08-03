@@ -10,7 +10,8 @@
   },
   "permissions": [
         "storage",
-        "activeTab"
+        "activeTab",
+        "webRequest"
   ],
   "icons": {
     "16": "icon.png",
@@ -38,7 +39,7 @@
     
     {
       "resources": [
-
+        "title.png",
         "src/assets/settings.png"
       ],
       "matches": [

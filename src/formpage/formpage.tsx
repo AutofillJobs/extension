@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import "react-phone-number-input/style.css";
 import PhoneInput from "react-phone-number-input";
 import "./formpage.css";
-import Experience from './Experience';
+import Experience from './components/Experience';
 import {
   getCountryCallingCode,
   parsePhoneNumber,
 } from "react-phone-number-input";
-import PdfBar from "./PdfBar";
-import { downloadJSON, uploadJSON } from "./JsonImportExport";
+import PdfBar from "./components/PdfBar";
+import { downloadJSON, uploadJSON } from "./components/JsonImportExport";
 import { saveUserData, saveFileData, getUserData, getFileData } from '../utils/storageHandler';
 
 const INITIAL_FORM_DATA = {
@@ -628,18 +628,18 @@ const FormPage = () => {
   }
 
   return (
-    <>
+    <div className="formpage-container">
       <div className='subheading-container'>
-        <h3 className="subheading" onClick={() => goToStep(1)}>
+        <h3 className={`subheading ${currentStep === 1 ? 'active' : ''}`} onClick={() => goToStep(1)}>
           Personal Information
         </h3>
-        <h3 className="subheading" onClick={() => goToStep(2)}>
+        <h3 className={`subheading ${currentStep === 2 ? 'active' : ''}`} onClick={() => goToStep(2)}>
           Address Information
         </h3>
-        <h3 className="subheading" onClick={() => goToStep(3)}>
+        <h3 className={`subheading ${currentStep === 3 ? 'active' : ''}`} onClick={() => goToStep(3)}>
           Credentials
         </h3>
-        <h3 className="subheading" onClick={() => goToStep(4)}>
+        <h3 className={`subheading ${currentStep === 4 ? 'active' : ''}`} onClick={() => goToStep(4)}>
           Experience
         </h3>
       </div>
@@ -669,7 +669,7 @@ const FormPage = () => {
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

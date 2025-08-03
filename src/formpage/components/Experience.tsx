@@ -6,7 +6,7 @@ import ProjectExperienceDisplay from "./ProjectExperienceDisplay";
 import WorkExperienceDisplay from "./WorkExperienceDisplay";
 import EducationExperienceDisplay from "./EducationExperienceDisplay";
 import './Experience.css'
-import { getUserData } from '../utils/storageHandler';
+import { getUserData } from '../../utils/storageHandler';
 
 export default function Experience() {
   const [isOpen, setIsOpen] = useState(false);

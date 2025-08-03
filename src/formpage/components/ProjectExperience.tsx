@@ -1,31 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { getUserData, saveUserData } from '../utils/storageHandler';
+import { getUserData, saveUserData } from '../../utils/storageHandler';
 
-const WorkExperiencePopup = ({ onClose, mode ,onSave}) => {
+const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
   // const [showSkillInput, setShowSkillInput] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
-  const [workData, setWorkData] = useState({
-    jobTitle: '',
-    startDate: '',
-    endDate: '',
+  const [projectData, setProjectData] = useState({
+    projectName: "",
+    startDate: "",
+    endDate: "",
     stillWorking: false,
-    description: '',
-    companyName: '',
-    location: '',
-    workType: '',
+    description: "",
+    gitUrl: "",
+    hostUrl: "",
   });
-  const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(workData.stillWorking);
+  const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(projectData.stillWorking);
 
+  useEffect(() => {
+    getUserData((userData) => {
+      if (userData && userData.projectExperiences) {
+        // If you want to edit an existing experience, you would need to pass an ID prop
+        // and then find the specific experience here
+      }
+    });
+  }, []);
 
   const handleCurrentlyWorkingChange = (e) => {
     setIsCurrentlyWorking(e.target.checked);
-    setWorkData({ ...workData, stillWorking: e.target.checked });
+    setProjectData({ ...projectData, stillWorking: e.target.checked });
   };
 
   // const handleAddSkillClick = () => {
   //   setShowSkillInput(true);
   // };
+
   const handleChangeSkill = (e) => {
     e.preventDefault();
     setNewSkill(e.target.value);
@@ -43,68 +51,61 @@ const WorkExperiencePopup = ({ onClose, mode ,onSave}) => {
   };
 
   const handleRemoveSkill = (index) => {
-    // Remove the selected skill from the skills array
     const updatedSkills = skills.filter((_, i) => i !== index);
     setSkills(updatedSkills);
   };
-const handleSave = (event) => {
+
+  const handleSave = (event) => {
     event.preventDefault();
-    const updatedWorkData = {
-        ...workData,
-        skills: skills,
-        id: Date.now(), 
+    const updatedProjectData = {
+      ...projectData,
+      skills: skills,
+      id: Date.now(), 
     };
 
     getUserData((userData) => {
-        const existingData = userData?.data || {};
-        const existingDetails = existingData.details || {};
-        const existingWorkExperiences = existingDetails.workExperiences || [];
+      const existingFormData = userData?.data || {};
+      const existingProjectExperiences = existingFormData.projectExperiences || [];
+      
+      const updatedFormData = {
+        data:{
+        ...existingFormData,
+        projectExperiences: [...existingProjectExperiences, updatedProjectData],
+        }
+      };
 
-        const updatedDetails = {
-            ...existingDetails,
-            workExperiences: [...existingWorkExperiences, updatedWorkData],
-        };
-
-        const updatedData = {
-            data: {
-                ...existingData,
-                details: updatedDetails,
-            },
-            error: "no error"
-        };
-
-        saveUserData(updatedData, (success, error) => {
-            if (success) {
-                console.log("Updated data saved:", updatedData);
-                onSave();
-                onClose();
-            } else {
-                console.error('Error saving work experience:', error);
-            }
-        });
+      saveUserData(updatedFormData, (success, error) => {
+        if (success) {
+          console.log('Project experience data saved');
+          onSave();
+          onClose();
+        } else {
+          console.error('Error saving project experience:', error);
+        }
+      });
     });
-};
-
+  };
 
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
       <div className="bg-white w-full md:w-96 p-6 rounded-lg shadow-xl">
         <div className="flex justify-between item-center">
-          <h2 className="text-2xl font-semibold mb-4">Work Experience</h2>
+          <h2 className="text-2xl font-semibold mb-4">Project Experience</h2>
           <button className="text-gray-600 mb-4 text-2xl" onClick={onClose}>
             X
           </button>
         </div>
 
-        <input 
-          type="text" 
-          placeholder="Job Title" 
-          className="w-full mb-4 p-2 border" 
-          value={workData.jobTitle}
+        <input
+          type="text"
+          placeholder="Project Name"
+          className="w-full mb-4 p-2 border"
+          value={projectData.projectName}
           disabled={!mode}
-          onChange={(e) => setWorkData({ ...workData, jobTitle: e.target.value })}
+          onChange={(e) =>
+            setProjectData({ ...projectData, projectName: e.target.value })
+          }
         />
-
         <label className="flex items-center mb-4">
           <input
             type="checkbox"
@@ -115,40 +116,37 @@ const handleSave = (event) => {
           />
           Currently Working
         </label>
-
         <input
           type="date"
           placeholder="Start Date"
           disabled={!mode}
-          value={workData.startDate}
-          className="w-full mb-4 p-2 border"
-          onChange={(e) => setWorkData({ ...workData, startDate: e.target.value })}
+          value={projectData.startDate}
+          className={`w-full mb-4 p-2 border`}
+          onChange={(e) =>
+            setProjectData({
+              ...projectData,
+              startDate: e.target.value,
+            })
+          }
         />
-
         <input
           type="date"
           placeholder="End Date"
-          className={`w-full mb-4 p-2 border ${isCurrentlyWorking ? 'bg-gray-200' : ''}`}
+          className={`w-full mb-4 p-2 border ${
+            isCurrentlyWorking ? "bg-gray-200" : ""
+          }`}
           disabled={isCurrentlyWorking || !mode}
-          value={workData.endDate}
-          onChange={(e) => setWorkData({ ...workData, endDate: e.target.value })}
-        />
-
-        <input 
-          type="text"
-          placeholder="Company Name"
-          className="w-full mb-4 p-2 border"
-          disabled={!mode}
-          value={workData.companyName}
-          onChange={(e) => setWorkData({ ...workData, companyName: e.target.value })}
+          value={projectData.endDate}
+          onChange={(e) =>
+            setProjectData({ ...projectData, endDate: e.target.value })
+          }
         />
 
 <h3 className="text-gray-600 text-sm font-semibold mb-2">
   Skills
 </h3>
-
         <div className="w-full mb-4 flex flex-wrap">
-          {skills?.map((skill, index) => (
+          {skills.map((skill, index) => (
             <div
               key={index}
               className="bg-gray-300 text-sm rounded-full px-3 py-1 mr-2 mb-2 flex items-center"
@@ -163,8 +161,7 @@ const handleSave = (event) => {
             </div>
           ))}
         </div>
-
-       
+   
           <div className="mb-4 flex flex-wrap">
             <input
               type="text"
@@ -179,37 +176,37 @@ const handleSave = (event) => {
               Add
             </button>
           </div>
-        
-
-        <textarea 
-          placeholder="Description" 
-          className="w-full mb-4 p-2 border" 
-          rows={3} 
+      
+        <textarea
+          placeholder="Description"
+          className="w-full mb-4 p-2 border"
+          rows={3}
           disabled={!mode}
-          value={workData.description} 
-          onChange={(e) => setWorkData({ ...workData, description: e.target.value })}
+          value={projectData.description}
+          onChange={(e) =>
+            setProjectData({ ...projectData, description: e.target.value })
+          }
         />
-
-        <input 
-          type="text" 
-          placeholder="Location" 
+        <input
+          type="text"
+          placeholder="Host Url"
           className="w-full mb-4 p-2 border"
           disabled={!mode}
-          value={workData.location}
-          onChange={(e) => setWorkData({ ...workData, location: e.target.value })}
+          value={projectData.hostUrl}
+          onChange={(e) =>
+            setProjectData({ ...projectData, hostUrl: e.target.value })
+          }
         />
-
-        <select 
-          className="mb-4 py-2 px-4 border" 
-          value={workData.workType} 
-          onChange={(e) => setWorkData({ ...workData, workType: e.target.value })}
-        >
-          <option value="">Work type</option>
-          <option value="Onsite">Onsite</option>
-          <option value="Hybrid">Hybrid</option>
-          <option value="Full remote">Full remote</option>
-        </select>
-
+        <input
+          type="text"
+          placeholder="Git repository Url"
+          className="w-full mb-4 p-2 border"
+          disabled={!mode}
+          value={projectData.gitUrl}
+          onChange={(e) =>
+            setProjectData({ ...projectData, gitUrl: e.target.value })
+          }
+        />
         <div className="flex justify-between">
           <button
             onClick={handleSave}
@@ -229,4 +226,4 @@ const handleSave = (event) => {
   );
 };
 
-export default WorkExperiencePopup;
+export default ProjectExperiencePopup;
