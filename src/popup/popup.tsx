@@ -33,7 +33,10 @@ const Popup = () => {
   };
 
   return (
-    <div className="bg-black w-full p-8 text-white relative">
+    <div className="flex flex-col h-full w-full p-4 antialiased text-slate-100 font-sans" 
+         style={{
+           background: 'linear-gradient(to right, #9333ea, #14b8a6)',
+         }}>
       <div className="header-container mb-8">
         <a href="https://autofilljobs.com" target="_blank" className="text-3xl font-bold text-[#00df9a] cursor-pointer">
           AutofillJobs
