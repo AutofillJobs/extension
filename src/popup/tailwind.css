@@ -4,9 +4,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap');
 /* Popup specific styles */
+/* height: 300px;  */
 @layer base {
   body {
-    height: 300px;
+    height: 263px;
     width: 400px;
     @apply font-sans text-black;
   }
