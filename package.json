@@ -1,12 +1,14 @@
 {
-  "name": "reactjs-chrome",
+  "name": "autofilljobs-browser-extension",
   "author": "Himanshu Batra",
   "version": "1.0.1",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "watch": "webpack --watch --progress --config webpack.dev.js",
-    "build": "webpack --watch --progress --config webpack.prod.js"
+    "build": "webpack --watch --progress --config webpack.prod.js",
+    "build:chrome": "webpack --config webpack.prod.js",
+    "build:edge": "webpack --config webpack.prod.js"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.188",
