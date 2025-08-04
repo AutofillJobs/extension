@@ -40,7 +40,6 @@
     
     {
       "resources": [
-        "title.png",
         "src/assets/settings.png"
       ],
       "matches": [

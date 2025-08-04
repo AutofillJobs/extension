@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import FormPage from './formpage';
+import React, { useState, Suspense } from 'react';
 import AnalyticsPage from './AnalyticsPage';
 import SettingsPage from './SettingsPage';
 import FeedbackPage from './FeedbackPage';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+
+// Lazy load the FormPage component
+const FormPage = React.lazy(() => import('./formpage'));
 
 const ComingSoon = () => {
   return (
@@ -46,7 +48,15 @@ const Dashboard = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'profile':
-        return <FormPage />;
+        return (
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading Form...</div>
+            </div>
+          }>
+            <FormPage />
+          </Suspense>
+        );
       case 'analytics':
         return <ComingSoon />;
       case 'settings':
@@ -54,7 +64,15 @@ const Dashboard = () => {
       case 'feedback':
         return <FeedbackPage />;
       default:
-        return <FormPage />;
+        return (
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading Form...</div>
+            </div>
+          }>
+            <FormPage />
+          </Suspense>
+        );
     }
   };
 

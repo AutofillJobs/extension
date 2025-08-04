@@ -4,6 +4,7 @@ const HtmlPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const tailwindcss = require("tailwindcss");
 const autoprefixer = require("autoprefixer");
+const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
   entry: {
@@ -16,9 +17,17 @@ module.exports = {
   module: {
     rules: [
       {
-        use: "ts-loader",
         test: /\.tsx?$/,
         exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              module: "esnext",
+            },
+          },
+        },
       },
       {
         test: /\.css$/i,
@@ -63,15 +72,58 @@ module.exports = {
   ],
   resolve: {
     extensions: [".tsx", ".js", ".ts"],
+    alias: {
+      'react': path.resolve('./node_modules/react'),
+      'react-dom': path.resolve('./node_modules/react-dom'),
+    },
   },
   output: {
     filename: "[name].js",
     path: path.join(__dirname, "dist"),
+    chunkFilename: "[name].[chunkhash].js",
   },
   optimization: {
     splitChunks: {
       chunks: "all",
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 10,
+        },
+        common: {
+          name: 'common',
+          minChunks: 2,
+          chunks: 'all',
+          priority: 5,
+        },
+        formpage: {
+          test: /[\\/]src[\\/]formpage[\\/]/,
+          name: 'formpage-chunks',
+          chunks: 'all',
+          priority: 20,
+        },
+      },
     },
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+          },
+          mangle: true,
+        },
+        extractComments: false,
+      }),
+    ],
+  },
+  performance: {
+    hints: 'warning',
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000,
   },
 };
 
