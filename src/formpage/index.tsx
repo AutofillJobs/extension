@@ -1,16 +1,21 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import FormPage from "./formpage";
-import './index.css'
+import Dashboard from "./Dashboard";
+import './tailwind.css';
+import './index.css';
+
 function init() {
-    const appContainer = document.createElement('div')
-    document.body.appendChild(appContainer)
+
+    const appContainer = document.createElement('div');
+    appContainer.className = 'app-container';
+    document.body.appendChild(appContainer);
+
     if (!appContainer) {
-        throw new Error("Can not find AppContainer");
+        throw new Error("Cannot find AppContainer");
     }
-    const root = createRoot(appContainer)
-    console.log(appContainer)
-    root.render(<FormPage />);
+
+    const root = createRoot(appContainer);
+    root.render(<Dashboard />);
 }
 
 init();

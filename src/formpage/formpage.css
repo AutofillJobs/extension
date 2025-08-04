@@ -53,6 +53,8 @@ body {
   padding: 2rem;
   position: relative;
   animation: slideIn 0.5s ease-in-out;
+  margin-left: 80px;
+  margin-right: 80px;
 }
 
 @keyframes slideIn {

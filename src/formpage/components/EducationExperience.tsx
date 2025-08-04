@@ -1,33 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { getUserData, saveUserData } from '../utils/storageHandler';
+import { getUserData, saveUserData } from '../../utils/storageHandler';
 
-const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
+const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
   // const [showSkillInput, setShowSkillInput] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
-  const [projectData, setProjectData] = useState({
-    projectName: "",
+  const [educationData, setEducationData] = useState({
+    courseName: "",
+    field: "",
     startDate: "",
+    collegeName: "",
     endDate: "",
-    stillWorking: false,
+    stillStudying: false,
     description: "",
-    gitUrl: "",
-    hostUrl: "",
+    grade: "",
+    location: "",
+    educationType: "",
   });
-  const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(projectData.stillWorking);
+  const [isCurrentlyStudying, setIsCurrentlyStudying] = useState(educationData.stillStudying);
 
   useEffect(() => {
     getUserData((userData) => {
-      if (userData && userData.projectExperiences) {
+      if (userData && userData.educationExperiences) {
         // If you want to edit an existing experience, you would need to pass an ID prop
         // and then find the specific experience here
       }
     });
   }, []);
 
-  const handleCurrentlyWorkingChange = (e) => {
-    setIsCurrentlyWorking(e.target.checked);
-    setProjectData({ ...projectData, stillWorking: e.target.checked });
+  const handleCurrentlyStudyingChange = (e) => {
+    setIsCurrentlyStudying(e.target.checked);
+    setEducationData({ ...educationData, stillStudying: e.target.checked });
   };
 
   // const handleAddSkillClick = () => {
@@ -57,30 +60,30 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
 
   const handleSave = (event) => {
     event.preventDefault();
-    const updatedProjectData = {
-      ...projectData,
+    const updatedEducationData = {
+      ...educationData,
       skills: skills,
-      id: Date.now(), 
+      id: Date.now(), // Generate a unique ID
     };
 
     getUserData((userData) => {
       const existingFormData = userData?.data || {};
-      const existingProjectExperiences = existingFormData.projectExperiences || [];
+      const existingEducationExperiences = existingFormData.educationExperiences || [];
       
       const updatedFormData = {
         data:{
         ...existingFormData,
-        projectExperiences: [...existingProjectExperiences, updatedProjectData],
+        educationExperiences: [...existingEducationExperiences, updatedEducationData],
         }
       };
 
       saveUserData(updatedFormData, (success, error) => {
         if (success) {
-          console.log('Project experience data saved');
-          onSave();
+          console.log('Education experience data saved');
           onClose();
+          onSave();
         } else {
-          console.error('Error saving project experience:', error);
+          console.error('Error saving education experience:', error);
         }
       });
     });
@@ -90,7 +93,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
       <div className="bg-white w-full md:w-96 p-6 rounded-lg shadow-xl">
         <div className="flex justify-between item-center">
-          <h2 className="text-2xl font-semibold mb-4">Project Experience</h2>
+          <h2 className="text-2xl font-semibold mb-4">Education Experience</h2>
           <button className="text-gray-600 mb-4 text-2xl" onClick={onClose}>
             X
           </button>
@@ -98,12 +101,22 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
 
         <input
           type="text"
-          placeholder="Project Name"
+          placeholder="Course Name"
           className="w-full mb-4 p-2 border"
-          value={projectData.projectName}
+          value={educationData.courseName}
           disabled={!mode}
           onChange={(e) =>
-            setProjectData({ ...projectData, projectName: e.target.value })
+            setEducationData({ ...educationData, courseName: e.target.value })
+          }
+        />
+        <input
+          type="text"
+          placeholder="Field"
+          className="w-full mb-4 p-2 border"
+          value={educationData.field}
+          disabled={!mode}
+          onChange={(e) =>
+            setEducationData({ ...educationData, field: e.target.value })
           }
         />
         <label className="flex items-center mb-4">
@@ -111,20 +124,20 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             type="checkbox"
             className="mr-2"
             disabled={!mode}
-            checked={isCurrentlyWorking}
-            onChange={handleCurrentlyWorkingChange}
+            checked={isCurrentlyStudying}
+            onChange={handleCurrentlyStudyingChange}
           />
-          Currently Working
+          Currently Studying
         </label>
         <input
           type="date"
           placeholder="Start Date"
           disabled={!mode}
-          value={projectData.startDate}
+          value={educationData.startDate}
           className={`w-full mb-4 p-2 border`}
           onChange={(e) =>
-            setProjectData({
-              ...projectData,
+            setEducationData({
+              ...educationData,
               startDate: e.target.value,
             })
           }
@@ -133,14 +146,63 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
           type="date"
           placeholder="End Date"
           className={`w-full mb-4 p-2 border ${
-            isCurrentlyWorking ? "bg-gray-200" : ""
+            isCurrentlyStudying ? "bg-gray-200" : ""
           }`}
-          disabled={isCurrentlyWorking || !mode}
-          value={projectData.endDate}
+          disabled={isCurrentlyStudying || !mode}
+          value={educationData.endDate}
           onChange={(e) =>
-            setProjectData({ ...projectData, endDate: e.target.value })
+            setEducationData({ ...educationData, endDate: e.target.value })
           }
         />
+        <input
+          type="text"
+          placeholder="College/University/Platform"
+          className="w-full mb-4 p-2 border"
+          disabled={!mode}
+          value={educationData.collegeName}
+          onChange={(e) =>
+            setEducationData({ ...educationData, collegeName: e.target.value })
+          }
+        />
+        <input
+          type="text"
+          placeholder="Grade"
+          className="w-full mb-4 p-2 border"
+          disabled={!mode}
+          value={educationData.grade}
+          onChange={(e) =>
+            setEducationData({ ...educationData, grade: e.target.value })
+          }
+        />
+
+        <select
+          className="mb-4 py-2 px-4 border"
+          value={educationData.educationType}
+          onChange={(e) => {
+            setEducationData({
+              ...educationData,
+              educationType: e.target.value,
+            });
+          }}
+        >
+          <option value="">Education type</option>
+          <option value="School Education">School Education</option>
+          <option value="Higher Education">Higher Education</option>
+          <option value="Online Education">Online Education</option>
+        </select>
+
+        {educationData.educationType !== "Online Education" && (
+          <input
+            type="text"
+            placeholder="Location"
+            className="w-full mb-4 p-2 border"
+            disabled={!mode}
+            value={educationData.location}
+            onChange={(e) =>
+              setEducationData({ ...educationData, location: e.target.value })
+            }
+          />
+        )}
 
 <h3 className="text-gray-600 text-sm font-semibold mb-2">
   Skills
@@ -161,7 +223,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             </div>
           ))}
         </div>
-   
+      
           <div className="mb-4 flex flex-wrap">
             <input
               type="text"
@@ -176,37 +238,8 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
               Add
             </button>
           </div>
-      
-        <textarea
-          placeholder="Description"
-          className="w-full mb-4 p-2 border"
-          rows={3}
-          disabled={!mode}
-          value={projectData.description}
-          onChange={(e) =>
-            setProjectData({ ...projectData, description: e.target.value })
-          }
-        />
-        <input
-          type="text"
-          placeholder="Host Url"
-          className="w-full mb-4 p-2 border"
-          disabled={!mode}
-          value={projectData.hostUrl}
-          onChange={(e) =>
-            setProjectData({ ...projectData, hostUrl: e.target.value })
-          }
-        />
-        <input
-          type="text"
-          placeholder="Git repository Url"
-          className="w-full mb-4 p-2 border"
-          disabled={!mode}
-          value={projectData.gitUrl}
-          onChange={(e) =>
-            setProjectData({ ...projectData, gitUrl: e.target.value })
-          }
-        />
+        
+
         <div className="flex justify-between">
           <button
             onClick={handleSave}
@@ -226,4 +259,4 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
   );
 };
 
-export default ProjectExperiencePopup;
+export default EducationExperiencePopup;
