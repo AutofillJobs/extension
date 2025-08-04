@@ -122,7 +122,7 @@ const App = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="p-4 rounded-xl border border-white/20 bg-white/5 shadow-inner">
             <div className="flex items-center justify-between mb-2">
               <LayoutGrid className="h-5 w-5 text-indigo-300" />
@@ -139,7 +139,7 @@ const App = () => {
             <div className="text-3xl font-bold tracking-tight text-white mb-0.5">{applicationsTotal}</div>
             <p className="text-xs text-slate-300">Lifetime count</p>
           </div>
-        </div>
+        </div> */}
 
         {/* Actions Section */}
         <div className="space-y-3 mb-6">
@@ -166,7 +166,7 @@ const App = () => {
         </div>
         
         {/* Recent Applications List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-white/20 bg-white/5 p-4" style={{maxHeight: '150px'}}>
+        {/* <div className="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-white/20 bg-white/5 p-4" style={{maxHeight: '150px'}}>
           <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-3">Recent Fills</h2>
           {recentApplications.length > 0 ? (
             <ul className="space-y-2">
@@ -187,7 +187,7 @@ const App = () => {
           ) : (
             <p className="text-center text-sm text-slate-400 py-4">No applications filled yet.</p>
           )}
-        </div>
+        </div> */}
       </div>
       
       {/* Custom scrollbar style */}

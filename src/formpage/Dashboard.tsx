@@ -6,6 +6,19 @@ import FeedbackPage from './FeedbackPage';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+const ComingSoon = () => {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <h2 className="text-3xl font-bold text-gray-800 mb-4">Coming Soon!</h2>
+      <p className="text-gray-600 max-w-md">
+        We're working hard to bring you this feature. Stay tuned for updates!
+      </p>
+    </div>
+  );
+};
+
+
+
 const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState('profile');
   const [user] = useState({
@@ -13,14 +26,31 @@ const Dashboard = () => {
     email: 'john.doe@example.com'
   });
 
+
+
+  // const renderPage = () => {
+  //   switch (currentPage) {
+  //     case 'profile':
+  //       return <FormPage />;
+  //     case 'analytics':
+  //       return <AnalyticsPage />;
+  //     case 'settings':
+  //       return <SettingsPage />;
+  //     case 'feedback':
+  //       return <FeedbackPage />;
+  //     default:
+  //       return <FormPage />;
+  //   }
+  // };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'profile':
         return <FormPage />;
       case 'analytics':
-        return <AnalyticsPage />;
+        return <ComingSoon />;
       case 'settings':
-        return <SettingsPage />;
+        return <ComingSoon />;
       case 'feedback':
         return <FeedbackPage />;
       default:
