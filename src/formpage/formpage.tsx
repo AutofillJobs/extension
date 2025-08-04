@@ -338,7 +338,7 @@ const FormPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="loading-container">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -361,7 +361,7 @@ const FormPage = () => {
         </h3>
       </div>
 
-      <div className="flex gap-4 mb-4">
+      <div className="json-buttons">
         <button className="btn-primary" onClick={handleDownloadJSON}>
           Download JSON
         </button>
@@ -370,7 +370,7 @@ const FormPage = () => {
         </button>
       </div>
 
-      <div className="container mx-auto p-4">
+      <div className="container">
         <form className="space-y-6">
           <FormSteps
             currentStep={currentStep}

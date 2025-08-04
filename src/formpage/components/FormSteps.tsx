@@ -107,7 +107,7 @@ const FormSteps = ({
   // Render form fields
   const renderFormFields = useCallback((fields) => {
     return fields.map((field, index) => (
-      <div key={index}>
+      <div key={index} className="space-y-1">
         <label htmlFor={field.name} className="block font-medium">
           {field.label}
         </label>
@@ -135,7 +135,7 @@ const FormSteps = ({
             value={formData[field.name] || ''}
             onChange={handleChange}
             className="input"
-            placeholder={field.placeholder}
+            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
             disabled={!isEditable}
           />
         )}
@@ -146,15 +146,15 @@ const FormSteps = ({
   // Render step content
   const renderStep = useCallback(() => {
     const stepHeader = (title) => (
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">{title}</h2>
         <div>
           {isEditable ? (
-            <button type="submit" onClick={handleSubmit} className="btn-primary mr-2">
+            <button type="submit" onClick={handleSubmit} className="btn-primary">
               Save
             </button>
           ) : (
-            <button type="button" onClick={handleEdit} className="btn-primary mr-2">
+            <button type="button" onClick={handleEdit} className="btn-primary">
               Edit
             </button>
           )}
@@ -165,9 +165,9 @@ const FormSteps = ({
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {stepHeader('Personal Information')}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
               {renderFormFields(personalFields)}
               <div>
                 <label htmlFor="phoneNumber" className="block font-medium">
@@ -202,9 +202,9 @@ const FormSteps = ({
 
       case 2:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {stepHeader('Address Information')}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
               {renderFormFields(addressFields)}
             </div>
           </div>
@@ -212,9 +212,9 @@ const FormSteps = ({
 
       case 3:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {stepHeader('Credentials')}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
               {renderFormFields(credentialFields)}
             </div>
           </div>
@@ -222,7 +222,7 @@ const FormSteps = ({
 
       case 4:
         return (
-          <div>
+          <div className="space-y-6">
             <div className="education-section">
               <LazyExperience />
             </div>
@@ -231,7 +231,7 @@ const FormSteps = ({
               <div className="file-input-container">
                 <div className="file-input-wrapper">
                   {resumeName && (
-                    <div>Resume uploaded: {resumeName}</div>
+                    <div className="text-sm text-green-600 mb-2">✓ Resume uploaded: {resumeName}</div>
                   )}
                   <label htmlFor="resumeInput" className="file-input-label">
                     Resume
@@ -242,13 +242,14 @@ const FormSteps = ({
                       type="file"
                       onChange={handleResumeChange}
                       accept=".pdf,.doc,.docx"
+                      disabled={!isEditable}
                     />
                   </div>
                 </div>
 
                 <div className="file-input-wrapper">
                   {cvName && (
-                    <div>Cover Letter uploaded: {cvName}</div>
+                    <div className="text-sm text-green-600 mb-2">✓ Cover Letter uploaded: {cvName}</div>
                   )}
                   <label htmlFor="cvInput" className="file-input-label">
                     Cover Letter
@@ -259,6 +260,7 @@ const FormSteps = ({
                       type="file"
                       onChange={handleCvChange}
                       accept=".pdf,.doc,.docx"
+                      disabled={!isEditable}
                     />
                   </div>
                 </div>

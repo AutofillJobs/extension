@@ -4,57 +4,76 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  background-color: #f4f4f4;
+  background-color: #f8fafc;
   margin: 0;
-  font-family: 'Arial', sans-serif;
-  animation: fadeIn 1s ease-in-out;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
+}
+
+.formpage-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
 .subheading-container {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .subheading {
-  font-size: 0.75rem; /* Smaller font size */
-  font-weight: 500;
-  color: #3498db;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  background-color: #ecf0f1;
-  border: 1px solid #bdc3c7;
-  border-radius: 4px;
-  transition: background-color 0.3s, color 0.3s, transform 0.3s;
+  padding: 0.5rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.subheading:hover,
+.subheading:hover {
+  background-color: #f1f5f9;
+  color: #475569;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 .subheading.active {
-  background-color: #3498db;
+  background-color: #3b82f6;
   color: white;
-  transform: scale(1.1);
+  border-color: #3b82f6;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
 .container {
-  width: 800px;
+  width: 100%;
+  max-width: 800px;
   background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
   position: relative;
   animation: slideIn 0.5s ease-in-out;
-  margin-left: 80px;
-  margin-right: 80px;
+  margin: 0 auto;
+  border: 1px solid #f1f5f9;
 }
 
 @keyframes slideIn {
@@ -69,47 +88,79 @@ body {
 }
 
 h2 {
-  color: #2c3e50;
+  color: #1e293b;
   text-align: center;
-  animation: fadeIn 1s ease-in-out;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background-color: #3b82f6;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #bdc3c7;
-  border-radius: 4px;
-  margin-top: 0.5rem;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  color: #374151;
 }
 
 .input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   outline: none;
+}
+
+.input:hover {
+  border-color: #9ca3af;
+}
+
+.input:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 select.input {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background: #ffffff url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="292.4" height="292.4" viewBox="0 0 292.4 292.4"><path fill="%233498db" d="M287 69.2L277 59.4c-7.2-7.2-18.8-7.2-26 0L146.2 164.3 41.3 59.4c-7.2-7.2-18.8-7.2-26 0L5.4 69.2c-7.2 7.2-7.2 18.8 0 26l130.8 130.8c7.2 7.2 18.8 7.2 26 0L287 95.2c7.2-7.2 7.2-18.8 0-26z"/></svg>') no-repeat right 0.75rem center;
-  background-size: 0.65rem auto;
+  background: #ffffff url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>') no-repeat right 0.75rem center;
+  background-size: 1rem auto;
+  padding-right: 2.5rem;
 }
 
 .block {
@@ -118,10 +169,21 @@ select.input {
 
 .font-medium {
   font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.space-y-1 > * + * {
+  margin-top: 0.25rem;
 }
 
 .space-y-4 > * + * {
   margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
 }
 
 .grid {
@@ -134,6 +196,10 @@ select.input {
 
 .gap-4 {
   gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
 }
 
 .flex {
@@ -152,6 +218,10 @@ select.input {
   margin-bottom: 1rem;
 }
 
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
 .text-xl {
   font-size: 1.25rem;
 }
@@ -160,52 +230,56 @@ select.input {
   font-weight: 700;
 }
 
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
-}
-
 .arrow-button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 2rem;
-  color: #3498db;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 1.25rem;
+  color: #3b82f6;
   cursor: pointer;
-  transition: color 0.3s, transform 0.3s;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .arrow-button:hover {
-  color: #2980b9;
-  transform: translateY(-2px);
+  color: #2563eb;
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
 }
 
 .arrow-left {
-  left: -50px;
+  left: -60px;
 }
 
 .arrow-right {
-  right: -50px;
+  right: -60px;
 }
 
-/* Add these styles to your formpage.css file */
-
+/* File upload styles */
 .education-section {
   margin-bottom: 2rem;
 }
 
 .file-upload-section {
-
-  border-radius: 8px;
+  background-color: #f8fafc;
+  border-radius: 12px;
   padding: 1.5rem;
   margin-top: 2rem;
+  border: 1px solid #e2e8f0;
 }
 
 .file-upload-heading {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #1e293b;
   margin-bottom: 1rem;
   text-align: center;
 }
@@ -223,33 +297,210 @@ select.input {
 }
 
 .file-input-label {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  color: #34495e;
+  color: #374151;
   margin-bottom: 0.5rem;
 }
 
-.file-input {
-  display: block;
+.custom-file-input {
+  position: relative;
   width: 100%;
   max-width: 300px;
+}
+
+.custom-file-input input[type="file"] {
+  width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #bdc3c7;
-  border-radius: 4px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
   background-color: #ffffff;
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.9rem;
-  transition: border-color 0.3s, background-color 0.3s;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  color: #6b7280;
 }
 
-.file-input:hover {
-  border-color: #3498db;
-  background-color: #ecf0f1;
+.custom-file-input input[type="file"]:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
 }
 
-.file-input:focus {
+.custom-file-input input[type="file"]:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.custom-file-input input[type="file"]:disabled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+/* Phone input customization */
+.PhoneInput {
+  margin-top: 0.375rem;
+}
+
+.PhoneInputInput {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  color: #374151;
+}
+
+.PhoneInputInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.PhoneInputInput:hover {
+  border-color: #9ca3af;
+}
+
+.PhoneInputInput:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Success message styling */
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-green-600 {
+  color: #059669;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .formpage-container {
+    padding: 1rem;
+  }
+  
+  .container {
+    padding: 1.5rem;
+    margin: 0 1rem;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .subheading-container {
+    gap: 0.5rem;
+  }
+  
+  .subheading {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+  
+  .arrow-button {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .arrow-left {
+    left: -50px;
+  }
+  
+  .arrow-right {
+    right: -50px;
+  }
+}
+
+/* Loading state */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* JSON import/export buttons */
+.json-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.json-buttons .btn-primary {
+  min-width: 120px;
+}
+
+/* Form field improvements */
+.form-field {
+  transition: all 0.2s ease;
+}
+
+.form-field:hover {
+  transform: translateY(-1px);
+}
+
+/* Step indicator improvements */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  margin: 0 4px;
+  transition: all 0.2s ease;
+}
+
+.step-dot.active {
+  background-color: #3b82f6;
+  transform: scale(1.2);
+}
+
+/* Enhanced focus states */
+.input:focus,
+.PhoneInputInput:focus,
+.custom-file-input input[type="file"]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Improved button states */
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Better spacing for form sections */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
 }
