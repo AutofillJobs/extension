@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Autofilljobs",
-  "description": "Automatically fill job application forms using AI"
+  "description": "Automatically fill job application forms using AI",
   "version": "1.0.3",
   "action": {
     "default_popup": "popup.html",
@@ -40,14 +40,14 @@
     }
   ],
   "host_permissions": [
-    "<all_urls>","*://*/*"
+    "<all_urls>",
+    "*://*/*"
   ],
   "web_accessible_resources": [
-    
     {
       "resources": [
         "variablepopup.html",
-    "variablepopup.js",
+        "variablepopup.js",
         "assets/Tom_George.pdf",
         "src/assets/settings.png"
       ],
@@ -55,5 +55,10 @@
         "<all_urls>"
       ]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "edge": {
+      "edge_addons_id": "your-edge-addon-id-here"
+    }
+  }
 }
