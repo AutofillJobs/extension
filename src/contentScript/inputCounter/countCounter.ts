@@ -1,3 +1,5 @@
+import { backendService } from '../../utils/backendService';
+
 export interface PageLoadOptions {
   maxWaitTime?: number;
   stabilityChecks?: number;
@@ -60,32 +62,78 @@ export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promi
   });
 }
 
+interface UserData {
+  data?: {
+    details?: {
+      email?: string;
+      emailAlternative?: string;
+    };
+  };
+}
 
-
-export async function saveInteractiveElements(input: number) {
-  chrome.storage.local.get(['interactiveElements'], (result) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error getting interactive elements count:', chrome.runtime.lastError);
-      return;
-    }
-
-    const previousCount = typeof result.interactiveElements === 'number' ? result.interactiveElements : 0;
-    const updatedCount = previousCount + input;
-
-    chrome.storage.local.set({ interactiveElements: updatedCount }, () => {
-      if (chrome.runtime.lastError) {
-        console.error('Error saving interactive elements:', chrome.runtime.lastError);
-      } else {
-        console.log(`✅ Updated interactive element count: ${previousCount} + ${input} = ${updatedCount}`);
-        if(updatedCount > 20){
-          alert(`High number of interactive elements detected: ${updatedCount}`);
+async function updateCount(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['interactiveElements', 'formData'], async (result) => {
+      try {
+        if (chrome.runtime.lastError) {
+          console.error('Error getting data:', chrome.runtime.lastError);
+          resolve();
+          return;
         }
+
+        const formData = result.formData;
+        if (!formData) {
+          console.log('No formData found');
+          resolve();
+          return;
+        }
+
+        const data: UserData = typeof formData === 'string' ? JSON.parse(formData) : formData;
+        const primaryEmail = data?.data?.details?.email;
+        
+        if (primaryEmail) {
+          alert(`User email: ${primaryEmail}`);
+          const result = await backendService.findUserByEmail(primaryEmail);
+          alert(result.user);
+  console.log('User check result:', result);
+        }
+        resolve();
+      } catch (error) {
+        console.error('Error processing data:', error);
+        resolve();
       }
     });
   });
 }
 
+export async function saveInteractiveElements(input: number): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['interactiveElements'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error getting count:', chrome.runtime.lastError);
+        resolve();
+        return;
+      }
 
+      const previousCount = typeof result.interactiveElements === 'number' 
+        ? result.interactiveElements 
+        : 0;
+      const updatedCount = previousCount + input;
+
+      chrome.storage.local.set({ interactiveElements: updatedCount }, async () => {
+        if (chrome.runtime.lastError) {
+          console.error('Error saving count:', chrome.runtime.lastError);
+        } else {
+          console.log(`✅ Updated count: ${previousCount} + ${input} = ${updatedCount}`);
+          if (updatedCount > 20) {
+            await updateCount();
+          }
+        }
+        resolve();
+      });
+    });
+  });
+}
 export function countVisibleUsableInputs(): HTMLElement[] {
   const inputSelectors = [
     'input:not([type="hidden"])',

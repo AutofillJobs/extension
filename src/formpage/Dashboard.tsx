@@ -1,5 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import AnalyticsPage from './AnalyticsPage';
+import AnalyticsPage from './Ananlytics/ AnalyticsPage';
 import SettingsPage from './SettingsPage';
 import FeedbackPage from './FeedbackPage';
 import Navbar from './components/Navbar';
@@ -58,7 +58,7 @@ const Dashboard = () => {
           </Suspense>
         );
       case 'analytics':
-        return <ComingSoon />;
+        return <AnalyticsPage />;
       case 'settings':
         return <ComingSoon />;
       case 'feedback':
