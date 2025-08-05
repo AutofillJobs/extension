@@ -6,6 +6,9 @@ const tailwindcss = require("tailwindcss");
 const autoprefixer = require("autoprefixer");
 const TerserPlugin = require("terser-webpack-plugin");
 
+// Check if we're in production mode
+const isProduction = process.env.NODE_ENV === 'production';
+
 module.exports = {
   entry: {
     popup: path.resolve("src/popup/index.tsx"),
@@ -107,18 +110,18 @@ module.exports = {
       },
     },
     minimize: true,
-    minimizer: [
-      new TerserPlugin({
-        terserOptions: {
-          compress: {
-            drop_console: true,
-            drop_debugger: true,
-          },
-          mangle: true,
-        },
-        extractComments: false,
-      }),
-    ],
+            minimizer: [
+          new TerserPlugin({
+            terserOptions: {
+              compress: {
+                drop_console: isProduction,
+                drop_debugger: true,
+              },
+              mangle: true,
+            },
+            extractComments: false,
+          }),
+        ],
   },
   performance: {
     hints: 'warning',

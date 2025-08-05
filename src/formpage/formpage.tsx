@@ -165,22 +165,34 @@ const FormPage = () => {
   useEffect(() => {
     const loadDataFromStorage = () => {
       getUserData((userData) => {
-        if (userData?.data?.details) {
-          setFormData(userData.data.details);
+        try {
+          if (userData?.data?.details && typeof userData.data.details === 'object') {
+            setFormData(userData.data.details);
+          } else {
+            console.warn('No valid user data found in storage, using default form data');
+            setFormData(INITIAL_FORM_DATA);
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setFormData(INITIAL_FORM_DATA);
         }
         setLoading(false);
       });
 
       // Load file data separately
       getFileData((fileData) => {
-        if (fileData?.resumeUrl && fileData?.resumeName) {
-          setResumeUrl(fileData.resumeUrl);
-          setResumeName(fileData.resumeName);
-        }
+        try {
+          if (fileData?.resumeUrl && fileData?.resumeName) {
+            setResumeUrl(fileData.resumeUrl);
+            setResumeName(fileData.resumeName);
+          }
 
-        if (fileData?.cvUrl && fileData?.cvName) {
-          setCvUrl(fileData.cvUrl);
-          setCvName(fileData.cvName);
+          if (fileData?.cvUrl && fileData?.cvName) {
+            setCvUrl(fileData.cvUrl);
+            setCvName(fileData.cvName);
+          }
+        } catch (error) {
+          console.error('Error loading file data:', error);
         }
       });
     };
@@ -231,7 +243,7 @@ const FormPage = () => {
       try {
         const phoneAltObj = parsePhoneNumber(data.phoneAlternativeNumber);
         if (phoneAltObj) {
-          const countryCallingCode = getCountryCallingCode(phoneAltObj.country);
+          const countryCallingCode = getCountryCallingCode(phoneAltObj?.country);
           updates.phoneAlternativeCode = `+${countryCallingCode}`;
           updates.phoneAlternativeNumber = phoneAltObj.nationalNumber.toString();
         }
@@ -251,30 +263,41 @@ const FormPage = () => {
       const phoneUpdates = parsePhoneNumbers(formData);
       
       getUserData((previousData) => {
-        const previousDetails = previousData?.data || {};
+        try {
+          // Validate previous data structure
+          const previousDetails = previousData?.data || {};
 
-        const updatedData = {
-          data: {
-            ...previousDetails,
-            details: {
-              ...formData,
-              ...phoneUpdates
+          const updatedData = {
+            data: {
+              ...previousDetails,
+              details: {
+                ...formData,
+                ...phoneUpdates
+              },
+              workExperiences: previousDetails.workExperiences || formData.workExperiences,
+              projectExperiences: previousDetails.projectExperiences || formData.projectExperiences,
+              educationExperiences: previousDetails.educationExperiences || formData.educationExperiences
             },
-            workExperiences: previousDetails.workExperiences || formData.workExperiences,
-            projectExperiences: previousDetails.projectExperiences || formData.projectExperiences,
-            educationExperiences: previousDetails.educationExperiences || formData.educationExperiences
-          },
-          error: "no error"
-        };
+            error: "no error"
+          };
 
-        saveUserData(updatedData, (success, error) => {
-          if (success) {
-            console.log('Form data saved successfully to local storage and backend');
-            setIsEditable(false);
-          } else {
-            console.error('Error saving form data:', error);
+          // Validate the updated data structure
+          if (!updatedData.data || !updatedData.data.details) {
+            console.error('Invalid data structure created');
+            return;
           }
-        });
+
+          saveUserData(updatedData, (success, error) => {
+            if (success) {
+              console.log('Form data saved successfully to local storage and backend');
+              setIsEditable(false);
+            } else {
+              console.error('Error saving form data:', error);
+            }
+          });
+        } catch (error) {
+          console.error('Error processing form data:', error);
+        }
       });
     } catch (error) {
       console.error('Error saving form data:', error);

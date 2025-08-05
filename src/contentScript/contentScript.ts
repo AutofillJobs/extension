@@ -23,37 +23,53 @@ async function initialize() {
     if (isWorkdaySite && toggleState) {
       console.log("Filling Workday form");
       getUserData((userData) => {
-        if (userData) {
-          fillWorkdayForm(userData);
-        } else {
-          console.warn('[ContentScript] No formData found in storage for Workday site.');
+        try {
+          if (userData && userData.data && userData.data.details) {
+            fillWorkdayForm(userData);
+          } else {
+            console.warn('[ContentScript] No valid formData found in storage for Workday site.');
+          }
+        } catch (error) {
+          console.error('[ContentScript] Error processing user data for Workday:', error);
         }
       });
     } else if (isGreenhouseSite && toggleState) {
       console.log("Filling Greenhouse form");
       getUserData((userData) => {
-        if (userData) {
-          fillGreenhouseFields(userData);
-        } else {
-          console.warn('[ContentScript] No formData found in storage for Greenhouse site.');
+        try {
+          if (userData && userData.data && userData.data.details) {
+            fillGreenhouseFields(userData);
+          } else {
+            console.warn('[ContentScript] No valid formData found in storage for Greenhouse site.');
+          }
+        } catch (error) {
+          console.error('[ContentScript] Error processing user data for Greenhouse:', error);
         }
       });
     } else if (icimsSite && toggleState) {
       console.log("Filling ICIMS form");
       getUserData((userData) => {
-        if (userData) {
-          autofillICIMS(null, userData);
-        } else {
-          console.warn('[ContentScript] No formData found in storage for ICIMS site.');
+        try {
+          if (userData && userData.data && userData.data.details) {
+            autofillICIMS(userData, null);
+          } else {
+            console.warn('[ContentScript] No valid formData found in storage for ICIMS site.');
+          }
+        } catch (error) {
+          console.error('[ContentScript] Error processing user data for ICIMS:', error);
         }
       });
-    }else if(isZohoSite && toggleState){
+    } else if(isZohoSite && toggleState){
       console.log("Filling ZOHO form");
       getUserData((userData) => {
-        if (userData) {
-          fillZohoForm(userData);
-        } else {
-          console.warn('[ContentScript] No formData found in storage for ICIMS site.');
+        try {
+          if (userData && userData.data && userData.data.details) {
+            fillZohoForm(userData);
+          } else {
+            console.warn('[ContentScript] No valid formData found in storage for ZOHO site.');
+          }
+        } catch (error) {
+          console.error('[ContentScript] Error processing user data for ZOHO:', error);
         }
       });
     } 

@@ -74,7 +74,20 @@ export function getUserData(callback: (userData: any) => void) {
       callback(null);
       return;
     }
-    callback(result.formData || null);
+    
+    try {
+      // Validate that the data has the expected structure
+      const formData = result.formData;
+      if (formData && typeof formData === 'object') {
+        callback(formData);
+      } else {
+        console.warn('Invalid formData structure:', formData);
+        callback(null);
+      }
+    } catch (error) {
+      console.error('Error processing user data:', error);
+      callback(null);
+    }
   });
 }
 
