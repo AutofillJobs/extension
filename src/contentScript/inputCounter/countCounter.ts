@@ -104,7 +104,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
         let userExist = await backendService.findUserByEmail(primaryEmail);
         console.log('User number of application:', userExist.user['number of applications']);
         if (!userExist.success) {
-          console.log('Error checking user existence: ' + userExist.error);
+          console.log('Error checking User existence : ' + userExist.error);
           resolve();
           return;
         }
