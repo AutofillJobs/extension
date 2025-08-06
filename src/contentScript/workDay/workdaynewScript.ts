@@ -5,17 +5,20 @@ export default function fillWorkdayForm(data: FormData): void {
         console.log(inputs);
         inputs.forEach(input => {
             const fieldName = (input.name || input.id || "").toLowerCase();
-            if (fieldName.includes("firstname")) input.value = data.data.details.firstName;
-            else if (fieldName.includes("lastname")) input.value = data.data.details.lastName;
-            else if (fieldName.includes("email")) input.value = data.data.details.email;
-            else if (fieldName.includes("postalcode")) input.value = String(data.data.details.zip);
-            else if (fieldName.includes("addressline1")) input.value = data.data.details.address1;
-            else if (fieldName.includes("city")) input.value = data.data.details.city;
-            else if (fieldName.includes("phonenumber")) input.value = String(data.data.details.phoneNumber);
-            else if (fieldName.includes("linkedinaccount")) input.value = data.data.details.linkedinUrl;
-            else if (fieldName.includes("url")) input.value = data.data.details[websiteIndex];
-            else if (fieldName.includes("selfidentifieddisabilitydata--name")) input.value = data.data.details.fullName;
-            else if(fieldName.includes("extension")) input.value = data.data.details.phoneCode
+            const details = data.data?.details;
+            if (!details) return;
+
+            if (fieldName.includes("firstname")) input.value = details.firstName ?? "";
+            else if (fieldName.includes("lastname")) input.value = details.lastName ?? "";
+            else if (fieldName.includes("email")) input.value = details.email ?? "";
+            else if (fieldName.includes("postalcode")) input.value = details.zip !== undefined ? String(details.zip) : "";
+            else if (fieldName.includes("addressline1")) input.value = details.address1 ?? "";
+            else if (fieldName.includes("city")) input.value = details.city;
+            else if (fieldName.includes("phonenumber")) input.value = String(details.phoneNumber);
+            else if (fieldName.includes("linkedinaccount")) input.value = details.linkedinUrl;
+            else if (fieldName.includes("url")) input.value = details[websiteIndex];
+            else if (fieldName.includes("selfidentifieddisabilitydata--name")) input.value = details.fullName;
+            else if(fieldName.includes("extension")) input.value = details.phoneCode
             else if(fieldName.includes("candidateispreviousworker")){
                 const noOption = document.querySelector<HTMLInputElement>('input[name="candidateIsPreviousWorker"][value="false"]');
                 if (noOption) {
@@ -31,11 +34,12 @@ export default function fillWorkdayForm(data: FormData): void {
         });       
         const searchInput = document.querySelector<HTMLInputElement>('#source--source');
         console.log("search", searchInput);
-        searchInput.value = "linkedin"
-        searchInput.dispatchEvent(new Event("input", { bubbles: true }));
-        const event = new KeyboardEvent('keydown', {
-            bubbles: true,
-            cancelable: true,
+        if (searchInput) {
+            searchInput.value = "linkedin";
+            searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+            const event = new KeyboardEvent('keydown', {
+                bubbles: true,
+                cancelable: true,
             key: 'Enter',
             code: 'Enter',
             keyCode: 13,
@@ -51,8 +55,10 @@ export default function fillWorkdayForm(data: FormData): void {
         countryDropdownBtn.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('[role="option"]');
+            const country = data.data?.details?.country;
+            if (!country) return;
             options.forEach(option => {
-                if (option.innerText.trim().toLowerCase() === data.data.details.country.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === country.toLowerCase()) {
                     option.click();
                 }
             });
@@ -63,8 +69,10 @@ export default function fillWorkdayForm(data: FormData): void {
         stateDropdownSelection.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('[role="option"]');
+            const state = data.data?.details?.state;
+            if (!state) return;
             options.forEach(option => {
-                if (option.innerText.trim().toLowerCase() === data.data.details.state.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === state.toLowerCase()) {
                     option.click();
                 }
             });
@@ -85,7 +93,8 @@ export default function fillWorkdayForm(data: FormData): void {
         searchInput.focus()
         searchInput.dispatchEvent(event)
         
-    };
+       };
+}
     function fillQuestionaire(){
         const workAuthorizationDropDown = document.querySelector<HTMLButtonElement>('button[name="3403860341171001f57d5c603f290001"]');
         console.log("aaaaa",workAuthorizationDropDown);
@@ -94,8 +103,10 @@ export default function fillWorkdayForm(data: FormData): void {
         workAuthorizationDropDown.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
+            const workAuthorization = data.data?.details?.workAuthorization;
+            if(!workAuthorization) return;
             options.forEach(option => {
-                if (option.innerText.trim().toLowerCase() === data.data.details.workAuthorization.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === workAuthorization.toLowerCase()) {
                     option.click();
                 }
             });
@@ -107,8 +118,10 @@ export default function fillWorkdayForm(data: FormData): void {
         visaSponsorShipDropdown.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
+            const visaSponsorship = data?.data?.details?.visaSponsorship;
+            if(!visaSponsorship) return;
             options.forEach(option => {
-                if (option.innerText.trim().toLowerCase() === data.data.details.visaSponsorship.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === visaSponsorship.toLowerCase()) {
                     option.click();
                 }
             });
@@ -122,10 +135,12 @@ export default function fillWorkdayForm(data: FormData): void {
         genderDropdown.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
+            const gender = data.data?.details?.gender;
+            if(!gender) return;
             options.forEach(option => {
                 console.log("gender option", option);
                 
-                if (option.innerText.trim().toLowerCase() === data.data.details.gender.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === gender.toLowerCase()) {
                     option.click();
                 }
             });
@@ -136,18 +151,26 @@ export default function fillWorkdayForm(data: FormData): void {
         veteranDropdown.click();
         setTimeout(() => {
             const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
+            const veteranStatus = data.data?.details?.veteranStatus;
+            if(!veteranStatus) return;
             options.forEach(option => {
-                if (option.innerText.trim().toLowerCase() === data.data.details.veteranStatus.toLowerCase()) {
+                if (option.innerText.trim().toLowerCase() === veteranStatus.toLowerCase()) {
                     option.click();
                 }
             });
         }, 500);
     }
     const fillExperience = (index: number): void => {
-        const exp = data.data.workExperiences[index];
+        const workExperiences = data?.data?.workExperiences;
+        if (!workExperiences || !Array.isArray(workExperiences)) return;
+        const exp = workExperiences[index];
         if (!exp) return;
-        const [startYear, startMonth] = exp.startDate.split('-')
-        const [endYear, endMonth] = exp.endDate.split('-')
+        if (!exp.startDate) return;
+        const [startYear, startMonth] = exp.startDate.split('-');
+        let endYear = '', endMonth = '';
+        if (exp.endDate) {
+            [endYear, endMonth] = exp.endDate.split('-');
+        }
         const sections = document.querySelectorAll<HTMLElement>('[aria-labelledby*="Work-Experience"]');
         const section = sections[index + 1];
         if (!section) return;
@@ -188,7 +211,9 @@ export default function fillWorkdayForm(data: FormData): void {
     };
 
     const fillEducation = (index: number): void => {
-        const edu = data.data.educationExperiences[index];
+        const educationExperiences = data?.data?.educationExperiences;
+        if (!educationExperiences || !Array.isArray(educationExperiences)) return;
+        const edu = educationExperiences[index];
         if (!edu) return;
         const sections = document.querySelectorAll<HTMLElement>('[aria-labelledby*="Education"]');
         const section = sections[index + 1];
@@ -249,13 +274,17 @@ export default function fillWorkdayForm(data: FormData): void {
                             const sectionTitle = labelId ? document.getElementById(labelId)?.innerText || '' : '';
 
                             if (sectionTitle.includes('Work Experience')) {
-                                for (let i = 0; i < data.data.workExperiences.length; i++) {
+                                const workExperiences = data?.data?.workExperiences;
+                                if (!workExperiences || !Array.isArray(workExperiences)) return;
+                                for (let i = 0; i < workExperiences.length; i++) {
                                     btn.click();
                                     await wait(1000);
                                     fillExperience(i);
                                 }
                             } else if (sectionTitle.includes('Education')) {
-                                for (let i = 0; i < data.data.educationExperiences.length; i++) {
+                                const educationExperiences = data.data.educationExperiences
+                                if(!educationExperiences || !Array.isArray(educationExperiences)) return;
+                                for (let i = 0; i < educationExperiences.length; i++) {
                                     btn.click();
                                     await wait(1000);
                                     fillEducation(i);
