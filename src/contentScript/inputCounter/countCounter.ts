@@ -92,7 +92,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
         const password = data?.data?.details?.password;
         const username = data?.data?.details?.name || 
                         data?.data?.details?.firstName + ' ' + data?.data?.details?.lastName;
-        console.log(`Primary email: ${primaryEmail}, Username: ${username}`);
+        console.log(`Primary email : ${primaryEmail}, username: ${username}`);
         // Check if we have enough user data to proceed
         if (!primaryEmail) {
           console.log('User email missing in local storage. Cannot proceed.');
@@ -104,7 +104,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
         let userExist = await backendService.findUserByEmail(primaryEmail);
         console.log('User number of application:', userExist.user['number of applications']);
         if (!userExist.success) {
-          console.log('Error checking User existence : ' + userExist.error);
+          console.log('Error checking User existences : ' + userExist.error);
           resolve();
           return;
         }
