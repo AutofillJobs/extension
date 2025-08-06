@@ -272,7 +272,8 @@ export default function fillWorkdayForm(data: FormData): void {
                             const group = btn.closest<HTMLElement>('[role="group"]');
                             const labelId = group?.getAttribute('aria-labelledby');
                             const sectionTitle = labelId ? document.getElementById(labelId)?.innerText || '' : '';
-                            const isAddButton = btn.innerText.trim().toLowerCase() === 'add' || btn.getAttribute('aria-label')?.toLowerCase().includes('add');
+                            const isAddButton = btn.innerText.trim().toLowerCase() === 'add' || 
+                            btn.getAttribute('aria-label')?.toLowerCase().includes('add');
                             if (!isAddButton) return;
                             if (sectionTitle.includes('Work Experience')) {
                                 const workExperiences = data?.data?.workExperiences;
