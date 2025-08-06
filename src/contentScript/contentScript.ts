@@ -7,6 +7,52 @@ import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
 import { autofillICIMS } from './icims/icimsScript'; // <-- from develop branch
 import fillZohoForm from './zoho/zohoScript';
+import { waitForPageToBeReady,countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
+
+
+async function initializeInputDetection() {
+  try {
+    console.log('Starting page load detection...');
+    
+    await waitForPageToBeReady({
+      maxWaitTime: 15000,
+      stabilityChecks: 4,
+      checkInterval: 750
+    });
+
+    if (window.history && window.history.pushState) {
+      const originalPushState = history.pushState;
+      history.pushState = function (...args) {
+        originalPushState.apply(this, args);
+        setTimeout(countVisibleUsableInputs, 1000);
+        return null;
+      };
+
+      window.addEventListener('popstate', () => {
+        setTimeout(countVisibleUsableInputs, 1000);
+      });
+    }
+
+    const inputs = countVisibleUsableInputs();
+    console.log(`Page fully loaded! Found ${inputs.length} interactive elements.`);
+    saveInteractiveElements(inputs.length);
+  } catch (error) {
+    console.error('Page load detection failed:', error);
+    setTimeout(() => {
+      const inputs = countVisibleUsableInputs();
+      console.log(`Page content detected (final attempt). Found ${inputs.length} elements.`);
+    }, 3000);
+  }
+}
+
+if (document.readyState === 'complete') {
+  initializeInputDetection();
+} else {
+  window.addEventListener('load', initializeInputDetection);
+  document.addEventListener('DOMContentLoaded', initializeInputDetection);
+  setTimeout(initializeInputDetection, 5000);
+}
+
 
 // Initialize when page is fully loaded
 async function initialize() {
