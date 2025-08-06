@@ -89,6 +89,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
         const formData = result.formData;
         const data: UserData = typeof formData === 'string' ? JSON.parse(formData) : formData;
         const primaryEmail = data?.data?.details?.email;
+        const password = data?.data?.details?.password;
         const username = data?.data?.details?.name || 
                         data?.data?.details?.firstName + ' ' + data?.data?.details?.lastName;
         console.log(`Primary email: ${primaryEmail}, Username: ${username}`);
@@ -118,7 +119,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 
           const newUserPayload: UserDataPayload = {
             email: primaryEmail,
-            password: 'default123',
+            password: password,
             address: data?.data?.details?.address1 || data?.data?.details?.address2 || "No address"
           };
 
