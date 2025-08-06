@@ -1,10 +1,9 @@
 import React, { useState, Suspense } from 'react';
-import AnalyticsPage from './AnalyticsPage';
 import SettingsPage from './SettingsPage';
 import FeedbackPage from './FeedbackPage';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-
+import AnalyticsPage from './Ananlytics/ AnalyticsPage';
 // Lazy load the FormPage component
 const FormPage = React.lazy(() => import('./formpage'));
 
@@ -58,7 +57,7 @@ const Dashboard = () => {
           </Suspense>
         );
       case 'analytics':
-        return <ComingSoon />;
+        return <AnalyticsPage />;
       case 'settings':
         return <ComingSoon />;
       case 'feedback':
