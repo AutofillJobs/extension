@@ -3,6 +3,25 @@ import { FormData } from './utils/types';
 let Email: string = "";
 let userData: any;
 
+export function setupBubbleMessageListener() {
+  console.log("Setting up Bubble message listener...");
+  window.addEventListener("message", (event) => {
+    // Only accept messages from your Bubble domain
+    if (event.origin !== 'https://applygoat.com') return;
+    const message = event.data;
+    switch (message.type) {
+      case 'UPDATE_USER_INFO':
+        console.log("Received user info update from Bubble:", message.payload);
+        chrome.storage.local.set({ userData: message.payload }, () => {
+          console.log("User data saved to chrome.storage");
+        });
+        break;
+      default:
+        console.warn("Unknown message type from Bubble:", message.type);
+    }
+  });
+}
+
 export function setupMessageListeners() {
   // Message listener for email and other data
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
