@@ -267,12 +267,14 @@ export default function fillWorkdayForm(data: FormData): void {
                     }
 
                     setTimeout(() => {
-                        const buttons = element.querySelectorAll<HTMLButtonElement>('button.css-f176sn');
+                        const buttons = element.querySelectorAll<HTMLButtonElement>('button');
                         buttons.forEach(async btn => {
                             const group = btn.closest<HTMLElement>('[role="group"]');
                             const labelId = group?.getAttribute('aria-labelledby');
                             const sectionTitle = labelId ? document.getElementById(labelId)?.innerText || '' : '';
-
+                            const isAddButton = btn.innerText.trim().toLowerCase() === 'add' || 
+                            btn.getAttribute('aria-label')?.toLowerCase().includes('add');
+                            if (!isAddButton) return;
                             if (sectionTitle.includes('Work Experience')) {
                                 const workExperiences = data?.data?.workExperiences;
                                 if (!workExperiences || !Array.isArray(workExperiences)) return;
