@@ -132,3 +132,29 @@ async function initialize() {
 }
 
 window.addEventListener("load", initialize);
+
+// contentScript.js
+
+// Listen for messages from the website
+window.addEventListener("message", (event) => {
+  // SECURITY: Verify the message origin to prevent malicious attacks
+  console.log("event",event)
+  if (event.origin !== "http://127.0.0.1:5500") {
+    return;
+  }
+
+  // You can add more security checks, like a message type
+  const message = event.data;
+  if (message.type && message.type === "UPDATE_USER_INFO") {
+    console.log("Message received from webpage:", message.payload);
+
+    // Save the payload directly to chrome.storage.local
+    chrome.storage.local.set({ userInfo: message.payload }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error saving to chrome.storage.local:", chrome.runtime.lastError.message);
+      } else {
+        console.log("User info saved successfully to local storage.");
+      }
+    });
+  }
+});
