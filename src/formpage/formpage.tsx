@@ -368,62 +368,135 @@ const FormPage = () => {
   }
 
   return (
-    <div className="formpage-container">
-      <div className='subheading-container'>
-        <h3 className={`subheading ${currentStep === 1 ? 'active' : ''}`} onClick={() => goToStep(1)}>
-          Personal Information
-        </h3>
-        <h3 className={`subheading ${currentStep === 2 ? 'active' : ''}`} onClick={() => goToStep(2)}>
-          Address Information
-        </h3>
-        <h3 className={`subheading ${currentStep === 3 ? 'active' : ''}`} onClick={() => goToStep(3)}>
-          Credentials
-        </h3>
-        <h3 className={`subheading ${currentStep === 4 ? 'active' : ''}`} onClick={() => goToStep(4)}>
-          Experience
-        </h3>
-      </div>
+<div className="formpage-container">
+  <div className="form-header">
+    <h1 className="form-title">Candidate Profile</h1>
+    <p className="form-subtitle">
+      {isEditable ? "Complete your profile information" : "Review your profile"}
+    </p>
+  </div>
 
-      <div className="json-buttons">
-        <button className="btn-primary" onClick={handleDownloadJSON}>
-          Download JSON
-        </button>
-        <button className="btn-primary" onClick={handleUploadJSON}>
-          Upload JSON
-        </button>
-      </div>
-
-      <div className="container">
-        <form className="space-y-6">
-          <FormSteps
-            currentStep={currentStep}
-            formData={formData}
-            handleChange={handleChange}
-            handlePhoneChange={handlePhoneChange}
-            isEditable={isEditable}
-            handleSubmit={handleSubmit}
-            handleEdit={handleEdit}
-            resumeName={resumeName}
-            resumeUrl={resumeUrl}
-            cvName={cvName}
-            cvUrl={cvUrl}
-            handleResumeChange={handleResumeChange}
-            handleCvChange={handleCvChange}
-          />
-        </form>
-        
-        {currentStep > 1 && (
-          <button className="arrow-button arrow-left" onClick={prevStep}>
-            &#9664;
-          </button>
-        )}
-        {currentStep < 4 && (
-          <button className="arrow-button arrow-right" onClick={nextStep}>
-            &#9654;
-          </button>
-        )}
-      </div>
+  {/* Progress Indicator */}
+  <div className="progress-container">
+    <div className="progress-track">
+      <div 
+        className="progress-bar" 
+        style={{ width: `${(currentStep / 4) * 100}%` }}
+      ></div>
     </div>
+    <div className="step-indicators">
+      {[1, 2, 3, 4].map((step) => (
+        <div 
+          key={step} 
+          className={`step-indicator ${currentStep >= step ? 'active' : ''}`}
+          onClick={() => goToStep(step)}
+        >
+          <div className="step-number">{step}</div>
+          <div className="step-label">
+            {step === 1 && 'Personal'}
+            {step === 2 && 'Address'}
+            {step === 3 && 'Credentials'}
+            {step === 4 && 'Experience'}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* Data Transfer Buttons */}
+  <div className="data-transfer-buttons">
+    <button 
+      className="data-button"
+      onClick={handleDownloadJSON}
+    >
+      <svg className="button-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+      Export JSON
+    </button>
+    <button 
+      className="data-button"
+      onClick={handleUploadJSON}
+    >
+      <svg className="button-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm7.293-8.707a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 10.414V16a1 1 0 11-2 0v-5.586l-1.293 1.293a1 1 0 01-1.414-1.414l3-3z" clipRule="evenodd" />
+      </svg>
+      Import JSON
+    </button>
+  </div>
+
+  {/* Form Content */}
+  <div className="form-card">
+    <form className="form-content">
+      <FormSteps
+        currentStep={currentStep}
+        formData={formData}
+        handleChange={handleChange}
+        handlePhoneChange={handlePhoneChange}
+        isEditable={isEditable}
+        handleSubmit={handleSubmit}
+        handleEdit={handleEdit}
+        resumeName={resumeName}
+        resumeUrl={resumeUrl}
+        cvName={cvName}
+        cvUrl={cvUrl}
+        handleResumeChange={handleResumeChange}
+        handleCvChange={handleCvChange}
+      />
+    </form>
+
+    {/* Navigation Controls */}
+    <div className="form-navigation">
+      {currentStep > 1 && (
+        <button 
+          className="nav-button prev-button"
+          onClick={prevStep}
+        >
+          <svg className="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Previous
+        </button>
+      )}
+      
+      <div className="step-counter">
+        Step {currentStep} of 4
+      </div>
+      
+      {currentStep < 4 ? (
+        <button 
+          className="nav-button next-button"
+          onClick={nextStep}
+        >
+          Next
+          <svg className="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+      ) : !isEditable ? (
+        <button 
+          className="nav-button edit-button"
+          onClick={handleEdit}
+        >
+          <svg className="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+          Edit
+        </button>
+      ) : (
+        <button 
+          className="nav-button submit-button"
+          onClick={handleSubmit}
+        >
+          <svg className="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Save
+        </button>
+      )}
+    </div>
+  </div>
+</div>
   );
 };
 
