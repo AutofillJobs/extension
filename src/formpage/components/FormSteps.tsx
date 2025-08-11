@@ -24,6 +24,9 @@ const FormSteps = ({
     { label: 'First Name', name: 'firstName', type: 'text' },
     { label: 'Middle Name', name: 'middleName', type: 'text' },
     { label: 'Last Name', name: 'lastName', type: 'text' },
+    { label: 'Username', name: 'userName', type: 'text' },
+    { label: 'Password', name: 'password', type: 'password' },
+    { label: 'Email ID', name: 'email', type: 'email' },
     { label: 'Family Name', name: 'familyName', type: 'text' },
     { label: 'Preferred Name', name: 'preferredName', type: 'text' },
     { label: 'Marital Status', name: 'maritalStatus', type: 'select', options: ['Single', 'Married', 'Divorced'] },
@@ -47,12 +50,9 @@ const FormSteps = ({
   ], []);
 
   const credentialFields = useMemo(() => [
-    { label: 'Username', name: 'userName', type: 'text' },
-    { label: 'Password', name: 'password', type: 'password' },
     { label: 'LinkedIn URL', name: 'linkedinUrl', type: 'url' },
     { label: 'GitHub URL', name: 'githubUrl', type: 'url' },
     { label: 'Twitter URL', name: 'twitterUrl', type: 'url' },
-    { label: 'Email ID', name: 'email', type: 'email' },
     { label: 'Alternative Email ID', name: 'emailAlternative', type: 'email' },
     { label: 'Expected Salary', name: 'expectedSalary', type: 'text' },
     { label: 'Gross Salary', name: 'grossSalary', type: 'text' },

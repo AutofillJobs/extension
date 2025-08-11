@@ -10,6 +10,7 @@ body {
   animation: fadeIn 0.5s ease-in-out;
 }
 
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -503,4 +504,295 @@ select.input {
 
 .form-section:last-child {
   margin-bottom: 0;
+}/* Base Styles */
+.formpage-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header Styles */
+.form-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.form-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+}
+
+/* Progress Indicator */
+.progress-container {
+  margin-bottom: 2.5rem;
+}
+
+.progress-track {
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  position: relative;
+  margin: 0 2rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #3b82f6;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.step-indicators {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.step-indicator.active .step-number {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.step-indicator.active .step-label {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Data Transfer Buttons */
+.data-transfer-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.data-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.data-button:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.data-button:active {
+  transform: translateY(0);
+}
+
+.button-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Form Card */
+.form-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #f1f5f9;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.form-content {
+  padding: 2rem;
+}
+
+/* Navigation Controls */
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.prev-button {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  color: #3b82f6;
+}
+
+.prev-button:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.next-button {
+  background-color: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+.next-button:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.edit-button {
+  background-color: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+.edit-button:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.submit-button {
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.submit-button:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.step-counter {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .formpage-container {
+    padding: 0 1rem;
+  }
+  
+  .form-title {
+    font-size: 1.5rem;
+  }
+  
+  .form-subtitle {
+    font-size: 1rem;
+  }
+  
+  .progress-track {
+    margin: 0 1rem;
+  }
+  
+  .step-label {
+    font-size: 0.75rem;
+  }
+  
+  .form-content {
+    padding: 1.5rem;
+  }
+  
+  .form-navigation {
+    padding: 1rem 1.5rem;
+  }
+  
+  .nav-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-transfer-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .data-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .step-indicators {
+    gap: 0.5rem;
+  }
+  
+  .step-label {
+    display: none;
+  }
 }
