@@ -143,14 +143,14 @@ export async function saveInteractiveElements(input: number): Promise<void> {
           console.log(`Local count updated: ${localCount} + ${input} = ${updatedCount}`);
 
           // Check if we've reached threshold for cloud update
-          if (updatedCount >= 20) {
+          if (updatedCount >= 300) {
             // Calculate total new count (current cloud + updatedCount)
             const newAppCount = cloudAppCount + updatedCount;
             
             // Show warning if exceeding 100, but still update
-            if (newAppCount > 100) {
-              console.log('Warning: Application count exceeds 100 (Total: ' + newAppCount + ')');
-            }
+            // if (newAppCount > 100) {
+            //   console.log('Warning: Application count exceeds 100 (Total: ' + newAppCount + ')');
+            // }
 
             const updateResult = await backendService.patchUser(userId, {
               "number of applications": newAppCount
