@@ -20,12 +20,12 @@ const FormSteps = ({
 }) => {
   // Form field configurations
   const personalFields = useMemo(() => [
+    { label: 'Username', name: 'userName', type: 'text' },
+    { label: 'Password', name: 'password', type: 'password' },
     { label: 'Full Name', name: 'fullName', type: 'text' },
     { label: 'First Name', name: 'firstName', type: 'text' },
     { label: 'Middle Name', name: 'middleName', type: 'text' },
     { label: 'Last Name', name: 'lastName', type: 'text' },
-    { label: 'Username', name: 'userName', type: 'text' },
-    { label: 'Password', name: 'password', type: 'password' },
     { label: 'Email ID', name: 'email', type: 'email' },
     { label: 'Family Name', name: 'familyName', type: 'text' },
     { label: 'Preferred Name', name: 'preferredName', type: 'text' },

@@ -41,5 +41,57 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.tabs.create({
       url: "https://applygoat.com/autofill?utm_source=new-user",
     });
+
+     // Get email and country from stored formData
+    chrome.storage.local.get(['formData'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error accessing local storage:', chrome.runtime.lastError.message);
+        return;
+      }
+
+      const formData = result.formData;
+      const data = typeof formData === 'string' ? JSON.parse(formData) : formData;
+
+      const email = data?.data?.details?.email || '';
+      const country = data?.data?.details?.country || '';
+
+      console.log(`Email: ${email}, Country: ${country}`);
+      
+
+      // Build uninstall URL with URL-encoded params
+      const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(email)}&country=${encodeURIComponent(country)}`;
+
+      if (chrome.runtime.setUninstallURL) {
+        chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
+      }
+    });
+  }
+});
+
+function updateUninstallURLFromStorage() {
+  chrome.storage.local.get(['formData'], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error accessing local storage:', chrome.runtime.lastError.message);
+      return;
+    }
+
+    const formData = result.formData;
+    const data = typeof formData === 'string' ? JSON.parse(formData) : formData;
+
+    const email = data?.data?.details?.email || '';
+    const country = data?.data?.details?.country || '';
+
+    const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(email)}&country=${encodeURIComponent(country)}`;
+    chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  updateUninstallURLFromStorage();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.formData) {
+    updateUninstallURLFromStorage();
   }
 });

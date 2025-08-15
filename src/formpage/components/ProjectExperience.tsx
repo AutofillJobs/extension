@@ -170,7 +170,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
               onChange={handleChangeSkill}
             />
             <button
-              className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
+              className="bg-blue-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
               onClick={handleSkillInputChange}
             >
               Add
@@ -210,13 +210,13 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
         <div className="flex justify-between">
           <button
             onClick={handleSave}
-            className="bg-black text-white px-6 py-2 rounded-lg mr-4 hover:bg-gray-800"
+            className="bg-blue-800 text-white px-6 py-2 rounded-lg mr-4 hover:bg-blue"
           >
             Save
           </button>
           <button
             onClick={onClose}
-            className="bg-gray-400 text-black px-6 py-2 rounded-lg hover:bg-gray-300"
+            className="bg-red-400 text-black px-6 py-2 rounded-lg hover:bg-red-300"
           >
             Discard
           </button>
