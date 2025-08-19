@@ -9,6 +9,7 @@ interface UserDataPayload {
   email: string;
   password: string;
   address: string;
+  "number of applications"?: number;
 }
 
 interface BubbleResponse {
