@@ -43,22 +43,7 @@ export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promi
       }
     };
 
-    // checkStability();
-
-    // const observer = new MutationObserver(() => {
-    //   checkStability();
-    // });
-
-    // observer.observe(document.body, {
-    //   childList: true,
-    //   subtree: true,
-    //   attributes: true,
-    //   characterData: true
-    // });
-
-    Promise.resolve().then(() => {
-      observer.disconnect();
-    });
+    checkStability();
   });
 }
 
@@ -67,8 +52,20 @@ interface UserData {
     details?: {
       email?: string;
       emailAlternative?: string;
+      firstName?: string;
+      lastName?: string;
+      name?: string;
+      password?: string;
+      address1?: string;
+      address2?: string;
     };
   };
+}
+
+interface UserDataPayload {
+  email: string;
+  password: string;
+  address: string;
 }
 
 export async function saveInteractiveElements(input: number): Promise<void> {
@@ -111,8 +108,8 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 
         // If user doesn't exist, create them
         if (userExist.success && !userExist.user) {
-          if (!username) {
-            console.log('User name missing. Cannot create user.');
+          if (!username || !password) {
+            console.log('User name or password missing. Cannot create user.');
             resolve();
             return;
           }
