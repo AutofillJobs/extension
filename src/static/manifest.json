@@ -1,19 +1,15 @@
+
 {
   "manifest_version": 3,
   "name": "applyGOAT",
   "description": "Autofill job application forms using AI",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "action": {
     "default_popup": "popup.html",
     "default_title": "applyGOAT",
     "default_icon": "icon.png"
   },
-  "permissions": [
-        "storage",
-        "activeTab",
-        "webRequest",
-        "tabs"
-  ],
+  "permissions": ["storage", "activeTab", "tabs"],
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
@@ -25,26 +21,17 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "contentScript.js"
-      ]
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
-  "host_permissions": [
-    "<all_urls>","*://*/*"
-  ],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
-    
     {
-      "resources": [
-        "src/assets/settings.png"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["src/assets/settings.png"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

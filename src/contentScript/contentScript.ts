@@ -5,6 +5,7 @@ import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
 import { autofillICIMS } from './icims/icimsScript';
 import fillZohoForm from './zoho/zohoScript';
+import fillSuccessFactorsForm from './successFactors/successfactorScript'
 import { countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
 
 // Utility: Wait for input in DOM
@@ -48,6 +49,7 @@ async function initialize() {
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
   const icimsSite = window.location.hostname.includes('icims');
   const isZohoSite = window.location.hostname.includes('zoho');
+  const isSuccessFactorsSite = window.location.hostname.includes('successfactors') || window.location.hostname.includes('dzconnex');
 
   getToggleState((toggleState) => {
     if (isWorkdaySite && toggleState) {
@@ -70,13 +72,18 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);
       });
+    } else if (isSuccessFactorsSite && toggleState) {
+      console.log("Filling SuccessFactors form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillSuccessFactorsForm(userData);
+      });
     } else {
       initializeFormFiller();
     }
   });
 
   chrome.runtime.sendMessage({ message: "getLoginEmail" }, () => { });
-}
+} 
 
 // Listen for page load
 window.addEventListener("load", initialize);
@@ -112,7 +119,7 @@ interface Application {
 // Detect career page
 const detectCareerPage = (): boolean => {
   const careerKeywords = ["/careers","/jobs","/opportunities","/apply","/vacancies","/join-us","/job-openings","/employment","/recruitment","/submit-a-job", "/post-a-job"];
-  const knownJobDomains = ["workday","greenhouse","lever","icims","zoho"];
+  const knownJobDomains = ["workday","greenhouse","lever","icims","zoho","successfactors","dzconnex"];
 
   const currentURL = window.location.href.toLowerCase();
   const currentHost = window.location.hostname.toLowerCase();
@@ -138,35 +145,95 @@ const getJobId = (): string | null => {
   const jobIdFromUrl = urlParts.find(part => /^\d+$/.test(part));
   if (jobIdFromUrl) return jobIdFromUrl;
 
-  return window.location.href;
+  return window.location.href; // fallback
 };
 
-// Save application
-const saveApplication = (jobId: string) => {
+// -----------------------------
+// ✅ Capture Job Title before Apply (❗️ NEW LOGIC TO PREVENT RACE CONDITION ❗️)
+// -----------------------------
+document.addEventListener("click", async (event) => {
+  const target = event.target as HTMLElement;
+  
+  // Find the job link, whether the user clicked the link directly or an element inside it
+  const jobLink = target.closest("a[data-rel='link-job-name']") as HTMLAnchorElement;
+
+  if (jobLink) {
+    // 1. Prevent the browser from navigating immediately
+    event.preventDefault();
+
+    const jobTitle = jobLink.textContent?.trim();
+    if (jobTitle) {
+      try {
+        // 2. Wait for the storage operation to complete
+        await new Promise<void>((resolve, reject) => {
+          chrome.storage.local.set({ lastJobTitle: jobTitle }, () => {
+            if (chrome.runtime.lastError) {
+              return reject(chrome.runtime.lastError);
+            }
+            console.log("✅ Stored job title before applying:", jobTitle);
+            resolve();
+          });
+        });
+        
+        // 3. Manually navigate to the page now that the title is saved
+        window.location.href = jobLink.href;
+      } catch (error) {
+        console.error("❌ Failed to save job title:", error);
+        // If saving fails, still navigate so the user isn't stuck
+        window.location.href = jobLink.href;
+      }
+    } else {
+      // If no title was found, navigate anyway
+      window.location.href = jobLink.href;
+    }
+  }
+}, true); // Use capture phase to ensure this runs before other click handlers
+
+
+// -----------------------------
+// Save application (dedup + uniqueKey)
+// -----------------------------
+const saveApplication = (jobId: string | null) => {
   const websiteLink = window.location.href;
-  const websiteTitle = document.title;
   const appliedDateTime = new Date().toLocaleString();
 
-  const newApplication: Application = {
-    jobId,
-    companyLink: websiteLink,
-    jobTitle: websiteTitle,
-    dateApplied: appliedDateTime,
-    status: "Applied",
-    isCareerForm: true
-  };
+  chrome.storage.local.get(["lastJobTitle", "applications"], (result) => {
+    let jobTitle =
+      result.lastJobTitle ||
+      document.querySelector("h1, h2")?.textContent?.trim() ||
+      document.querySelector("title")?.textContent?.trim() ||
+      "Unknown Job";
 
-  chrome.storage.local.get({ applications: [] }, (result) => {
-    const applications: Application[] = result.applications;
-    const isAlreadySaved = applications.some(app => app.jobId === jobId);
+    const applications: Application[] = result.applications || [];
+    const stableJobId = jobId || websiteLink;
+    const uniqueKey = `${stableJobId}-${jobTitle}-${appliedDateTime}`;
 
+    const newApplication: Application = {
+      jobId: stableJobId,
+      companyLink: websiteLink,
+      jobTitle,
+      dateApplied: appliedDateTime,
+      status: "Applied",
+      isCareerForm: true,
+    };
+
+    const isAlreadySaved = applications.some(
+      (app) => `${app.jobId}-${app.jobTitle}` === `${stableJobId}-${jobTitle}`
+    );
+  
     if (!isAlreadySaved) {
       applications.push(newApplication);
       chrome.storage.local.set({ applications }, () => {
         console.log("✅ Career form saved:", newApplication);
+        chrome.storage.local.remove("lastJobTitle");
       });
     } else {
-      console.log(`⚠️ Application for Job ID ${jobId} already exists.`);
+      console.log(`⚠️ Application already exists for this job title. Saving again with a new timestamp.`);
+      applications.push(newApplication);
+      chrome.storage.local.set({ applications }, () => {
+        console.log("✅ Career form saved (re-application):", newApplication);
+        chrome.storage.local.remove("lastJobTitle");
+      });
     }
   });
 };
@@ -183,14 +250,16 @@ const handleFormSubmission = () => {
 const detectConfirmationPage = () => {
   const isConfirmation =
     window.location.href.includes("/confirmation") ||
-      window.location.href.includes("/jobTasks/completed") // ✅ Workday
-     &&
-    (window.location.hostname.includes("greenhouse") ||
-     window.location.hostname.includes("workday") ||
-     window.location.hostname.includes("lever") ||
-     window.location.hostname.includes("icims"));
+    window.location.href.includes("/jobTasks/completed") || // ✅ Workday
+    window.location.href.includes("/thank-you") ||
+    window.location.href.includes("/success") ||
+    document.title.toLowerCase().includes("thank you");
 
-  if (!isConfirmation) return;
+  const isKnownJobSite =
+    ["greenhouse","workday","lever","icims","successfactors","dzconnex"]
+      .some(domain => window.location.hostname.includes(domain));
+
+  if (!isConfirmation || !isKnownJobSite) return;
   const jobId = getJobId();
   if (!jobId) return;
   saveApplication(jobId);
@@ -202,3 +271,5 @@ window.addEventListener("load", detectConfirmationPage);
 
 // Expose function for debugging
 (window as any).detectCareerPage = detectCareerPage;
+
+
