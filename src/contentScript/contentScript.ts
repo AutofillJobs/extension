@@ -78,12 +78,12 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) fillSuccessFactorsForm(userData);
       });
-    } else if (isLeverSite && toggleState) {
-    console.log("Filling Lever form");
-    getUserData((userData) => {
-      if (userData?.data?.details) fillLeverForm(userData);
-    });
-  }else {
+    }else if (isLeverSite && toggleState) {
+  console.log("Filling Lever form");
+  getUserData((userData) => {
+    if (userData?.data?.details) fillLeverForm(userData);
+  });
+} else {
       initializeFormFiller();
     }
   });
