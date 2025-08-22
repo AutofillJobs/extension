@@ -1,7 +1,7 @@
 // utils/waitForInput.ts
 async function waitForInput(
   selector: string,
-  timeout = 6000,
+  timeout = 3000,
   context: Document | ShadowRoot = document
 ): Promise<HTMLInputElement | null> {
   return new Promise((resolve) => {
@@ -112,3 +112,10 @@ export default async function fillSuccessFactorsForm(userData: any) {
     console.error("❌ Error autofilling SuccessFactors form:", error);
   }
 }
+
+
+
+
+
+
+

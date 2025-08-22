@@ -7,6 +7,7 @@ import { autofillICIMS } from './icims/icimsScript';
 import fillZohoForm from './zoho/zohoScript';
 import fillSuccessFactorsForm from './successFactors/successfactorScript'
 import { countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
+import fillLeverForm from "./lever/leverScript";
 
 // Utility: Wait for input in DOM
 const waitForInput = (selector: string, timeout = 5000) => {
@@ -77,13 +78,20 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) fillSuccessFactorsForm(userData);
       });
-    } else {
+    } 
+    else if (window.location.hostname.includes("jobs.lever.co") && toggleState) {
+      console.log("Filling Lever form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillLeverForm(userData);
+      });
+    } 
+    else {
       initializeFormFiller();
     }
   });
 
   chrome.runtime.sendMessage({ message: "getLoginEmail" }, () => { });
-} 
+}
 
 // Listen for page load
 window.addEventListener("load", initialize);
@@ -92,6 +100,7 @@ window.addEventListener("load", initialize);
 window.addEventListener("message", (event) => {
   if (event.origin !== "http://127.0.0.1:5500") return;
 
+  // userInfo -> formData 
   const message = event.data;
   if (message.type === "UPDATE_USER_INFO") {
     chrome.storage.local.set({ userInfo: message.payload }, () => {
@@ -118,8 +127,8 @@ interface Application {
 
 // Detect career page
 const detectCareerPage = (): boolean => {
-  const careerKeywords = ["/careers","/jobs","/opportunities","/apply","/vacancies","/join-us","/job-openings","/employment","/recruitment","/submit-a-job", "/post-a-job"];
-  const knownJobDomains = ["workday","greenhouse","lever","icims","zoho","successfactors","dzconnex"];
+  const careerKeywords = ["/careers", "/jobs", "/opportunities", "/apply", "/vacancies", "/join-us", "/job-openings", "/employment", "/recruitment", "/submit-a-job", "/post-a-job"];
+  const knownJobDomains = ["workday", "greenhouse", "lever", "icims", "zoho", "successfactors", "dzconnex"];
 
   const currentURL = window.location.href.toLowerCase();
   const currentHost = window.location.hostname.toLowerCase();
@@ -153,7 +162,7 @@ const getJobId = (): string | null => {
 // -----------------------------
 document.addEventListener("click", async (event) => {
   const target = event.target as HTMLElement;
-  
+
   // Find the job link, whether the user clicked the link directly or an element inside it
   const jobLink = target.closest("a[data-rel='link-job-name']") as HTMLAnchorElement;
 
@@ -174,7 +183,7 @@ document.addEventListener("click", async (event) => {
             resolve();
           });
         });
-        
+
         // 3. Manually navigate to the page now that the title is saved
         window.location.href = jobLink.href;
       } catch (error) {
@@ -220,7 +229,7 @@ const saveApplication = (jobId: string | null) => {
     const isAlreadySaved = applications.some(
       (app) => `${app.jobId}-${app.jobTitle}` === `${stableJobId}-${jobTitle}`
     );
-  
+
     if (!isAlreadySaved) {
       applications.push(newApplication);
       chrome.storage.local.set({ applications }, () => {
@@ -256,7 +265,7 @@ const detectConfirmationPage = () => {
     document.title.toLowerCase().includes("thank you");
 
   const isKnownJobSite =
-    ["greenhouse","workday","lever","icims","successfactors","dzconnex"]
+    ["greenhouse", "workday", "lever", "icims", "successfactors", "dzconnex"]
       .some(domain => window.location.hostname.includes(domain));
 
   if (!isConfirmation || !isKnownJobSite) return;
