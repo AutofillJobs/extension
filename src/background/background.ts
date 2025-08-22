@@ -68,6 +68,40 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "saveAppliedJob") {
+    const { jobId, jobTitle, url, appliedDateTime } = message;
+
+    chrome.storage.local.get(["applications"], (result) => {
+      const applications = result.applications || [];
+
+      const uniqueKey = `${jobId}-${jobTitle}`;
+      const alreadySaved = applications.some(
+        (app: any) => `${app.jobId}-${app.jobTitle}` === uniqueKey
+      );
+
+      if (!alreadySaved) {
+        applications.push({
+          jobId,
+          companyLink: url,
+          jobTitle,
+          dateApplied: appliedDateTime,
+          status: "Applied",
+          isCareerForm: true
+        });
+
+        chrome.storage.local.set({ applications }, () => {
+          console.log("✅ Application saved:", jobId, jobTitle);
+        });
+      } else {
+        console.log("⚠️ Duplicate application skipped:", uniqueKey);
+      }
+    });
+
+    sendResponse({ success: true });
+    return true; // keep channel open for async
+  }
+});
 function updateUninstallURLFromStorage() {
   chrome.storage.local.get(['formData'], (result) => {
     if (chrome.runtime.lastError) {
