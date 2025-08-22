@@ -331,7 +331,8 @@ export default function fillWorkdayForm(data: FormData): void {
             }
         }
 
-        return await waitAndClickButton();
+        // return await waitAndClickButton();
+        return false;
     };
 
     const fillPersonalInfo = async (websiteIndex = 0): Promise<void> => {
@@ -742,7 +743,7 @@ export default function fillWorkdayForm(data: FormData): void {
             // After personal info form filling is complete, click Save & Continue
             setTimeout(async () => {
                 console.log('[workdaynewScript] Personal info filling complete, attempting Save & Continue...');
-                await waitAndClickButton();
+                // await waitAndClickButton();
             }, 3000);
         };
     }
@@ -1081,7 +1082,7 @@ export default function fillWorkdayForm(data: FormData): void {
         await waitUntilFormIsValid();
         
         // Click Save & Continue
-        await waitAndClickButton();
+        // await waitAndClickButton();
     }
 
     // Helper function to check remaining unanswered application questions
