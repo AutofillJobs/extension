@@ -356,8 +356,8 @@ export default function fillWorkdayForm(data: FormData): void {
             else if (fieldName.includes("addressline1")) input.value = details.address1 ?? "";
             else if (fieldName.includes("city")) input.value = details.city ?? "";
             else if (input.id === "phoneNumber--phoneNumber" || (fieldName.includes("phonenumber") && !fieldName.includes("countryphone") && !fieldName.includes("code"))) {
-                input.value = String(details.phoneNumber || '9874563210');
-                console.log('[workdaynewScript] Phone number field found:', fieldName, 'ID:', input.id, 'Value set:', details.phoneNumber || '9874563210', 'Input element:', input);
+                input.value = String(details.phoneNumber || '2025550147');
+                console.log('[workdaynewScript] Phone number field found:', fieldName, 'ID:', input.id, 'Value set:', details.phoneNumber || '2025550147', 'Input element:', input);
                 
                 // Trigger events to ensure Workday recognizes the value
                 input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -390,7 +390,123 @@ export default function fillWorkdayForm(data: FormData): void {
                 }
             }
             else if (fieldName.includes("selfidentifieddisabilitydata--name")) input.value = details.fullName ?? "";
-            else if (fieldName.includes("extension")) input.value = details.phoneCode ?? "";
+            else if (fieldName.includes("extension")) {
+                input.value = details.phoneCode ?? "+1";
+            }
+            else if (fieldName.includes("countryphonecode") || fieldName.includes("countrycode") || fieldName.includes("phonenumber--countryphonecode")) {
+                // Country phone code dropdown selection - avoid source field
+                setTimeout(async () => {
+                    const phoneCode = details.phoneCode || "+1";
+                    
+                    // Find country phone code search input - exclude source field
+                    const phoneCodeSearch = document.querySelector<HTMLInputElement>('input[id="phoneNumber--countryPhoneCode"]') ||
+                                          document.querySelector<HTMLInputElement>('input[id*="countryPhoneCode"]:not([id*="source"])') ||
+                                          document.querySelector<HTMLInputElement>('input[data-automation-id="searchBox"]:not([id*="source"])') ||
+                                          document.querySelector<HTMLInputElement>('input[placeholder="Search"]:not([id*="source"])');
+                    
+                    if (phoneCodeSearch && !phoneCodeSearch.id.includes('source')) {
+                        phoneCodeSearch.focus();
+                        phoneCodeSearch.value = phoneCode;
+                        phoneCodeSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                        phoneCodeSearch.dispatchEvent(new Event('change', { bubbles: true }));
+                        
+                        // Wait for dropdown options and select matching phone code
+                        setTimeout(async () => {
+                            const codeOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
+                            for (const option of codeOptions) {
+                                const optionText = option.textContent?.trim();
+                                if (optionText === phoneCode || optionText?.includes(phoneCode)) {
+                                    option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    await wait(200);
+                                    option.click();
+                                    break;
+                                }
+                            }
+                        }, 800);
+                    }
+                }, 2500);
+            }
+            else if (fieldName.includes("source")) {
+                // How did you hear about us - using question text detection to avoid country confusion
+                setTimeout(async () => {
+                    // First, find the actual question container for "How did you hear about us"
+                    const questionTexts = [
+                        'how did you hear about us',
+                        'how did you hear about this position',
+                        'source of application',
+                        'where did you hear about us'
+                    ];
+                    
+                    let sourceContainer = null;
+                    let sourceButton = null;
+                    
+                    // Search for the question text in the DOM
+                    for (const questionText of questionTexts) {
+                        const allText = document.body.textContent?.toLowerCase() || '';
+                        if (allText.includes(questionText)) {
+                            console.log(`[workdaynewScript] Found source question: ${questionText}`);
+                            
+                            // Find the associated dropdown button for this question
+                            const containers = document.querySelectorAll('fieldset, .css-1w0k4b1, [data-automation-id*="formField"]');
+                            for (const container of containers) {
+                                const containerText = container.textContent?.toLowerCase() || '';
+                                if (containerText.includes(questionText)) {
+                                    // Look for dropdown button within this container
+                                    sourceButton = container.querySelector('button[aria-haspopup="listbox"]') ||
+                                                  container.querySelector('button[data-automation-id*="formField"]') ||
+                                                  container.querySelector('button');
+                                    if (sourceButton) {
+                                        sourceContainer = container;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (sourceButton) break;
+                        }
+                    }
+                    
+                    // Fallback to direct source field detection if question text approach fails
+                    if (!sourceButton) {
+                        sourceButton = document.querySelector('button[aria-label*="How did you hear"]') ||
+                                      document.querySelector('button[data-automation-id*="source"]') ||
+                                      document.querySelector('button[aria-describedby*="source"]');
+                    }
+                    
+                    if (sourceButton && sourceButton instanceof HTMLElement) {
+                        console.log('[workdaynewScript] Found source dropdown button, proceeding with selection...');
+                        
+                        // Click to open dropdown
+                        sourceButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        await wait(300);
+                        sourceButton.click();
+
+                        // Wait for options to appear
+                        await wait(1500);
+                        
+                        // Look for LinkedIn first, then fallback to first option
+                        const options = document.querySelectorAll<HTMLElement>('[role="option"]');
+                        let linkedInFound = false;
+                        for (const option of options) {
+                            const optionText = option.textContent?.trim().toLowerCase();
+                            if (optionText?.includes('linkedin')) {
+                                option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                await wait(200);
+                                option.click();
+                                linkedInFound = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!linkedInFound && options.length > 0) {
+                            options[0].click();
+                            console.log('[workdaynewScript] Successfully completed source selection');
+                        }
+                    } else {
+                        console.warn('[workdaynewScript] Source question/button not found using text detection');
+                    }
+                }, 2500);
+            }
             else if (fieldName.includes("candidateispreviousworker")) {
                 const noOption = document.querySelector<HTMLInputElement>('input[name="candidateIsPreviousWorker"][value="false"]');
                 if (noOption) {
@@ -421,20 +537,178 @@ export default function fillWorkdayForm(data: FormData): void {
             searchInput.dispatchEvent(event);
 
 
-            // Country dropdown selection
-            const countryDropdownBtn = document.querySelector<HTMLButtonElement>('button[name="country"]');
-            if (!countryDropdownBtn) return;
-            countryDropdownBtn.click();
-            setTimeout(() => {
-                const options = document.querySelectorAll<HTMLElement>('[role="option"]');
-                const country = data.data?.details?.country;
-                if (!country) return;
-                options.forEach(option => {
-                    if (option.innerText.trim().toLowerCase() === country.toLowerCase()) {
-                        option.click();
+            // Robust country dropdown selection - works across job boards
+            const country = data.data?.details?.country;
+            if (!country) return;
+            console.log("Countrty is : " + country )
+            
+            // Find country dropdown using multiple robust selectors
+            let countryDropdownBtn: HTMLButtonElement | null = null;
+            
+            // Primary selectors for country dropdown - including exact button structure
+            const countrySelectors = [
+                'button[name="country"]',
+                'button[id="country--country"]',
+                'button[aria-label*="Country / Territory"]',
+                'button[aria-label*="Country"]',
+                'button[aria-label*="Territory"]',
+                'button[data-automation-id*="country"]',
+                'button[id*="country"]',
+                'button[id*="Country"]',
+                'input[name="country"]',
+                'input[data-automation-id*="country"]',
+                'input[aria-label*="Country"]',
+                'input[aria-label*="Territory"]',
+                'input[id*="country"]',
+                'input[id*="Country"]'
+            ];
+            
+            // Try each selector until we find the country dropdown
+            for (const selector of countrySelectors) {
+                const element = document.querySelector<HTMLButtonElement>(selector) || 
+                               document.querySelector<HTMLInputElement>(selector);
+                if (element) {
+                    countryDropdownBtn = element as HTMLButtonElement;
+                    break;
+                }
+            }
+            
+            // Fallback: find any element that contains country-related text or exact button structure
+            if (!countryDropdownBtn) {
+                // Try exact button structure first
+                const exactButton = document.querySelector<HTMLButtonElement>('button[aria-haspopup="listbox"][name="country"]');
+                if (exactButton) {
+                    countryDropdownBtn = exactButton;
+                } else {
+                    // Fallback to text-based search
+                    const allButtons = document.querySelectorAll('button, input');
+                    for (const element of allButtons) {
+                        const text = element.textContent?.toLowerCase() || 
+                                   element.getAttribute('aria-label')?.toLowerCase() || 
+                                   element.getAttribute('placeholder')?.toLowerCase() || '';
+                        
+                        if (text.includes('country') || text.includes('territory')) {
+                            countryDropdownBtn = element as HTMLButtonElement;
+                            break;
+                        }
                     }
-                });
-            }, 500);
+                }
+            }
+            
+            if (!countryDropdownBtn) return;
+            
+            // Click the country dropdown button
+            countryDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await wait(500);
+            countryDropdownBtn.click();
+            
+            // Wait for dropdown to open and search for country
+            setTimeout(async () => {
+                // Look for search input in dropdown
+                const searchInput = document.querySelector<HTMLInputElement>('input[data-automation-id="searchInput"]') || 
+                                  document.querySelector<HTMLInputElement>('input[placeholder*="Search"]') ||
+                                  document.querySelector<HTMLInputElement>('input[type="text"]');
+                
+                if (searchInput) {
+                    // Type country name in search
+                    searchInput.focus();
+                    searchInput.value = country;
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    await wait(1000);
+                }
+                
+                // Find and click the matching country option
+                const options = document.querySelectorAll<HTMLElement>('[role="option"]');
+                for (const option of options) {
+                    const optionText = option.textContent?.trim().toLowerCase();
+                    if (optionText === country.toLowerCase() || 
+                        optionText?.includes(country.toLowerCase()) ||
+                        country.toLowerCase().includes(optionText || '')) {
+                        option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        await wait(200);
+                        option.click();
+                        break;
+                    }
+                }
+            }, 1000);
+            
+            // Phone device type dropdown selection
+            setTimeout(async () => {
+                const phoneDeviceType = data.data?.details?.phoneDeviceType || "Mobile";
+                
+                // Find phone device type dropdown
+                let phoneDeviceBtn: HTMLButtonElement | null = null;
+                
+                const phoneSelectors = [
+                    'button[name="phoneType"]',
+                    'button[id="phoneNumber--phoneType"]',
+                    'button[aria-label*="Phone Device Type"]',
+                    'button[data-automation-id*="phone"]',
+                    'button[id*="phone"]'
+                ];
+                
+                for (const selector of phoneSelectors) {
+                    const element = document.querySelector<HTMLButtonElement>(selector);
+                    if (element) {
+                        phoneDeviceBtn = element;
+                        break;
+                    }
+                }
+                
+                if (!phoneDeviceBtn) {
+                    // Fallback search for phone device dropdown
+                    const allButtons = document.querySelectorAll('button');
+                    for (const button of allButtons) {
+                        const text = button.textContent?.toLowerCase() || 
+                                   button.getAttribute('aria-label')?.toLowerCase() || '';
+                        
+                        if (text.includes('phone device') || text.includes('device type')) {
+                            phoneDeviceBtn = button as HTMLButtonElement;
+                            break;
+                        }
+                    }
+                }
+                
+                if (phoneDeviceBtn) {
+                    phoneDeviceBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await wait(500);
+                    phoneDeviceBtn.click();
+                    
+                    // Wait for dropdown and select device type
+                    setTimeout(async () => {
+                        const deviceOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
+                        let selected = false;
+                        
+                        for (const option of deviceOptions) {
+                            const optionText = option.textContent?.trim().toLowerCase();
+                            const targetType = phoneDeviceType.toLowerCase();
+                            
+                            if (optionText === targetType || 
+                                optionText?.includes(targetType) ||
+                                targetType.includes(optionText || '')) {
+                                option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                await wait(200);
+                                option.click();
+                                selected = true;
+                                break;
+                            }
+                        }
+                        
+                        // If exact match not found, select Mobile as fallback
+                        if (!selected) {
+                            for (const option of deviceOptions) {
+                                const optionText = option.textContent?.trim().toLowerCase();
+                                if (optionText === 'mobile') {
+                                    option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    await wait(200);
+                                    option.click();
+                                    break;
+                                }
+                            }
+                        }
+                    }, 800);
+                }
+            }, 2000);
             // state dropdown selection
             const stateDropdownSelection = document.querySelector<HTMLButtonElement>('button[name="countryRegion"]');
             if (!stateDropdownSelection) return;
@@ -971,10 +1245,78 @@ export default function fillWorkdayForm(data: FormData): void {
         }
     }
     
-    function fillVoluntaryDisclosure() {
+    async function fillVoluntaryDisclosure() {
         console.log('[workdaynewScript] Processing voluntary disclosure section...');
         
-        // Specifically target the terms and conditions checkbox
+        const details = data.data?.details;
+        if (!details) {
+            console.warn('[workdaynewScript] No details found for voluntary disclosure');
+            return;
+        }
+        
+        // Handle gender selection
+        if (details.gender) {
+            console.log(`[workdaynewScript] Processing gender selection: ${details.gender}`);
+            
+            // Find gender dropdown button - targeting the specific button provided
+            const genderDropdown = document.querySelector<HTMLButtonElement>('button[name="gender"]') ||
+                                  document.querySelector<HTMLButtonElement>('#personalInfoPerson--gender') ||
+                                  document.querySelector<HTMLButtonElement>('button[aria-label*="gender" i]') ||
+                                  document.querySelector<HTMLButtonElement>('button[aria-label*="Select One"]');
+            
+            if (genderDropdown) {
+                console.log('[workdaynewScript] Found gender dropdown, attempting to open...');
+                genderDropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // More robust click simulation
+                genderDropdown.focus();
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                genderDropdown.dispatchEvent(clickEvent);
+                
+                // Wait for dropdown options to appear
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Verify that options are visible and select the correct one
+                let options = document.querySelectorAll<HTMLElement>('[role="option"]');
+                if (options.length === 0) {
+                    console.warn('[workdaynewScript] Gender options not visible after dispatchEvent, trying a direct click.');
+                    genderDropdown.click(); // Fallback to a simple click
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    options = document.querySelectorAll<HTMLElement>('[role="option"]'); // Re-query for options
+                }
+
+                if (options.length > 0) {
+                    const targetGender = details.gender.toLowerCase();
+                    let optionFound = false;
+                    console.log(`[workdaynewScript] Found ${options.length} options. Looking for '${targetGender}'.`);
+
+                    for (const option of options) {
+                        const optionText = option.innerText.trim().toLowerCase();
+                        if (optionText === targetGender) {
+                            console.log(`[workdaynewScript] Selecting gender: ${option.innerText}`);
+                            option.click();
+                            optionFound = true;
+                            break;
+                        }
+                    }
+
+                    if (!optionFound) {
+                        console.warn(`[workdaynewScript] Gender option '${targetGender}' not found.`);
+                    }
+                } else {
+                    console.error('[workdaynewScript] Could not open gender dropdown to select an option.');
+                }
+            } else {
+                console.warn('[workdaynewScript] Gender dropdown not found');
+            }
+        }
+        
+        // Handle terms and conditions checkbox
         const termsCheckbox = document.getElementById('termsAndConditions--acceptTermsAndAgreements') as HTMLInputElement;
         
         if (termsCheckbox) {
@@ -1002,6 +1344,17 @@ export default function fillWorkdayForm(data: FormData): void {
                     checkboxElement.click();
                 }
             });
+        }
+        
+        // Handle other demographic dropdowns (ethnicity, veteran status, etc.)
+        if (details.ethnicity) {
+            console.log(`[workdaynewScript] Processing ethnicity: ${details.ethnicity}`);
+            // Similar dropdown handling for ethnicity
+        }
+        
+        if (details.veteran) {
+            console.log(`[workdaynewScript] Processing veteran status: ${details.veteran}`);
+            // Similar dropdown handling for veteran status
         }
     }
     const fillExperience = (index: number): void => {
@@ -1099,26 +1452,145 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.log(`[workdaynewScript] Found ${options.length} degree options`);
 
                 let optionFound = false;
-                options.forEach(option => {
+                const targetDegree = edu.educationType.toLowerCase();
+                
+                // Create flexible degree mappings
+                const degreeMappings: Record<string, string[]> = {
+                    'bachelor': ['bachelor', 'bachelors', 'bs', 'ba', 'b.sc', 'bachelor\'s'],
+                    'master': ['master', 'masters', 'ms', 'ma', 'm.sc', 'master\'s'],
+                    'doctorate': ['doctorate', 'phd', 'ph.d', 'doctoral', 'doctor\'s'],
+                    'high school': ['high school', 'highschool', 'hs', 'secondary'],
+                    'associates': ['associates', 'associate', 'associate\'s']
+                };
+                
+                for (const option of options) {
                     const optionText = option.innerText.trim().toLowerCase();
-                    const targetDegree = edu.educationType.toLowerCase();
-
+                    
                     console.log(`[workdaynewScript] Checking option: "${optionText}" against "${targetDegree}"`);
-
+                    
+                    // Direct match
                     if (optionText === targetDegree || optionText.includes(targetDegree) || targetDegree.includes(optionText)) {
                         console.log(`[workdaynewScript] Selecting degree option: ${optionText}`);
                         option.click();
                         optionFound = true;
+                        break;
                     }
-                });
+                    
+                    // Flexible matching using degree mappings
+                    for (const [standardDegree, variations] of Object.entries(degreeMappings)) {
+                        // Check if target contains standard degree
+                        if (targetDegree.includes(standardDegree)) {
+                            // Check if option matches any variation
+                            if (variations.some(variation => optionText.includes(variation))) {
+                                console.log(`[workdaynewScript] Selecting degree option: ${optionText} (matched ${standardDegree})`);
+                                option.click();
+                                optionFound = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (optionFound) break;
+                }
 
                 if (!optionFound) {
                     console.warn(`[workdaynewScript] Degree option not found for: ${edu.educationType}`);
+                    // Try to select the closest match - look for 'bachelors' if target is 'bachelor of science'
+                    for (const option of options) {
+                        const optionText = option.innerText.trim().toLowerCase();
+                        if (targetDegree.includes('bachelor') && optionText.includes('bachelor')) {
+                            console.log(`[workdaynewScript] Fallback: selecting bachelor's degree option: ${optionText}`);
+                            option.click();
+                            optionFound = true;
+                            break;
+                        }
+                    }
                 }
             }, 800);
         } else {
             console.warn('[workdaynewScript] Degree dropdown not found or educationType missing');
         }
+
+        // After filling education details, handle the languages section
+        await fillLanguages();
+    };
+
+    const fillLanguages = async (): Promise<void> => {
+        console.log('[workdaynewScript] Starting to fill Languages section...');
+
+        const languageContainer = document.querySelector('[aria-labelledby*="Languages-section"]');
+        if (!languageContainer) {
+            console.warn('[workdaynewScript] Languages section not found.');
+            return;
+        }
+
+        // 1. Select the language (English)
+        const languageDropdownBtn = languageContainer.querySelector<HTMLButtonElement>('button[name="language"][aria-label*="Language"]');
+        if (languageDropdownBtn) {
+            console.log('[workdaynewScript] Clicking language dropdown...');
+            languageDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await wait(300);
+            languageDropdownBtn.click();
+            await wait(800);
+
+            const languageOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
+            for (const option of languageOptions) {
+                if (option.textContent?.trim().toLowerCase() === 'english') {
+                    console.log('[workdaynewScript] Selecting language: English');
+                    option.click();
+                    await wait(500); // Wait for selection to process
+                    break;
+                }
+            }
+        } else {
+            console.warn('[workdaynewScript] Language dropdown button not found.');
+        }
+
+        // 2. Select proficiency levels for other dropdowns
+        const proficiencies = ['Listening', 'Overall', 'Reading', 'Speaking', 'Writing'];
+        const targetProficiency = 'Average';
+
+        for (const proficiency of proficiencies) {
+            console.log(`[workdaynewScript] Processing proficiency: ${proficiency}`);
+            const proficiencyDropdownBtn = languageContainer.querySelector<HTMLButtonElement>(`button[aria-label*="${proficiency}"]`);
+
+            if (proficiencyDropdownBtn) {
+                 // Check if a value is already selected
+                if (proficiencyDropdownBtn.textContent?.trim().toLowerCase() !== 'select one') {
+                    console.log(`[workdaynewScript] Proficiency for '${proficiency}' is already set to '${proficiencyDropdownBtn.textContent?.trim()}'. Skipping.`);
+                    continue;
+                }
+
+                console.log(`[workdaynewScript] Clicking proficiency dropdown for: ${proficiency}`);
+                proficiencyDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await wait(300);
+                proficiencyDropdownBtn.click();
+                await wait(800);
+
+                const proficiencyOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
+                let optionSelected = false;
+                for (const option of proficiencyOptions) {
+                    if (option.textContent?.trim().toLowerCase() === targetProficiency.toLowerCase()) {
+                        console.log(`[workdaynewScript] Selecting proficiency '${targetProficiency}' for '${proficiency}'`);
+                        option.click();
+                        optionSelected = true;
+                        await wait(500); // Wait for selection to process
+                        break;
+                    }
+                }
+
+                if (!optionSelected) {
+                    console.warn(`[workdaynewScript] Could not find option '${targetProficiency}' for '${proficiency}'. Closing dropdown.`);
+                     // If the desired option isn't found, click body to close the dropdown to avoid getting stuck
+                    document.body.click();
+                    await wait(300);
+                }
+            } else {
+                console.warn(`[workdaynewScript] Proficiency dropdown for '${proficiency}' not found.`);
+            }
+        }
+
+        console.log('[workdaynewScript] Finished filling Languages section.');
     };
 
     const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -1139,11 +1611,11 @@ export default function fillWorkdayForm(data: FormData): void {
                         if (currentPage === 'app-questions-1') {
                             await fillApplicationQuestions1();
                             console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
-                            await clickSaveAndContinue();
+                            // await clickSaveAndContinue();
                         } else if (currentPage === 'app-questions-2') {
                             await fillApplicationQuestions2();
                             console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
-                            await clickSaveAndContinue();
+                            // await clickSaveAndContinue();
                         }
                         // No fallback needed - page detection handles all application question pages
                         
@@ -1171,7 +1643,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                                 console.log('[workdaynewScript] Work experience filling complete, clicking Save & Continue...');
                                 saveClicked = false; // Reset flag to allow step 2 save click
-                                await clickSaveAndContinue();
+                                // await clickSaveAndContinue();
                             } else if (sectionTitle.includes('Education')) {
                                 const educationExperiences = data.data.educationExperiences
                                 if (!educationExperiences || !Array.isArray(educationExperiences)) return;
@@ -1199,11 +1671,11 @@ export default function fillWorkdayForm(data: FormData): void {
             if (currentPage === 'app-questions-1') {
                 await fillApplicationQuestions1();
                 console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
-                await clickSaveAndContinue();
+                // await clickSaveAndContinue();
             } else if (currentPage === 'app-questions-2') {
                 await fillApplicationQuestions2();
                 console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
-                await clickSaveAndContinue();
+                // await clickSaveAndContinue();
             }
             // No fallback needed - page detection handles all application question pages
             
