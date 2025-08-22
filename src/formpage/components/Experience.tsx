@@ -5,8 +5,236 @@ import EducationExperiencePopup from './EducationExperience';
 import ProjectExperienceDisplay from "./ProjectExperienceDisplay";
 import WorkExperienceDisplay from "./WorkExperienceDisplay";
 import EducationExperienceDisplay from "./EducationExperienceDisplay";
-import './Experience.css'
+import './Experience.css';
 import { getUserData } from '../../utils/storageHandler';
+
+// Additional Skills Popup Component (stores separately in chrome.storage.local)
+const AdditionalSkillsPopup = ({ onClose, onSave }) => {
+  const [skills, setSkills] = useState([]);
+  const [newSkill, setNewSkill] = useState('');
+  const [existingSkills, setExistingSkills] = useState([]);
+
+  useEffect(() => {
+    try {
+      chrome.storage.local.get(['additionalSkills'], (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error loading additional skills:', chrome.runtime.lastError);
+          return;
+        }
+        setExistingSkills(result?.additionalSkills || []);
+      });
+    } catch (e) {
+      console.error('chrome.storage not available:', e);
+    }
+  }, []);
+
+  const handleChangeSkill = (e) => setNewSkill(e.target.value);
+
+  const handleAddSkill = (e) => {
+    if ((e.key === 'Enter' || e.type === 'click') && newSkill.trim()) {
+      e.preventDefault?.();
+      const trimmed = newSkill.trim();
+      if (!skills.includes(trimmed) && !existingSkills.includes(trimmed)) {
+        setSkills((prev) => [...prev, trimmed]);
+      }
+      setNewSkill('');
+    }
+  };
+
+  const handleRemoveSkill = (index) => {
+    setSkills((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingSkill = (index) => {
+    setExistingSkills((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = (event) => {
+    event.preventDefault();
+    const allSkills = [...new Set([...existingSkills, ...skills])];
+
+    try {
+      chrome.storage.local.set({ additionalSkills: allSkills }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Error saving additional skills:', chrome.runtime.lastError);
+          return;
+        }
+        onSave?.();
+        onClose?.();
+      });
+    } catch (e) {
+      console.error('chrome.storage not available:', e);
+    }
+  };
+
+  return (
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
+      <div className="bg-white w-full md:w-96 p-6 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold mb-4">Additional Skills</h2>
+          <button className="text-gray-600 mb-4 text-2xl" onClick={onClose}>×</button>
+        </div>
+
+        {existingSkills.length > 0 && (
+          <>
+            <h3 className="text-gray-600 text-sm font-semibold mb-2">Current Skills</h3>
+            <div className="w-full mb-4 flex flex-wrap">
+              {existingSkills.map((skill, index) => (
+                <div key={index} className="bg-blue-100 text-blue-800 text-sm rounded-full px-3 py-1 mr-2 mb-2 flex items-center">
+                  {skill}
+                  <button
+                    onClick={() => handleRemoveExistingSkill(index)}
+                    className="ml-2 text-xs font-semibold focus:outline-none hover:text-red-600"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {skills.length > 0 && (
+          <>
+            <h3 className="text-gray-600 text-sm font-semibold mb-2">New Skills to Add</h3>
+            <div className="w-full mb-4 flex flex-wrap">
+              {skills.map((skill, index) => (
+                <div key={index} className="bg-green-100 text-green-800 text-sm rounded-full px-3 py-1 mr-2 mb-2 flex items-center">
+                  {skill}
+                  <button
+                    onClick={() => handleRemoveSkill(index)}
+                    className="ml-2 text-xs font-semibold focus:outline-none hover:text-red-600"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <h3 className="text-gray-600 text-sm font-semibold mb-2">Add New Skill</h3>
+        <div className="mb-4 flex">
+          <input
+            type="text"
+            placeholder="Enter skill name"
+            className="p-2 border rounded-lg flex-grow"
+            value={newSkill}
+            onChange={handleChangeSkill}
+            onKeyDown={handleAddSkill}
+          />
+          <button
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg ml-2 hover:bg-gray-700"
+            onClick={handleAddSkill}
+          >Add</button>
+        </div>
+
+        <div className="flex justify-between">
+          <button
+            onClick={handleSave}
+            className="bg-black text-white px-6 py-2 rounded-lg mr-4 hover:bg-gray-800"
+          >Save</button>
+          <button
+            onClick={onClose}
+            className="bg-gray-400 text-black px-6 py-2 rounded-lg hover:bg-gray-300"
+          >Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Skills Card Component (aggregates experience skills + additionalSkills from storage)
+const SkillsCard = ({ experience, refreshKey }) => {
+  const [experienceSkills, setExperienceSkills] = useState([]);
+  const [additionalSkills, setAdditionalSkills] = useState([]);
+
+  // Collect skills from experiences
+  useEffect(() => {
+    const skillsSet = new Set();
+
+    experience?.workExperiences?.forEach((w) => {
+      w?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
+    });
+    experience?.projectExperiences?.forEach((p) => {
+      p?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
+    });
+    experience?.educationExperiences?.forEach((e) => {
+      e?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
+    });
+
+    setExperienceSkills(Array.from(skillsSet).sort());
+  }, [experience]);
+
+  // Load additional skills from chrome storage and listen for changes
+  useEffect(() => {
+    const loadAdditional = () => {
+      try {
+        chrome.storage.local.get(['additionalSkills'], (result) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error loading additional skills:', chrome.runtime.lastError);
+            return;
+          }
+          setAdditionalSkills(result?.additionalSkills || []);
+        });
+      } catch (e) {
+        console.error('chrome.storage not available:', e);
+      }
+    };
+
+    loadAdditional();
+
+    const onChanged = (changes, area) => {
+      if (area === 'local' && changes.additionalSkills) {
+        setAdditionalSkills(changes.additionalSkills.newValue || []);
+      }
+    };
+
+    try {
+      chrome.storage.onChanged.addListener(onChanged);
+    } catch (e) {
+      // ignore if not in extension context
+    }
+
+    return () => {
+      try {
+        chrome.storage.onChanged.removeListener(onChanged);
+      } catch {}
+    };
+  }, [refreshKey]);
+
+  const totalSkills = [...new Set([...(experienceSkills || []), ...(additionalSkills || [])])];
+  if (!totalSkills.length) return null;
+
+  return (
+    <div className="p-4">
+      <h2 className="text-sm font-semibold text-gray-700 pb-2">All Skills ({totalSkills.length})</h2>
+      <div className="bg-gray-50 p-3 rounded-lg">
+        {experienceSkills.length > 0 && (
+          <div className="mb-3">
+            <h4 className="text-xs font-medium text-gray-600 mb-2">From Experiences</h4>
+            <div className="flex flex-wrap gap-2">
+              {experienceSkills.map((skill, idx) => (
+                <span key={`exp-${idx}`} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-blue-200">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {additionalSkills.length > 0 && (
+          <div>
+            <h4 className="text-xs font-medium text-gray-600 mb-2">Additional Skills</h4>
+            <div className="flex flex-wrap gap-2">
+              {additionalSkills.map((skill, idx) => (
+                <span key={`add-${idx}`} className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-200">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function Experience() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,13 +247,8 @@ export default function Experience() {
   });
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleRefresh = () => {
-    setRefreshKey((prevKey) => prevKey + 1);
-  };
-
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
+  const handleRefresh = () => setRefreshKey((k) => k + 1);
+  const toggleDropdown = () => setIsOpen((v) => !v);
 
   useEffect(() => {
     getUserData((userData) => {
@@ -41,236 +264,144 @@ export default function Experience() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        {/* Header with Add Button */}
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">My Experience</h1>
-          <div className="relative">
+    <div className="w-full md:w-96 md:max-w-full mx-auto">
+      <div className="p-6">
+        <div className="relative inline-block text-left">
+          <div>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-x-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors duration-200"
+              className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
               onClick={toggleDropdown}
             >
-              Add Experience
-              <svg
-                className="-mr-1 h-5 w-5 text-white"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
+              ADD
+              <svg className="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
               </svg>
             </button>
-            
+          </div>
+          <div className="flex flex-col gap-4">
             {isOpen && (
-              <div className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="absolute right-5 z-10 mt-2 ml-10 w-36 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="py-1" role="none">
-                  <button
-                    className="text-gray-700 block w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors duration-150"
-                    onClick={() => handleOptionClick("Work")}
-                  >
-                    Work Experience
-                  </button>
-                  <button
-                    className="text-gray-700 block w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors duration-150"
-                    onClick={() => handleOptionClick("Education")}
-                  >
-                    Education
-                  </button>
-                  <button
-                    className="text-gray-700 block w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors duration-150"
-                    onClick={() => handleOptionClick("Project")}
-                  >
-                    Project
-                  </button>
+                  <div className="text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100" onClick={() => handleOptionClick("Work")}>Work</div>
+                  <div className="text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100" onClick={() => handleOptionClick("Education")}>Education</div>
+                  <div className="text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100" onClick={() => handleOptionClick("Project")}>Project</div>
+                  <div className="text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100" onClick={() => handleOptionClick("Skills")}>Additional Skills</div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Experience Sections */}
-        <div className="divide-y divide-gray-200">
-          {/* Work Experience Section */}
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-indigo-100 p-2 rounded-full mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-800">Work Experience</h2>
-            </div>
-            <div className="space-y-3">
-              {experience?.workExperiences?.length > 0 ? (
-                experience.workExperiences.map((workExp) => (
-                  <div
-                    key={workExp.id}
-                    onClick={() => {
-                      setSelectedDisplayOption({
-                        type: "Work",
-                        data: workExp,
-                        selected: true,
-                      });
-                    }}
-                    className="bg-gray-50 hover:bg-indigo-50 p-4 rounded-lg border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                  >
-                    <h3 className="font-medium text-gray-900">{workExp.jobTitle}</h3>
-                    <p className="text-sm text-gray-600">{workExp.companyName}</p>
-                    {workExp.startDate && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(workExp.startDate).toLocaleDateString()} - {workExp.endDate ? new Date(workExp.endDate).toLocaleDateString() : 'Present'}
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm italic">No work experience added yet</p>
-              )}
-            </div>
-          </div>
+        {/* Skills Card */}
+        <SkillsCard experience={experience} refreshKey={refreshKey} />
 
-          {/* Project Experience Section */}
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-indigo-100 p-2 rounded-full mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+        <div className="p-4">
+          <h2 className="text-sm font-semibold text-gray-700 pb-1">Work Experiences</h2>
+          <div className="grid gap-2 rounded">
+            {experience?.workExperiences?.map((workExp) => (
+              <div
+                key={workExp.id}
+                onClick={() => {
+                  setSelectedDisplayOption({ type: "Work", data: workExp, selected: true });
+                }}
+                className="bg-gray-100 p-2 cursor-pointer hover:bg-gray-200"
+              >
+                <p className="text-black">{workExp.jobTitle} : {workExp.companyName}</p>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800">Projects</h2>
-            </div>
-            <div className="space-y-3">
-              {experience?.projectExperiences?.length > 0 ? (
-                experience.projectExperiences.map((projectExp) => (
-                  <div
-                    key={projectExp.id}
-                    onClick={() => {
-                      setSelectedDisplayOption({
-                        type: "Project",
-                        data: projectExp,
-                        selected: true,
-                      });
-                    }}
-                    className="bg-gray-50 hover:bg-indigo-50 p-4 rounded-lg border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                  >
-                    <h3 className="font-medium text-gray-900">{projectExp.projectName}</h3>
-                    {projectExp.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{projectExp.description}</p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm italic">No projects added yet</p>
-              )}
-            </div>
+            ))}
           </div>
+        </div>
 
-          {/* Education Experience Section */}
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-indigo-100 p-2 rounded-full mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                  <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                </svg>
+        <div className="p-4">
+          <h2 className="text-sm font-semibold text-gray-700 pb-1">Project Experiences</h2>
+          <div className="grid gap-2 rounded">
+            {experience?.projectExperiences?.map((projectExp) => (
+              <div
+                key={projectExp.id}
+                onClick={() => {
+                  setSelectedDisplayOption({ type: "Project", data: projectExp, selected: true });
+                }}
+                className="bg-gray-100 p-2 cursor-pointer hover:bg-gray-200"
+              >
+                <p className="text-black">Project: {projectExp.projectName}</p>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800">Education</h2>
-            </div>
-            <div className="space-y-3">
-              {experience?.educationExperiences?.length > 0 ? (
-                experience.educationExperiences.map((eduExp) => (
-                  <div
-                    key={eduExp.id}
-                    onClick={() => {
-                      setSelectedDisplayOption({
-                        type: "Education",
-                        data: eduExp,
-                        selected: true,
-                      });
-                    }}
-                    className="bg-gray-50 hover:bg-indigo-50 p-4 rounded-lg border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                  >
-                    <h3 className="font-medium text-gray-900">{eduExp.courseName}</h3>
-                    <p className="text-sm text-gray-600">{eduExp.collegeName}</p>
-                    {eduExp.startDate && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(eduExp.startDate).toLocaleDateString()} - {eduExp.endDate ? new Date(eduExp.endDate).toLocaleDateString() : 'Present'}
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm italic">No education added yet</p>
-              )}
-            </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h2 className="text-sm font-semibold text-gray-700 pb-1">Education Experiences</h2>
+          <div className="grid gap-2 rounded">
+            {experience?.educationExperiences?.map((eduExp) => (
+              <div
+                key={eduExp.id}
+                onClick={() => {
+                  setSelectedDisplayOption({ type: "Education", data: eduExp, selected: true });
+                }}
+                className="bg-gray-100 p-2 cursor-pointer hover:bg-gray-200"
+              >
+                <p className="text-black">{eduExp.courseName} : {eduExp.collegeName}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Modals for displaying details */}
       {selectedDisplayOption.selected && selectedDisplayOption?.type === "Project" && (
         <ProjectExperienceDisplay
           data={selectedDisplayOption.data}
           mode={true}
-          onClose={() => {
-            setSelectedDisplayOption({ selected: false, data: null, type: "" });
-          }}
-          onSave={handleRefresh}
-        />
-      )}
-      {selectedDisplayOption.selected && selectedDisplayOption?.type === "Work" && (
-        <WorkExperienceDisplay
-          data={selectedDisplayOption.data}
-          mode={true}
-          onClose={() => {
-            setSelectedDisplayOption({ selected: false, data: null, type: "" });
-          }}
-          onSave={handleRefresh}
-        />
-      )}
-      {selectedDisplayOption.selected && selectedDisplayOption?.type === "Education" && (
-        <EducationExperienceDisplay
-          data={selectedDisplayOption.data}
-          mode={true}
-          onClose={() => {
-            setSelectedDisplayOption({ selected: false, data: null, type: "" });
-          }}
+          onClose={() => setSelectedDisplayOption({ selected: false, data: null, type: "" })}
           onSave={handleRefresh}
         />
       )}
 
-      {/* Modals for adding new items */}
+      {selectedDisplayOption.selected && selectedDisplayOption?.type === "Work" && (
+        <WorkExperienceDisplay
+          data={selectedDisplayOption.data}
+          mode={true}
+          onClose={() => setSelectedDisplayOption({ selected: false, data: null, type: "" })}
+          onSave={handleRefresh}
+        />
+      )}
+
+      {selectedDisplayOption.selected && selectedDisplayOption?.type === "Education" && (
+        <EducationExperienceDisplay
+          data={selectedDisplayOption.data}
+          mode={true}
+          onClose={() => setSelectedDisplayOption({ selected: false, data: null, type: "" })}
+          onSave={handleRefresh}
+        />
+      )}
+
       {selectedOption === "Work" && (
         <WorkExperiencePopup
           mode={true}
-          onClose={() => {
-            setSelectedOption(null);
-          }}
+          onClose={() => setSelectedOption(null)}
           onSave={handleRefresh}
         />
       )}
+
       {selectedOption === "Education" && (
         <EducationExperiencePopup
           mode={true}
-          onClose={() => {
-            setSelectedOption(null);
-          }}
+          onClose={() => setSelectedOption(null)}
           onSave={handleRefresh}
         />
       )}
+
       {selectedOption === "Project" && (
         <ProjectExperience
           mode={true}
-          onClose={() => {
-            setSelectedOption(null);
-          }}
+          onClose={() => setSelectedOption(null)}
+          onSave={handleRefresh}
+        />
+      )}
+
+      {selectedOption === "Skills" && (
+        <AdditionalSkillsPopup
+          onClose={() => setSelectedOption(null)}
           onSave={handleRefresh}
         />
       )}

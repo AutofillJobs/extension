@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUserData, saveUserData } from '../../utils/storageHandler';
 
-const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
-  // const [showSkillInput, setShowSkillInput] = useState(false);
+const ProjectExperiencePopup = ({ onClose, mode, onSave }) => {
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
   const [projectData, setProjectData] = useState({
@@ -18,7 +17,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
 
   useEffect(() => {
     getUserData((userData) => {
-      if (userData && userData.projectExperiences) {
+      if (userData && userData.data?.details?.projectExperiences) {
         // If you want to edit an existing experience, you would need to pass an ID prop
         // and then find the specific experience here
       }
@@ -30,23 +29,15 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
     setProjectData({ ...projectData, stillWorking: e.target.checked });
   };
 
-  // const handleAddSkillClick = () => {
-  //   setShowSkillInput(true);
-  // };
-
   const handleChangeSkill = (e) => {
-    e.preventDefault();
     setNewSkill(e.target.value);
-  }
+  };
 
   const handleSkillInputChange = (e) => {
-    e.preventDefault();
-    // Add the skill to the skills array when user inputs a skill and presses Enter or clicks Add
-    if (e.key === 'Enter' || e.type === 'click') {
-      console.log("e",e)
-      setSkills([...skills, newSkill]);
+    if ((e.key === 'Enter' || e.type === 'click') && newSkill.trim()) {
+      e.preventDefault();
+      setSkills([...skills, newSkill.trim()]);
       setNewSkill("");
-      // setShowSkillInput(false);
     }
   };
 
@@ -64,13 +55,18 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
     };
 
     getUserData((userData) => {
-      const existingFormData = userData?.data || {};
-      const existingProjectExperiences = existingFormData.projectExperiences || [];
+      const existingFormData = userData || {};
+      const existingDetails = existingFormData.data?.details || {};
+      const existingProjectExperiences = existingDetails.projectExperiences || [];
       
       const updatedFormData = {
-        data:{
         ...existingFormData,
-        projectExperiences: [...existingProjectExperiences, updatedProjectData],
+        data: {
+          ...existingFormData.data,
+          details: {
+            ...existingDetails,
+            projectExperiences: [...existingProjectExperiences, updatedProjectData],
+          }
         }
       };
 
@@ -106,6 +102,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             setProjectData({ ...projectData, projectName: e.target.value })
           }
         />
+        
         <label className="flex items-center mb-4">
           <input
             type="checkbox"
@@ -116,6 +113,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
           />
           Currently Working
         </label>
+        
         <input
           type="date"
           placeholder="Start Date"
@@ -129,6 +127,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             })
           }
         />
+        
         <input
           type="date"
           placeholder="End Date"
@@ -142,9 +141,10 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
           }
         />
 
-<h3 className="text-gray-600 text-sm font-semibold mb-2">
-  Skills
-</h3>
+        <h3 className="text-gray-600 text-sm font-semibold mb-2">
+          Skills
+        </h3>
+        
         <div className="w-full mb-4 flex flex-wrap">
           {skills.map((skill, index) => (
             <div
@@ -162,20 +162,22 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
           ))}
         </div>
    
-          <div className="mb-4 flex flex-wrap">
-            <input
-              type="text"
-              placeholder="Skill"
-              className="p-2 border h-10 rounded-lg flex-grow"
-              onChange={handleChangeSkill}
-            />
-            <button
-              className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
-              onClick={handleSkillInputChange}
-            >
-              Add
-            </button>
-          </div>
+        <div className="mb-4 flex flex-wrap">
+          <input
+            type="text"
+            placeholder="Skill"
+            className="p-2 border h-10 rounded-lg flex-grow"
+            value={newSkill}
+            onChange={handleChangeSkill}
+            onKeyPress={handleSkillInputChange}
+          />
+          <button
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
+            onClick={handleSkillInputChange}
+          >
+            Add
+          </button>
+        </div>
       
         <textarea
           placeholder="Description"
@@ -187,6 +189,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             setProjectData({ ...projectData, description: e.target.value })
           }
         />
+        
         <input
           type="text"
           placeholder="Host Url"
@@ -197,6 +200,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             setProjectData({ ...projectData, hostUrl: e.target.value })
           }
         />
+        
         <input
           type="text"
           placeholder="Git repository Url"
@@ -207,6 +211,7 @@ const ProjectExperiencePopup = ({ onClose, mode,onSave }) => {
             setProjectData({ ...projectData, gitUrl: e.target.value })
           }
         />
+        
         <div className="flex justify-between">
           <button
             onClick={handleSave}

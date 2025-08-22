@@ -43,22 +43,7 @@ export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promi
       }
     };
 
-    // checkStability();
-
-    // const observer = new MutationObserver(() => {
-    //   checkStability();
-    // });
-
-    // observer.observe(document.body, {
-    //   childList: true,
-    //   subtree: true,
-    //   attributes: true,
-    //   characterData: true
-    // });
-
-    Promise.resolve().then(() => {
-      observer.disconnect();
-    });
+    checkStability();
   });
 }
 
@@ -67,8 +52,20 @@ interface UserData {
     details?: {
       email?: string;
       emailAlternative?: string;
+      firstName?: string;
+      lastName?: string;
+      name?: string;
+      password?: string;
+      address1?: string;
+      address2?: string;
     };
   };
+}
+
+interface UserDataPayload {
+  email: string;
+  password: string;
+  address: string;
 }
 
 export async function saveInteractiveElements(input: number): Promise<void> {
@@ -111,8 +108,8 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 
         // If user doesn't exist, create them
         if (userExist.success && !userExist.user) {
-          if (!username) {
-            console.log('User name missing. Cannot create user.');
+          if (!username || !password) {
+            console.log('User name or password missing. Cannot create user.');
             resolve();
             return;
           }
@@ -143,14 +140,14 @@ export async function saveInteractiveElements(input: number): Promise<void> {
           console.log(`Local count updated: ${localCount} + ${input} = ${updatedCount}`);
 
           // Check if we've reached threshold for cloud update
-          if (updatedCount >= 20) {
+          if (updatedCount >= 300) {
             // Calculate total new count (current cloud + updatedCount)
             const newAppCount = cloudAppCount + updatedCount;
             
             // Show warning if exceeding 100, but still update
-            if (newAppCount > 100) {
-              console.log('Warning: Application count exceeds 100 (Total: ' + newAppCount + ')');
-            }
+            // if (newAppCount > 100) {
+            //   console.log('Warning: Application count exceeds 100 (Total: ' + newAppCount + ')');
+            // }
 
             const updateResult = await backendService.patchUser(userId, {
               "number of applications": newAppCount

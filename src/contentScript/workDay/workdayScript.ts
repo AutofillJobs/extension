@@ -141,8 +141,8 @@ function createWorkdayFormFiller(userData:any) {
       element.focus();
       await sleep(100);
 
-      const isFirstNameField: boolean = element.id && element.id.includes('firstName');
-      const isPhoneNumberField: boolean = element.id && element.id.includes('phoneNumber');
+      const isFirstNameField: boolean = !!(element.id && element.id.includes('firstName'));
+      const isPhoneNumberField: boolean = !!(element.id && element.id.includes('phoneNumber'));
 
       if (context === "STEP2" || ((isFirstNameField || isPhoneNumberField) && context !== "STEP2")) {
         const logPrefix: string = context === "STEP2" ? "STEP2 Context" : `Non-STEP2 Field (${element.id})`;
@@ -324,14 +324,14 @@ function createWorkdayFormFiller(userData:any) {
               if (element.id === 'personalInfoPerson--gender' && value.toLowerCase() === 'male') {
                 console.log(`[Form Filler DEBUG Gender] MATCHED option: Text="${option.textContent ? option.textContent.trim() : 'N/A'}", Using selector "${selector}"`);
               }
+              let clickTarget: HTMLElement = option as HTMLElement;
+              if (option.tagName === 'LI' && option.firstElementChild && option.firstElementChild.tagName === 'DIV') {
+                clickTarget = option.firstElementChild as HTMLElement;
+              }
+
               try {
                 option.scrollIntoView({ block: 'center' });
                 await sleep(300);
-
-                let clickTarget: HTMLElement = option as HTMLElement;
-                if (option.tagName === 'LI' && option.firstElementChild && option.firstElementChild.tagName === 'DIV') {
-                  clickTarget = option.firstElementChild as HTMLElement;
-                }
 
                 try {
                   (clickTarget as HTMLElement).focus();
@@ -551,8 +551,9 @@ function createWorkdayFormFiller(userData:any) {
     for (const doc of allDocs) {
       const headers = doc.querySelectorAll('h2') as NodeListOf<HTMLHeadingElement>;
       for (const header of headers) {
-        if (header.textContent && keywords.some(keyword => header.textContent.trim().includes(keyword))) {
-          console.log(`[Form Filler] detectStepByHeading: Found matching H2: "${header.textContent.trim()}"`);
+        const headerText = header.textContent?.trim() || '';
+        if (headerText && keywords.some(keyword => headerText.includes(keyword))) {
+          console.log(`[Form Filler] detectStepByHeading: Found matching H2: "${headerText}"`);
           if (requiredFieldSelector) {
             console.log(`[Form Filler] detectStepByHeading: Checking for required field: "${requiredFieldSelector}"`);
             if (await findSingleElement(requiredFieldSelector, 500)) {
@@ -659,66 +660,251 @@ function createWorkdayFormFiller(userData:any) {
 
   async function clickSaveAndContinue(): Promise<boolean> {
     console.log('[Form Filler] clickSaveAndContinue: Attempting to find and click Save/Continue/Next button.');
+    
+    // Wait for form validation and button enablement
+    await waitForFormValidation();
+    
+    // Enhanced selectors including the exact one you provided
     const buttonSelectors: string[] = [
       'button[data-automation-id="pageFooterNextButton"]',
-      'button[data-automation-id*="SaveAndContinue"]i',
-      'button[data-automation-id*="Next"]i',
-      'button[data-automation-id*="Submit"]i',
-      'button[data-automation-id*="Continue"]i',
-      'button[aria-label*="Save and Continue"]i',
-      'button[aria-label*="Next"]i',
-      'button[aria-label*="Submit"]i',
-      'button[aria-label*="Continue"]i',
-      'button.css-wz5u7z[data-automation-id="pageFooterNextButton"]'
+      'button[data-automation-id="pageFooterNextButton"].css-1cgcsv0',
+      'button.css-1cgcsv0[data-automation-id="pageFooterNextButton"]',
+      'button[data-automation-id*="SaveAndContinue"]',
+      'button[data-automation-id*="Next"]',
+      'button[data-automation-id*="Submit"]',
+      'button[data-automation-id*="saveAndContinue"]',
+      'button[data-automation-id*="next"]',
+      'button[data-automation-id*="submit"]',
+      'button[data-automation-id*="Save"]',
+      'button[data-automation-id*="save"]',
+      'button[data-automation-id*="Continue"]',
+      'button[data-automation-id*="continue"]',
+      'footer[data-automation-id="bottomNavigation"] button',
+      'footer[data-automation-id="bottomNavigation"] button[data-automation-id*="Next"]',
+      'footer[data-automation-id="bottomNavigation"] button[data-automation-id*="Save"]',
+      'button[data-automation-id*="bottomNavigation"]',
+      'button[data-automation-id*="footer"]',
+      'button[data-automation-id*="navigation"]'
     ];
 
-    const buttonTexts: string[] = ["Save and Continue", "Next", "Submit", "Continue"];
+    const buttonTexts: string[] = [
+      "Save and Continue",
+      "Next",
+      "Continue",
+      "Submit",
+      "Save & Continue",
+      "save and continue",
+      "next",
+      "continue",
+      "submit"
+    ];
 
     const allDocs = getAllIframeDocuments();
+    
+    console.log('[Form Filler] clickSaveAndContinue: Starting enhanced button detection...');
 
-    for (const doc of allDocs) {
-      for (const selector of buttonSelectors) {
-        try {
-          const button = doc.querySelector(selector) as HTMLButtonElement;
-          if (button && button.offsetParent !== null) {
-            console.log(`[Form Filler] clickSaveAndContinue: Found button with selector "${selector}". Text: "${button.textContent ? button.textContent.trim() : 'N/A'}"`);
-            button.scrollIntoView({ block: 'center' });
-            await sleep(200);
-            button.focus();
-            await sleep(100);
-            console.log('[Form Filler] clickSaveAndContinue: Clicking button...');
-            button.click();
-            await sleep(1500);
-            return true;
+    // Retry mechanism with progressive delays
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`[Form Filler] clickSaveAndContinue: Attempt ${attempt}/${maxRetries}`);
+      
+      for (const doc of allDocs) {
+        // First, try exact CSS selectors
+        for (const selector of buttonSelectors) {
+          try {
+            const button = doc.querySelector(selector) as HTMLButtonElement;
+            if (button) {
+              const isVisible = button.offsetParent !== null;
+              const isEnabled = !button.disabled && !button.hasAttribute('aria-disabled');
+              const buttonText = button.textContent ? button.textContent.trim() : 'N/A';
+              
+              console.log(`[Form Filler] clickSaveAndContinue: Found button with selector "${selector}"`);
+              console.log(`[Form Filler]   - Visible: ${isVisible}, Enabled: ${isEnabled}, Text: "${buttonText}"`);
+              
+              if (isVisible && isEnabled) {
+                console.log(`[Form Filler] clickSaveAndContinue: Attempting to click button with text: "${buttonText}"`);
+                
+                // Ensure button is in view
+                button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await sleep(1000);
+                
+                try {
+                  // Enhanced clicking mechanism
+                  button.focus();
+                  
+                  // Try multiple clicking strategies
+                  const clickStrategies = [
+                    () => button.click(),
+                    () => {
+                      button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                      button.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                    },
+                    () => {
+                      const rect = button.getBoundingClientRect();
+                      const x = rect.left + rect.width / 2;
+                      const y = rect.top + rect.height / 2;
+                      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
+                    }
+                  ];
+                  
+                  for (const strategy of clickStrategies) {
+                    try {
+                      strategy();
+                      await sleep(500);
+                      
+                      // Verify the click was successful by checking if button disappeared or became disabled
+                      const buttonStillExists = doc.contains(button) && !button.disabled;
+                      if (!buttonStillExists) {
+                        console.log('[Form Filler] clickSaveAndContinue: Button click successful - button state changed!');
+                        await sleep(2000);
+                        return true;
+                      }
+                    } catch (clickError) {
+                      console.warn(`[Form Filler] clickSaveAndContinue: Click strategy failed, trying next...`);
+                    }
+                  }
+                  
+                  console.log('[Form Filler] clickSaveAndContinue: Button clicked successfully!');
+                  await sleep(2000);
+                  return true;
+                  
+                } catch (clickError) {
+                  console.error('[Form Filler] clickSaveAndContinue: Error clicking button:', clickError);
+                }
+              } else {
+                console.warn(`[Form Filler] clickSaveAndContinue: Button found but not clickable - Visible: ${isVisible}, Enabled: ${isEnabled}`);
+              }
+            }
+          } catch (e) {
+            console.warn(`[Form Filler] clickSaveAndContinue: Error with selector "${selector}": ${(e as Error).message}`);
           }
-        } catch (e) {
-          console.warn(`[Form Filler] clickSaveAndContinue: Error with selector "${selector}" in a document: ${(e as Error).message}`);
+        }
+
+        // Fallback: scan all buttons for text matches
+        const buttons = doc.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+        console.log(`[Form Filler] clickSaveAndContinue: Scanning ${buttons.length} buttons for text matches...`);
+        
+        for (const button of buttons) {
+          if (button.offsetParent !== null) {
+            const buttonText: string = button.textContent ? button.textContent.trim().toLowerCase() : "";
+            const originalText = button.textContent ? button.textContent.trim() : "N/A";
+            
+            console.log(`[Form Filler] clickSaveAndContinue: Checking button text: "${originalText}"`);
+            
+            for (const text of buttonTexts) {
+              if (buttonText.includes(text.toLowerCase())) {
+                console.log(`[Form Filler] clickSaveAndContinue: MATCHED button by text content: "${originalText}" (matched "${text}")`);
+                
+                const isEnabled = !button.disabled && !button.hasAttribute('aria-disabled');
+                const hasValidText = buttonText.length > 0;
+                
+                if (isEnabled && hasValidText) {
+                  console.log(`[Form Filler] clickSaveAndContinue: Attempting to click text-matched button: "${originalText}"`);
+                  
+                  // Enhanced scrolling and clicking
+                  button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  await sleep(1000);
+                  
+                  try {
+                    button.focus();
+                    button.click();
+                    await sleep(100);
+                    
+                    // Additional event dispatch for reliability
+                    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                    await sleep(50);
+                    button.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                    await sleep(50);
+                    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                    
+                    console.log(`[Form Filler] clickSaveAndContinue: Successfully clicked text-matched button: "${originalText}"`);
+                    await sleep(2000);
+                    return true;
+                  } catch (clickError) {
+                    console.error(`[Form Filler] clickSaveAndContinue: Error clicking text-matched button: ${clickError}`);
+                  }
+                } else {
+                  console.warn(`[Form Filler] clickSaveAndContinue: Text-matched button not clickable - Enabled: ${isEnabled}, Has Text: ${hasValidText}`);
+                }
+              }
+            }
+          } else {
+            const buttonText = button.textContent ? button.textContent.trim() : "N/A";
+            console.warn(`[Form Filler] clickSaveAndContinue: Button "${buttonText}" not visible (offsetParent is null)`);
+          }
         }
       }
-
-      const buttons = doc.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
-      for (const button of buttons) {
-        if (button.offsetParent !== null) {
-          const buttonText: string = button.textContent ? button.textContent.trim().toLowerCase() : "";
-          for (const text of buttonTexts) {
-            if (buttonText.includes(text.toLowerCase())) {
-              console.log(`[Form Filler] clickSaveAndContinue: Found button by text content: "${button.textContent.trim()}" (matched "${text}")`);
-              button.scrollIntoView({ block: 'center' });
-              await sleep(200);
-              button.focus();
-              await sleep(100);
-              console.log('[Form Filler] clickSaveAndContinue: Clicking button found by text...');
-              button.click();
-              await sleep(1500);
-              return true;
-            }
-          }
-        }
+      
+      if (attempt < maxRetries) {
+        console.log(`[Form Filler] clickSaveAndContinue: Retrying in 2 seconds...`);
+        await sleep(2000);
       }
     }
 
-    console.error('[Form Filler] clickSaveAndContinue: Could NOT find or click a Save/Continue/Next/Submit button after trying all selectors and text checks.');
+    // Final comprehensive scan with debug info
+    console.error('[Form Filler] clickSaveAndContinue: Could NOT find or click a Save/Continue/Next/Submit button after all attempts.');
+    console.error('[Form Filler] clickSaveAndContinue: This might be due to:');
+    console.error('[Form Filler] clickSaveAndContinue: 1. Button not being visible/enabled');
+    console.error('[Form Filler] clickSaveAndContinue: 2. Button having different selectors/text');
+    console.error('[Form Filler] clickSaveAndContinue: 3. Form validation preventing button activation');
+    
+    // Debug: List all buttons on the page
+    const debugButtons = document.querySelectorAll('button');
+    console.warn('[Form Filler] clickSaveAndContinue: Available buttons:');
+    debugButtons.forEach((btn, idx) => {
+      const btnText = btn.textContent?.trim() || 'No text';
+      const btnId = btn.id || 'No ID';
+      const btnClass = btn.className || 'No class';
+      const btnAutomation = btn.getAttribute('data-automation-id') || 'No automation ID';
+      const isVisible = btn.offsetParent !== null;
+      const isDisabled = (btn as HTMLButtonElement).disabled;
+      console.warn(`[Form Filler] Button ${idx}: "${btnText}" (ID: ${btnId}, Class: ${btnClass}, Automation: ${btnAutomation}, Visible: ${isVisible}, Disabled: ${isDisabled})`);
+    });
+    
     return false;
+  }
+
+  async function waitForFormValidation(): Promise<void> {
+    console.log('[Form Filler] waitForFormValidation: Checking if form is ready for Save & Continue...');
+    
+    let attempts = 0;
+    const maxAttempts = 20;
+    const checkInterval = 500; // ms
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      
+      // Check if save button is enabled
+      const saveButton = document.querySelector('button[data-automation-id="pageFooterNextButton"]') as HTMLButtonElement;
+      if (saveButton) {
+        const isEnabled = !saveButton.disabled;
+        const isVisible = saveButton.offsetParent !== null;
+        
+        console.log(`[Form Filler] waitForFormValidation: Attempt ${attempts}/${maxAttempts} - Save button enabled: ${isEnabled}, visible: ${isVisible}`);
+        
+        if (isEnabled && isVisible) {
+          console.log('[Form Filler] waitForFormValidation: Form validation complete, save button is ready');
+          return;
+        }
+      }
+      
+      // Also check for any validation errors or loading states
+      const validationErrors = document.querySelectorAll('[data-automation-id="error"]');
+      const loadingSpinners = document.querySelectorAll('[data-automation-id="loading"]');
+      
+      if (validationErrors.length > 0) {
+        console.warn(`[Form Filler] waitForFormValidation: Found ${validationErrors.length} validation errors`);
+      }
+      
+      if (loadingSpinners.length > 0) {
+        console.log(`[Form Filler] waitForFormValidation: Found ${loadingSpinners.length} loading indicators, waiting...`);
+      }
+      
+      await sleep(checkInterval);
+    }
+    
+    console.warn(`[Form Filler] waitForFormValidation: Max attempts reached (${maxAttempts}), proceeding anyway...`);
   }
 
   const step1Fields: Field[] = [
@@ -876,70 +1062,6 @@ function createWorkdayFormFiller(userData:any) {
     ];
   }
   
-
-
-
-
-
-  // // Dynamically generate step2Fields for each work experience
-  // const step2Fields: Field[] = (userData.workExperience || []).slice(0, jobTitleIdSuffixes.length).flatMap((exp: any, idx: number) => {
-  //   const id = jobTitleIdSuffixes[idx];
-  //   // Parse start and end dates
-  //   const start = parseMonthYear(exp.startDate);
-  //   const end = parseMonthYear(exp.endDate);
-  //   const startMonth = exp.startMonth || start.month;
-  //   const startYear = exp.startYear || start.year;
-  //   const endMonth = exp.endMonth || end.month;
-  //   const endYear = exp.endYear || end.year;
-  //   return [
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--jobTitle[name="jobTitle"]`,
-  //       value: exp.jobTitle || ''
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--companyName[name="companyName"]`,
-  //       value: exp.companyName || ''
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--location[name="location"]`,
-  //       value: exp.location || ''
-  //     },
-  //     {
-  //       type: 'checkbox',
-  //       selector: `input#workExperience-${id}--currentlyWorkHere[name="currentlyWorkHere"]`,
-  //       check: !!exp.stillWorking
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--startDate-month[data-automation-id="dateSectionMonth-input"]`,
-  //       value: startMonth || ''
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--startDate-year[data-automation-id="dateSectionYear-input"]`,
-  //       value: startYear || ''
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--endDate-month[data-automation-id="dateSectionMonth-input"]`,
-  //       value: endMonth || ''
-  //     },
-  //     {
-  //       type: 'text',
-  //       selector: `input#workExperience-${id}--endDate-year[data-automation-id="dateSectionYear-input"]`,
-  //       value: endYear || ''
-  //     },
-  //     {
-  //       type: 'textarea',
-  //       selector: `textarea#workExperience-${id}--roleDescription[name="roleDescription"]`,
-  //       value: exp.description || ''
-  //     }
-  //   ];
-  // });
-
   const step3Fields: Field[] = [
     {
       type: 'dropdown',
@@ -1075,8 +1197,11 @@ function createWorkdayFormFiller(userData:any) {
           }
 
           if (step2SetupSuccess && await processFields(step2Fields, "STEP2")) {
+            console.log('[Form Filler] Step 2: Waiting for form validation before clicking Save & Continue...');
+            await waitForFormValidation();
+
             if (await clickSaveAndContinue()) {
-              console.log('[Form Filler] Step 2 Save & Continue clicked. Updating global hint to 3.');
+              console.log('[Form Filler] Step 2 Save and Continue clicked. Updating global hint to 3.');
               currentGlobalStepHint = 3;
               if (await pollForNextStep("Step 3 (Application Questions/Voluntary Disclosures)", step3Keywords)) {
                 stepProcessedAndAdvanced = true;
@@ -1148,7 +1273,12 @@ function createWorkdayFormFiller(userData:any) {
 
   const initFormFiller = async (): Promise<void> => {
     try {
-      console.log('[Form Filler] Initializing form filler...');
+      console.log('[Form Filler] === FORM FILLER SCRIPT LOADED ===');
+      console.log('[Form Filler] URL:', window.location.href);
+      console.log('[Form Filler] Document readyState:', document.readyState);
+      console.log('[Form Filler] Starting immediate initialization...');
+      
+      // Force immediate initialization regardless of readyState
       if (document.readyState === 'loading') {
         console.log('[Form Filler] Document is loading, waiting for DOMContentLoaded...');
         await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
@@ -1156,8 +1286,14 @@ function createWorkdayFormFiller(userData:any) {
         console.log('[Form Filler] Document already loaded or interactive.');
       }
 
-      await sleep(1000);
+      // Add immediate form detection
+      console.log('[Form Filler] Checking for Workday form...');
+      const hasWorkdayForm = document.querySelector('[data-automation-id="workdayApplicationPage"]') !== null;
+      console.log('[Form Filler] Workday form detected:', hasWorkdayForm);
+      
+      await sleep(2000); // Give more time for form to load
 
+      console.log('[Form Filler] Starting fillApplicationForm...');
       await fillApplicationForm();
 
       const observer = new MutationObserver(async (mutations, obs) => {
@@ -1179,10 +1315,13 @@ function createWorkdayFormFiller(userData:any) {
                   significantChangeDetected = true;
                   break;
                 }
-                if (elementNode.tagName === 'H2' && elementNode.textContent && stepKeywordsForObserver.some(kw => elementNode.textContent.trim().includes(kw))) {
-                  console.log(`[Form Filler] MutationObserver: Detected new H2 matching a step keyword: ${elementNode.textContent.trim()}`);
-                  significantChangeDetected = true;
-                  break;
+                if (elementNode.tagName === 'H2') {
+                  const textContent = elementNode.textContent;
+                  if (textContent && stepKeywordsForObserver.some(kw => textContent.trim().includes(kw))) {
+                    console.log(`[Form Filler] MutationObserver: Detected new H2 matching a step keyword: ${textContent.trim()}`);
+                    significantChangeDetected = true;
+                    break;
+                  }
                 }
                 if (!significantChangeDetected && (elementNode.matches('div[role="main"], section[role="main"]') || (elementNode.querySelector && elementNode.querySelector('div[role="main"], section[role="main"]')))) {
                   console.log('[Form Filler] MutationObserver: Detected new main role container.');
@@ -1232,6 +1371,32 @@ function createWorkdayFormFiller(userData:any) {
     initFormFiller,
     // add more if you want to expose more functions
   };
+}
+
+// Force trigger for debugging
+console.log('[Form Filler] === FORCE TRIGGERING FORM FILLER ===');
+const workdayFormFiller = createWorkdayFormFiller({});
+
+// Immediate execution
+setTimeout(() => {
+  console.log('[Form Filler] FORCE: Executing form filler after 3 seconds...');
+  workdayFormFiller.fillApplicationForm();
+}, 3000);
+
+// Also expose globally for manual triggering
+(window as any).forceWorkdayFormFill = () => {
+  console.log('[Form Filler] MANUAL TRIGGER: Executing form filler...');
+  workdayFormFiller.fillApplicationForm();
+};
+
+// Auto-detect Workday forms
+if (document.querySelector('[data-automation-id*="workday"]') || 
+    document.querySelector('[data-automation-id*="application"]') ||
+    window.location.href.includes('workday')) {
+  console.log('[Form Filler] WORKDAY DETECTED: Auto-triggering form filler...');
+  setTimeout(() => {
+    workdayFormFiller.fillApplicationForm();
+  }, 5000);
 }
 
 export default createWorkdayFormFiller;

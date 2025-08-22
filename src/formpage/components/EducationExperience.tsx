@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUserData, saveUserData } from '../../utils/storageHandler';
 
-const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
-  // const [showSkillInput, setShowSkillInput] = useState(false);
+const EducationExperiencePopup = ({ onClose, mode, onSave }) => {
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
   const [educationData, setEducationData] = useState({
@@ -21,7 +20,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
 
   useEffect(() => {
     getUserData((userData) => {
-      if (userData && userData.educationExperiences) {
+      if (userData && userData.data?.details?.educationExperiences) {
         // If you want to edit an existing experience, you would need to pass an ID prop
         // and then find the specific experience here
       }
@@ -33,23 +32,15 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
     setEducationData({ ...educationData, stillStudying: e.target.checked });
   };
 
-  // const handleAddSkillClick = () => {
-  //   setShowSkillInput(true);
-  // };
-
   const handleChangeSkill = (e) => {
-    e.preventDefault();
     setNewSkill(e.target.value);
-  }
+  };
 
   const handleSkillInputChange = (e) => {
-    e.preventDefault();
-    // Add the skill to the skills array when user inputs a skill and presses Enter or clicks Add
-    if (e.key === 'Enter' || e.type === 'click') {
-      console.log("e",e)
-      setSkills([...skills, newSkill]);
+    if ((e.key === 'Enter' || e.type === 'click') && newSkill.trim()) {
+      e.preventDefault();
+      setSkills([...skills, newSkill.trim()]);
       setNewSkill("");
-      // setShowSkillInput(false);
     }
   };
 
@@ -67,21 +58,26 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
     };
 
     getUserData((userData) => {
-      const existingFormData = userData?.data || {};
-      const existingEducationExperiences = existingFormData.educationExperiences || [];
+      const existingFormData = userData || {};
+      const existingDetails = existingFormData.data?.details || {};
+      const existingEducationExperiences = existingDetails.educationExperiences || [];
       
       const updatedFormData = {
-        data:{
         ...existingFormData,
-        educationExperiences: [...existingEducationExperiences, updatedEducationData],
+        data: {
+          ...existingFormData.data,
+          details: {
+            ...existingDetails,
+            educationExperiences: [...existingEducationExperiences, updatedEducationData],
+          }
         }
       };
 
       saveUserData(updatedFormData, (success, error) => {
         if (success) {
           console.log('Education experience data saved');
-          onClose();
           onSave();
+          onClose();
         } else {
           console.error('Error saving education experience:', error);
         }
@@ -109,6 +105,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
             setEducationData({ ...educationData, courseName: e.target.value })
           }
         />
+        
         <input
           type="text"
           placeholder="Field"
@@ -119,6 +116,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
             setEducationData({ ...educationData, field: e.target.value })
           }
         />
+        
         <label className="flex items-center mb-4">
           <input
             type="checkbox"
@@ -129,6 +127,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
           />
           Currently Studying
         </label>
+        
         <input
           type="date"
           placeholder="Start Date"
@@ -142,6 +141,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
             })
           }
         />
+        
         <input
           type="date"
           placeholder="End Date"
@@ -154,6 +154,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
             setEducationData({ ...educationData, endDate: e.target.value })
           }
         />
+        
         <input
           type="text"
           placeholder="College/University/Platform"
@@ -164,6 +165,7 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
             setEducationData({ ...educationData, collegeName: e.target.value })
           }
         />
+        
         <input
           type="text"
           placeholder="Grade"
@@ -176,8 +178,9 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
         />
 
         <select
-          className="mb-4 py-2 px-4 border"
+          className="w-full mb-4 py-2 px-4 border"
           value={educationData.educationType}
+          disabled={!mode}
           onChange={(e) => {
             setEducationData({
               ...educationData,
@@ -204,9 +207,10 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
           />
         )}
 
-<h3 className="text-gray-600 text-sm font-semibold mb-2">
-  Skills
-</h3>
+        <h3 className="text-gray-600 text-sm font-semibold mb-2">
+          Skills
+        </h3>
+        
         <div className="w-full mb-4 flex flex-wrap">
           {skills.map((skill, index) => (
             <div
@@ -224,21 +228,22 @@ const EducationExperiencePopup = ({ onClose, mode ,onSave}) => {
           ))}
         </div>
       
-          <div className="mb-4 flex flex-wrap">
-            <input
-              type="text"
-              placeholder="Skill"
-              className="p-2 border h-10 rounded-lg flex-grow"
-              onChange={handleChangeSkill}
-            />
-            <button
-              className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
-              onClick={handleSkillInputChange}
-            >
-              Add
-            </button>
-          </div>
-        
+        <div className="mb-4 flex flex-wrap">
+          <input
+            type="text"
+            placeholder="Skill"
+            className="p-2 border h-10 rounded-lg flex-grow"
+            value={newSkill}
+            onChange={handleChangeSkill}
+            onKeyPress={handleSkillInputChange}
+          />
+          <button
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-4 ml-2"
+            onClick={handleSkillInputChange}
+          >
+            Add
+          </button>
+        </div>
 
         <div className="flex justify-between">
           <button
