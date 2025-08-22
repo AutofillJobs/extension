@@ -1,4 +1,4 @@
-import { backendService } from '../../utils/backendService';
+import { backendService } from "../../utils/backendService";
 
 export interface PageLoadOptions {
   maxWaitTime?: number;
@@ -6,11 +6,13 @@ export interface PageLoadOptions {
   checkInterval?: number;
 }
 
-export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promise<void> {
+export async function waitForPageToBeReady(
+  options: PageLoadOptions = {}
+): Promise<void> {
   const {
     maxWaitTime = 10000,
     stabilityChecks = 3,
-    checkInterval = 500
+    checkInterval = 500,
   } = options;
 
   return new Promise((resolve) => {
@@ -20,12 +22,14 @@ export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promi
 
     const checkStability = () => {
       if (Date.now() - startTime > maxWaitTime) {
-        console.warn('Maximum wait time reached, proceeding anyway');
+        console.warn("Maximum wait time reached, proceeding anyway");
         resolve();
         return;
       }
 
-      const currentElements = document.querySelectorAll('input, textarea, select, [role="textbox"], [contenteditable="true"]');
+      const currentElements = document.querySelectorAll(
+        'input, textarea, select, [role="textbox"], [contenteditable="true"]'
+      );
       const currentCount = currentElements.length;
 
       if (currentCount > 0 && currentCount === lastElementCount) {
@@ -36,7 +40,7 @@ export async function waitForPageToBeReady(options: PageLoadOptions = {}): Promi
       }
 
       if (stableCount >= stabilityChecks) {
-        console.log('Page content stabilized');
+        console.log("Page content stabilized");
         resolve();
       } else {
         setTimeout(checkStability, checkInterval);
@@ -70,107 +74,130 @@ interface UserDataPayload {
 
 export async function saveInteractiveElements(input: number): Promise<void> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['interactiveElements', 'formData'], async (result) => {
-      try {
-        if (chrome.runtime.lastError) {
-          console.log('Error accessing local storage: ' + chrome.runtime.lastError.message);
-          resolve();
-          return;
-        }
-
-        // Get current local count or initialize to 0
-        let localCount = typeof result.interactiveElements === 'number' ? result.interactiveElements : 0;
-        const updatedCount = localCount + input;
-        
-        // Get user data from local storage
-        const formData = result.formData;
-        const data: UserData = typeof formData === 'string' ? JSON.parse(formData) : formData;
-        const primaryEmail = data?.data?.details?.email;
-        const password = data?.data?.details?.password;
-        const username = data?.data?.details?.name || 
-                        data?.data?.details?.firstName + ' ' + data?.data?.details?.lastName;
-        console.log(`Primary email : ${primaryEmail}, username: ${username}`);
-        // Check if we have enough user data to proceed
-        if (!primaryEmail) {
-          console.log('User email missing in local storage. Cannot proceed.');
-          resolve();
-          return;
-        }
-
-        // Check if user exists in cloud
-        let userExist = await backendService.findUserByEmail(primaryEmail);
-        console.log('User number of application:', userExist.user['number of applications']);
-        if (!userExist.success) {
-          console.log('Error checking User existences : ' + userExist.error);
-          resolve();
-          return;
-        }
-
-        // If user doesn't exist, create them
-        if (userExist.success && !userExist.user) {
-          if (!username || !password) {
-            console.log('User name or password missing. Cannot create user.');
+    chrome.storage.local.get(
+      ["interactiveElements", "formData"],
+      async (result) => {
+        try {
+          if (chrome.runtime.lastError) {
+            console.log(
+              "Error accessing local storage: " +
+                chrome.runtime.lastError.message
+            );
             resolve();
             return;
           }
 
-          const newUserPayload: UserDataPayload = {
-            email: primaryEmail,
-            password: password,
-            address: data?.data?.details?.address1 || data?.data?.details?.address2 || "No address"
-          };
+          // Get current local count or initialize to 0
+          let localCount =
+            typeof result.interactiveElements === "number"
+              ? result.interactiveElements
+              : 0;
+          const updatedCount = localCount + input;
 
-          const createResult = await backendService.createUser(newUserPayload);
-          if (!createResult.success) {
-            console.log('Failed to create user: ' + createResult.error);
-            resolve();
-            return;
-          }
-          
-          // Refresh user data after creation
-          userExist = await backendService.findUserByEmail(primaryEmail);
-        }
-
-        // At this point, user should exist
-        if (userExist.success && userExist.user) {
-          const userId = userExist.user._id;
-          let cloudAppCount = userExist.user["number of applications"] || 0;
-          // Update local storage with new count
+          // Always update local storage first
           await chrome.storage.local.set({ interactiveElements: updatedCount });
-          console.log(`Local count updated: ${localCount} + ${input} = ${updatedCount}`);
+          console.log(
+            `Local count updated: ${localCount} + ${input} = ${updatedCount}`
+          );
 
-          // Check if we've reached threshold for cloud update
-          if (updatedCount >= 300) {
-            // Calculate total new count (current cloud + updatedCount)
-            const newAppCount = cloudAppCount + updatedCount;
-            
-            // Show warning if exceeding 100, but still update
-            // if (newAppCount > 100) {
-            //   console.log('Warning: Application count exceeds 100 (Total: ' + newAppCount + ')');
-            // }
+          // Only continue if threshold reached
+          if (updatedCount < 300) {
+            resolve();
+            return;
+          }
 
-            const updateResult = await backendService.patchUser(userId, {
-              "number of applications": newAppCount
-            });
+          // Get user data from local storage
+          const formData = result.formData;
+          const data: UserData =
+            typeof formData === "string" ? JSON.parse(formData) : formData;
+          const primaryEmail = data?.data?.details?.email;
+          const password = data?.data?.details?.password;
+          const username =
+            data?.data?.details?.name ||
+            data?.data?.details?.firstName +
+              " " +
+              data?.data?.details?.lastName;
 
-            if (updateResult.success) {
-              console.log(`🎉 Cloud updated: ${cloudAppCount} → ${newAppCount}`);
-              // Reset local count after successful cloud update
-              await chrome.storage.local.set({ interactiveElements: 0 });
-            } else {
-              console.log('Failed to update cloud count: ' + updateResult.error);
+          if (!primaryEmail) {
+            console.log(
+              "User email missing in local storage. Cannot proceed with cloud update."
+            );
+            resolve();
+            return;
+          }
+
+          // Check if user exists in cloud
+          let userExist = await backendService.findUserByEmail(primaryEmail);
+          if (!userExist.success) {
+            console.log("Error checking user existence: " + userExist.error);
+            resolve();
+            return;
+          }
+
+          // If user doesn't exist, create them
+          if (!userExist.user) {
+            if (!username || !password) {
+              console.log("User name or password missing. Cannot create user.");
+              resolve();
+              return;
+            }
+
+            const newUserPayload: UserDataPayload = {
+              email: primaryEmail,
+              password: password,
+              address:
+                data?.data?.details?.address1 ||
+                data?.data?.details?.address2 ||
+                "No address",
+            };
+
+            const createResult = await backendService.createUser(
+              newUserPayload
+            );
+            if (!createResult.success) {
+              console.log("Failed to create user: " + createResult.error);
+              resolve();
+              return;
+            }
+
+            // Refresh user data after creation
+            userExist = await backendService.findUserByEmail(primaryEmail);
+            if (!userExist.success || !userExist.user) {
+              console.log(
+                "Unexpected error: User not found after creation attempt"
+              );
+              resolve();
+              return;
             }
           }
-        } else {
-          console.log('Unexpected error: User not found after creation attempt');
+
+          // Update cloud count
+          const userId = userExist.user._id;
+          const cloudAppCount = userExist.user["number of applications"] || 0;
+          const newAppCount = cloudAppCount + updatedCount;
+
+          const updateResult = await backendService.patchUser(userId, {
+            "number of applications": newAppCount,
+          });
+
+          if (updateResult.success) {
+            console.log(`🎉 Cloud updated: ${cloudAppCount} → ${newAppCount}`);
+            // Reset local count after successful update
+            await chrome.storage.local.set({ interactiveElements: 0 });
+          } else {
+            console.log("Failed to update cloud count: " + updateResult.error);
+          }
+
+          resolve();
+        } catch (error) {
+          console.log(
+            "Unexpected error in saveInteractiveElements: " +
+              (error instanceof Error ? error.message : String(error))
+          );
+          resolve();
         }
-        
-        resolve();
-      } catch (error) {
-        console.log('Unexpected error in saveInteractiveElements: ' + (error instanceof Error ? error.message : String(error)));
-        resolve();
       }
-    });
+    );
   });
 }
 
@@ -282,7 +309,6 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 //   });
 // }
 
-
 // async function updateCount(): Promise<void> {
 //   return new Promise((resolve) => {
 //     chrome.storage.local.get(['formData'], async (result) => {
@@ -367,7 +393,6 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 //   });
 // }
 
-
 // export async function saveInteractiveElements(input: number): Promise<void> {
 //   return new Promise((resolve) => {
 //     chrome.storage.local.get(['interactiveElements'], (result) => {
@@ -377,8 +402,8 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 //         return;
 //       }
 
-//       const previousCount = typeof result.interactiveElements === 'number' 
-//         ? result.interactiveElements 
+//       const previousCount = typeof result.interactiveElements === 'number'
+//         ? result.interactiveElements
 //         : 0;
 //       const updatedCount = previousCount + input;
 
@@ -397,47 +422,55 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 //   });
 // }
 
-
 export function countVisibleUsableInputs(): HTMLElement[] {
   const inputSelectors = [
     'input:not([type="hidden"])',
-    'textarea',
-    'select',
+    "textarea",
+    "select",
     '[role="textbox"]',
     '[contenteditable="true"]',
     '[role="combobox"] input',
     '[role="search"] input',
-    '.mat-input-element',
-    '.MuiInputBase-input',
-    '.ant-input',
-    '.el-input__inner',
+    ".mat-input-element",
+    ".MuiInputBase-input",
+    ".ant-input",
+    ".el-input__inner",
     '[data-testid="input"]',
-    'input.v-text-field__slot',
-    'input.q-input'
+    "input.v-text-field__slot",
+    "input.q-input",
   ];
 
   function isVisibleUsable(element: Element | null): boolean {
     if (!element) return false;
     const htmlElement = element as HTMLElement;
     if (htmlElement.hidden) return false;
-    if (htmlElement.getAttribute('aria-hidden') === 'true') return false;
+    if (htmlElement.getAttribute("aria-hidden") === "true") return false;
     const style = window.getComputedStyle(htmlElement);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-    if (htmlElement.offsetWidth <= 0 && htmlElement.offsetHeight <= 0) return false;
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    )
+      return false;
+    if (htmlElement.offsetWidth <= 0 && htmlElement.offsetHeight <= 0)
+      return false;
 
     let parent = htmlElement.parentElement;
     while (parent) {
       const parentStyle = window.getComputedStyle(parent);
-      if (parentStyle.display === 'none') return false;
+      if (parentStyle.display === "none") return false;
       parent = parent.parentElement;
     }
 
     return true;
   }
 
-  function findAllElements(selectors: string[], root: Document | ShadowRoot = document): Element[] {
+  function findAllElements(
+    selectors: string[],
+    root: Document | ShadowRoot = document
+  ): Element[] {
     let results: Element[] = [];
-    selectors.forEach(selector => {
+    selectors.forEach((selector) => {
       try {
         results.push(...Array.from(root.querySelectorAll(selector)));
       } catch (e) {
@@ -445,20 +478,20 @@ export function countVisibleUsableInputs(): HTMLElement[] {
       }
     });
 
-    Array.from(root.querySelectorAll('*')).forEach(element => {
+    Array.from(root.querySelectorAll("*")).forEach((element) => {
       if (element.shadowRoot) {
         results.push(...findAllElements(selectors, element.shadowRoot));
       }
     });
 
     if (root instanceof Document) {
-      Array.from(root.querySelectorAll('iframe')).forEach(iframe => {
+      Array.from(root.querySelectorAll("iframe")).forEach((iframe) => {
         try {
           if (iframe.contentDocument) {
             results.push(...findAllElements(selectors, iframe.contentDocument));
           }
         } catch (e) {
-          console.log('Skipped cross-origin iframe:', iframe.src);
+          console.log("Skipped cross-origin iframe:", iframe.src);
         }
       });
     }
