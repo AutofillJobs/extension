@@ -59,7 +59,7 @@ interface UserData {
       firstName?: string;
       lastName?: string;
       name?: string;
-      password?: string;
+      // password?: string;
       address1?: string;
       address2?: string;
     };
@@ -68,7 +68,7 @@ interface UserData {
 
 interface UserDataPayload {
   email: string;
-  password: string;
+  // password: string;
   address: string;
 }
 
@@ -111,7 +111,7 @@ export async function saveInteractiveElements(input: number): Promise<void> {
           const data: UserData =
             typeof formData === "string" ? JSON.parse(formData) : formData;
           const primaryEmail = data?.data?.details?.email;
-          const password = data?.data?.details?.password;
+          // const password = data?.data?.details?.password;
           const username =
             data?.data?.details?.name ||
             data?.data?.details?.firstName +
@@ -136,15 +136,15 @@ export async function saveInteractiveElements(input: number): Promise<void> {
 
           // If user doesn't exist, create them
           if (!userExist.user) {
-            if (!username || !password) {
-              console.log("User name or password missing. Cannot create user.");
-              resolve();
-              return;
-            }
+            // if (!username || !password) {
+            //   console.log("User name or password missing. Cannot create user.");
+            //   resolve();
+            //   return;
+            // }
 
             const newUserPayload: UserDataPayload = {
               email: primaryEmail,
-              password: password,
+              // password: password,
               address:
                 data?.data?.details?.address1 ||
                 data?.data?.details?.address2 ||
