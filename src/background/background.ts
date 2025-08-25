@@ -11,17 +11,22 @@ chrome.runtime.onInstalled.addListener((details) => {
 
         // Only send to Bubble in production
         // if (process.env.NODE_ENV === "production") {
-        //   fetch("https://applygoat.com/version-test/api/1.1/obj/installedUserDetails", {
-        //     method: "POST",
-        //     headers: {
-        //       "Content-Type": "application/json",
-        //       "Authorization": "Bearer e02abfdc4f4c029b6ebecf5cd18a8c97"
-        //     },
-        //     body: JSON.stringify(payload),
-        //   })
+        //   fetch(
+        //     "https://applygoat.com/version-test/api/1.1/obj/installedUserDetails",
+        //     {
+        //       method: "POST",
+        //       headers: {
+        //         "Content-Type": "application/json",
+        //         Authorization: "Bearer e02abfdc4f4c029b6ebecf5cd18a8c97",
+        //       },
+        //       body: JSON.stringify(payload),
+        //     }
+        //   )
         //     .then((res) => {
         //       if (!res.ok) {
-        //         throw new Error(`Failed to send data to Bubble. Status: ${res.status}`);
+        //         throw new Error(
+        //           `Failed to send data to Bubble. Status: ${res.status}`
+        //         );
         //       }
         //       return res.json();
         //     })
@@ -42,27 +47,33 @@ chrome.runtime.onInstalled.addListener((details) => {
       url: "https://applygoat.com/autofill?utm_source=new-user",
     });
 
-     // Get email and country from stored formData
-    chrome.storage.local.get(['formData'], (result) => {
+    // Get email and country from stored formData
+    chrome.storage.local.get(["formData"], (result) => {
       if (chrome.runtime.lastError) {
-        console.error('Error accessing local storage:', chrome.runtime.lastError.message);
+        console.error(
+          "Error accessing local storage:",
+          chrome.runtime.lastError.message
+        );
         return;
       }
 
       const formData = result.formData;
-      const data = typeof formData === 'string' ? JSON.parse(formData) : formData;
+      const data =
+        typeof formData === "string" ? JSON.parse(formData) : formData;
 
-      const email = data?.data?.details?.email || '';
-      const country = data?.data?.details?.country || '';
+      const email = data?.data?.details?.email || "";
+      const country = data?.data?.details?.country || "";
 
       console.log(`Email: ${email}, Country: ${country}`);
-      
 
       // Build uninstall URL with URL-encoded params
-      const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(email)}&country=${encodeURIComponent(country)}`;
+      const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(
+        email
+      )}&country=${encodeURIComponent(country)}`;
 
       if (chrome.runtime.setUninstallURL) {
-        chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
+        console.log("Setting uninstall URL:", uninstallFeedbackUrl);
+        // chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
       }
     });
   }
@@ -87,7 +98,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           jobTitle,
           dateApplied: appliedDateTime,
           status: "Applied",
-          isCareerForm: true
+          isCareerForm: true,
         });
 
         chrome.storage.local.set({ applications }, () => {
@@ -103,19 +114,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 function updateUninstallURLFromStorage() {
-  chrome.storage.local.get(['formData'], (result) => {
+  chrome.storage.local.get(["formData"], (result) => {
     if (chrome.runtime.lastError) {
-      console.error('Error accessing local storage:', chrome.runtime.lastError.message);
+      console.error(
+        "Error accessing local storage:",
+        chrome.runtime.lastError.message
+      );
       return;
     }
 
     const formData = result.formData;
-    const data = typeof formData === 'string' ? JSON.parse(formData) : formData;
+    const data = typeof formData === "string" ? JSON.parse(formData) : formData;
 
-    const email = data?.data?.details?.email || '';
-    const country = data?.data?.details?.country || '';
+    const email = data?.data?.details?.email || "";
+    const country = data?.data?.details?.country || "";
 
-    const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(email)}&country=${encodeURIComponent(country)}`;
+    const uninstallFeedbackUrl = `https://applygoat.com/version-test/uninstall?debug_mode=true&email=${encodeURIComponent(
+      email
+    )}&country=${encodeURIComponent(country)}`;
     chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
   });
 }
@@ -125,7 +141,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.formData) {
+  if (area === "local" && changes.formData) {
     updateUninstallURLFromStorage();
   }
 });
