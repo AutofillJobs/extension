@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import { initializeStorage, getToggleState, getUserData } from '../utils/storageHandler';
 import { setupMessageListeners, setupBubbleMessageListener } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
@@ -6,31 +5,10 @@ import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
 import { autofillICIMS } from './icims/icimsScript';
 import fillZohoForm from './zoho/zohoScript';
-import fillSuccessFactorsForm from './successFactors/successfactorScript'
+import fillSuccessFactorsForm from './successFactors/successfactorScript';
+import fillSmartRecruitersForm from './SmartRecruit/smartRecruitContent';
 import { countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
 import fillLeverForm from './lever/leverScript';
-=======
-import {
-  initializeStorage,
-  getToggleState,
-  getUserData,
-} from "../utils/storageHandler";
-import {
-  setupMessageListeners,
-  setupBubbleMessageListener,
-} from "./messageListener";
-import { initializeFormFiller } from "./autoFormFill/formFiller";
-import fillWorkdayForm from "./workDay/workdaynewScript";
-import fillGreenhouseFields from "./greenhouse/greenhouseScript";
-import { autofillICIMS } from "./icims/icimsScript";
-import fillZohoForm from "./zoho/zohoScript";
-import fillSmartRecruitersForm from "./SmartRecruit/smartRecruitContent"
-import {
-  countVisibleUsableInputs,
-  saveInteractiveElements,
-} from "./inputCounter/countCounter";
-
->>>>>>> Stashed changes
 // Utility: Wait for input in DOM
 const waitForInput = (selector: string, timeout = 5000) => {
   return new Promise<HTMLInputElement | null>((resolve) => {
@@ -70,16 +48,11 @@ async function initialize() {
 
   const isWorkdaySite = window.location.hostname.includes('workday');
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
-<<<<<<< Updated upstream
   const icimsSite = window.location.hostname.includes('icims');
   const isZohoSite = window.location.hostname.includes('zoho');
   const isSuccessFactorsSite = window.location.hostname.includes('successfactors') || window.location.hostname.includes('dzconnex');
   const isLeverSite = window.location.hostname.includes('lever');
-=======
-  const icimsSite = window.location.hostname.includes("icims");
-  const isZohoSite = window.location.hostname.includes("zoho");
-  const isSmartRecruitersSite = window.location.hostname.includes("smartrecruiters");
->>>>>>> Stashed changes
+  const isSmartRecruitersSite = window.location.hostname.includes('smartrecruiters');
 
   getToggleState((toggleState) => {
     if (isWorkdaySite && toggleState) {
@@ -102,26 +75,22 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);
       });
-<<<<<<< Updated upstream
     } else if (isSuccessFactorsSite && toggleState) {
       console.log("Filling SuccessFactors form");
       getUserData((userData) => {
         if (userData?.data?.details) fillSuccessFactorsForm(userData);
       });
-    }else if (isLeverSite && toggleState) {
-  console.log("Filling Lever form");
-  getUserData((userData) => {
-    if (userData?.data?.details) fillLeverForm(userData);
-  });
-} else {
-=======
+    } else if (isLeverSite && toggleState) {
+      console.log("Filling Lever form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillLeverForm(userData);
+      });
     } else if (isSmartRecruitersSite && toggleState) {
-    console.log("Filling SmartRecruiters form");
-    getUserData((userData) => {
-      if (userData?.data?.details) fillSmartRecruitersForm(userData);
-    });
+      console.log("Filling SmartRecruiters form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillSmartRecruitersForm(userData);
+      });
     } else {
->>>>>>> Stashed changes
       initializeFormFiller();
     }
   });

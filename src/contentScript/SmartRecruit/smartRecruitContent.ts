@@ -1,7 +1,7 @@
 import {
-  detectPreliminaryQuestionsPage, fillPreliminaryQuestions
+  detectPreliminaryQuestionsPage,
+  fillPreliminaryQuestions,
 } from "./preliminaryScript";
-
 
 export const domHelpers = {
   waitForElement: async (
@@ -553,7 +553,7 @@ async function fillPersonalInfo(details: any) {
   const cityComponents = [
     'spl-autocomplete[data-test="location-autocomplete"]',
     'spl-autocomplete[label="City"]',
-    '#spl-form-element_10'
+    "#spl-form-element_10",
   ];
 
   let cityComponent: HTMLElement | null = null;
@@ -571,34 +571,52 @@ async function fillPersonalInfo(details: any) {
     await delay(1000);
 
     if (cityComponent.shadowRoot) {
-
-      cityInput = cityComponent.shadowRoot.querySelector('input') as HTMLInputElement ||
-        cityComponent.shadowRoot.querySelector('input[type="text"]') as HTMLInputElement ||
-        cityComponent.shadowRoot.querySelector('spl-input input') as HTMLInputElement;
+      cityInput =
+        (cityComponent.shadowRoot.querySelector("input") as HTMLInputElement) ||
+        (cityComponent.shadowRoot.querySelector(
+          'input[type="text"]'
+        ) as HTMLInputElement) ||
+        (cityComponent.shadowRoot.querySelector(
+          "spl-input input"
+        ) as HTMLInputElement);
 
       if (!cityInput) {
-        const shadowSplInput = cityComponent.shadowRoot.querySelector('spl-input');
+        const shadowSplInput =
+          cityComponent.shadowRoot.querySelector("spl-input");
         if (shadowSplInput && shadowSplInput.shadowRoot) {
-          cityInput = shadowSplInput.shadowRoot.querySelector('input') as HTMLInputElement;
+          cityInput = shadowSplInput.shadowRoot.querySelector(
+            "input"
+          ) as HTMLInputElement;
         }
       }
-
     }
 
     if (!cityInput) {
       await delay(2000);
 
       if (cityComponent.shadowRoot) {
-        cityInput = cityComponent.shadowRoot.querySelector('input') as HTMLInputElement ||
-          cityComponent.shadowRoot.querySelector('input[type="text"]') as HTMLInputElement;
+        cityInput =
+          (cityComponent.shadowRoot.querySelector(
+            "input"
+          ) as HTMLInputElement) ||
+          (cityComponent.shadowRoot.querySelector(
+            'input[type="text"]'
+          ) as HTMLInputElement);
       }
     }
 
     if (!cityInput) {
-      cityInput = document.querySelector('input[placeholder*="City" i]') as HTMLInputElement ||
-        document.querySelector('input[placeholder*="city" i]') as HTMLInputElement ||
-        document.querySelector('input.c-spl-input') as HTMLInputElement ||
-        document.querySelector('input[data-test*="location"]') as HTMLInputElement;
+      cityInput =
+        (document.querySelector(
+          'input[placeholder*="City" i]'
+        ) as HTMLInputElement) ||
+        (document.querySelector(
+          'input[placeholder*="city" i]'
+        ) as HTMLInputElement) ||
+        (document.querySelector("input.c-spl-input") as HTMLInputElement) ||
+        (document.querySelector(
+          'input[data-test*="location"]'
+        ) as HTMLInputElement);
     }
 
     if (cityInput) {
@@ -608,7 +626,7 @@ async function fillPersonalInfo(details: any) {
 
       for (const char of cityValue) {
         cityInput.value += char;
-        cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+        cityInput.dispatchEvent(new Event("input", { bubbles: true }));
         await delay(50);
       }
 
@@ -620,7 +638,7 @@ async function fillPersonalInfo(details: any) {
         "spl-typography-body",
         '[role="option"]',
         "spl-select-option",
-        ".sr-autocomplete-option"
+        ".sr-autocomplete-option",
       ];
 
       let hasAutocompleteOptions = false;
@@ -632,56 +650,63 @@ async function fillPersonalInfo(details: any) {
       }
 
       if (hasAutocompleteOptions) {
-
         cityInput.focus();
         await delay(500);
 
-        const arrowDownEvent = new KeyboardEvent('keydown', {
-          key: 'ArrowDown',
-          code: 'ArrowDown',
+        const arrowDownEvent = new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          code: "ArrowDown",
           keyCode: 40,
           which: 40,
           bubbles: true,
           cancelable: true,
-          composed: true
+          composed: true,
         });
         cityInput.dispatchEvent(arrowDownEvent);
         await delay(400);
 
-        const enterEvent = new KeyboardEvent('keydown', {
-          key: 'Enter',
-          code: 'Enter',
+        const enterEvent = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
           keyCode: 13,
           which: 13,
           bubbles: true,
           cancelable: true,
-          composed: true
+          composed: true,
         });
         cityInput.dispatchEvent(enterEvent);
         await delay(600);
 
-        cityInput.dispatchEvent(new KeyboardEvent('keyup', {
-          key: 'Enter',
-          code: 'Enter',
-          keyCode: 13,
-          which: 13,
-          bubbles: true,
-          cancelable: true
-        }));
+        cityInput.dispatchEvent(
+          new KeyboardEvent("keyup", {
+            key: "Enter",
+            code: "Enter",
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
 
         await delay(300);
 
         const finalValue = cityInput.value;
         if (finalValue && finalValue !== cityValue) {
-          console.log(`Autocomplete selection successful. New value: "${finalValue}"`);
+          console.log(
+            `Autocomplete selection successful. New value: "${finalValue}"`
+          );
         } else {
-          console.log(` Autocomplete selection may not have worked. Value remains: "${finalValue}"`);
+          console.log(
+            ` Autocomplete selection may not have worked. Value remains: "${finalValue}"`
+          );
         }
       } else {
-        console.log(" No autocomplete options found for city, keeping typed value");
+        console.log(
+          " No autocomplete options found for city, keeping typed value"
+        );
       }
 
-      cityInput.dispatchEvent(new Event('blur', { bubbles: true }));
+      cityInput.dispatchEvent(new Event("blur", { bubbles: true }));
       console.log(" City filled and processed successfully:", cityValue);
     } else {
       console.warn(" Could not find city input within component");
@@ -692,37 +717,43 @@ async function fillPersonalInfo(details: any) {
 
   console.log(" Filling phone number...");
 
-  const phoneContainer = document.querySelector('spl-phone-field#spl-form-element_5');
+  const phoneContainer = document.querySelector(
+    "spl-phone-field#spl-form-element_5"
+  );
   console.log(" Phone container found:", !!phoneContainer);
 
   if (phoneContainer && phoneContainer.shadowRoot) {
-
-    const splInternalFormField = phoneContainer.shadowRoot.querySelector('spl-internal-form-field');
+    const splInternalFormField = phoneContainer.shadowRoot.querySelector(
+      "spl-internal-form-field"
+    );
     if (splInternalFormField && splInternalFormField.shadowRoot) {
-   
-      function deepFindInputs(element: Element | Document | ShadowRoot): HTMLInputElement[] {
+      function deepFindInputs(
+        element: Element | Document | ShadowRoot
+      ): HTMLInputElement[] {
         const inputs: HTMLInputElement[] = [];
 
         try {
-          
           if (element instanceof Element && element.shadowRoot) {
-            const shadowInputs = element.shadowRoot.querySelectorAll('input');
-            shadowInputs.forEach(input => inputs.push(input as HTMLInputElement));
+            const shadowInputs = element.shadowRoot.querySelectorAll("input");
+            shadowInputs.forEach((input) =>
+              inputs.push(input as HTMLInputElement)
+            );
 
-           
-            const shadowElements = element.shadowRoot.querySelectorAll('*');
-            shadowElements.forEach(el => {
+            const shadowElements = element.shadowRoot.querySelectorAll("*");
+            shadowElements.forEach((el) => {
               inputs.push(...deepFindInputs(el));
             });
           }
 
           // Check regular DOM
           if (element instanceof Document || element instanceof ShadowRoot) {
-            const regularInputs = element.querySelectorAll('input');
-            regularInputs.forEach(input => inputs.push(input as HTMLInputElement));
+            const regularInputs = element.querySelectorAll("input");
+            regularInputs.forEach((input) =>
+              inputs.push(input as HTMLInputElement)
+            );
 
-            const allElements = element.querySelectorAll('*');
-            allElements.forEach(el => {
+            const allElements = element.querySelectorAll("*");
+            allElements.forEach((el) => {
               if (el.shadowRoot) {
                 inputs.push(...deepFindInputs(el.shadowRoot));
               }
@@ -750,20 +781,26 @@ async function fillPersonalInfo(details: any) {
       // Smart phone input detection
       let phoneInput: HTMLInputElement | null = null;
 
-      const phoneKeywords = ['phone', 'tel', 'mobile', 'cell', 'contact'];
+      const phoneKeywords = ["phone", "tel", "mobile", "cell", "contact"];
 
       for (const input of uniqueInputs) {
         const inputText = (
-          input.type + ' ' +
-          input.id + ' ' +
-          input.name + ' ' +
-          input.placeholder + ' ' +
+          input.type +
+          " " +
+          input.id +
+          " " +
+          input.name +
+          " " +
+          input.placeholder +
+          " " +
           input.className
         ).toLowerCase();
 
-        const isPhoneRelated = phoneKeywords.some(keyword => inputText.includes(keyword));
+        const isPhoneRelated = phoneKeywords.some((keyword) =>
+          inputText.includes(keyword)
+        );
 
-        if (isPhoneRelated || input.type === 'tel') {
+        if (isPhoneRelated || input.type === "tel") {
           phoneInput = input;
           console.log(` Phone input candidate:`, {
             type: input.type,
@@ -771,7 +808,7 @@ async function fillPersonalInfo(details: any) {
             name: input.name,
             placeholder: input.placeholder,
             className: input.className,
-            related: isPhoneRelated
+            related: isPhoneRelated,
           });
           break;
         }
@@ -780,18 +817,29 @@ async function fillPersonalInfo(details: any) {
       // Fallback to first text/tel input
       const phoneValue = details.phoneNumber || "+55 2025550147";
       if (!phoneInput) {
-        phoneInput = uniqueInputs.find(input => input.type === 'tel') ||
-          uniqueInputs.find(input => input.type === 'text') ||
-          uniqueInputs[0] || null;
+        phoneInput =
+          uniqueInputs.find((input) => input.type === "tel") ||
+          uniqueInputs.find((input) => input.type === "text") ||
+          uniqueInputs[0] ||
+          null;
       }
 
       if (phoneInput) {
         phoneInput.focus();
         phoneInput.value = phoneValue;
-        phoneInput.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
-        phoneInput.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-        phoneInput.dispatchEvent(new Event("blur", { bubbles: true, cancelable: true }));
-        console.log("Phone number filled via ultra-comprehensive search:", phoneValue);
+        phoneInput.dispatchEvent(
+          new Event("input", { bubbles: true, cancelable: true })
+        );
+        phoneInput.dispatchEvent(
+          new Event("change", { bubbles: true, cancelable: true })
+        );
+        phoneInput.dispatchEvent(
+          new Event("blur", { bubbles: true, cancelable: true })
+        );
+        console.log(
+          "Phone number filled via ultra-comprehensive search:",
+          phoneValue
+        );
       } else {
         console.warn(" No phone input found via ultra-comprehensive search");
       }
@@ -890,9 +938,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         input.focus();
         await domHelpers.delay(500);
 
-        console.log(
-          ` Pressing Arrow Down to select first autocomplete option`
-        );
+        console.log(` Pressing Arrow Down to select first autocomplete option`);
 
         const arrowDownEvent = new KeyboardEvent("keydown", {
           key: "ArrowDown",
@@ -961,49 +1007,342 @@ async function fillEducationForm(form: HTMLElement, education: any) {
     dateStr: string,
     fieldName: string
   ) => {
-    if (!dateStr) return console.log(` Skipping ${fieldName} (no date).`);
-    console.log(` Filling date for ${fieldName} with: "${dateStr}"`);
+    if (!dateStr) {
+      console.log(` Skipping ${fieldName} as no date was provided.`);
+      return;
+    }
+    console.log(` Filling date for ${fieldName} with value: "${dateStr}"`);
+
     try {
-      const [year, month] = dateStr.split("-").map(Number);
-      if (!year || !month)
-        return console.warn(` Invalid date format: "${dateStr}"`);
-
-      const dateElement = form.querySelector(selector) as HTMLElement;
-      if (!dateElement)
-        return console.warn(` ${fieldName} date element not found.`);
-
-      dateElement.click();
-      const calendar = await domHelpers.waitForElement(".flatpickr-calendar");
-      if (!calendar)
-        return console.warn(`${fieldName} calendar did not appear.`);
-
-      const yearInput = calendar.querySelector(".cur-year") as HTMLInputElement;
-      if (yearInput && parseInt(yearInput.value) !== year) {
-        yearInput.value = year.toString();
-        yearInput.dispatchEvent(new Event("input", { bubbles: true }));
-        await domHelpers.delay(300);
+      // Find the experience form container first
+      const formContainer = await domHelpers.waitForElement(selector, 5000);
+      if (!formContainer) {
+        console.warn(` Experience form container not found: ${selector}`);
+        return;
       }
 
-      const monthSelector = `.flatpickr-monthDropdown-month[value="${month - 1
-        }"]`;
-      const monthOption = calendar.querySelector(
-        monthSelector
-      ) as HTMLOptionElement;
-      if (monthOption) monthOption.selected = true;
-      calendar.dispatchEvent(new Event("change", { bubbles: true }));
+      let dateInput = null;
+
+      console.log(
+        ` Searching for spl-date-field elements with specific labels...`
+      );
+
+      const allDateFields = formContainer.querySelectorAll("spl-date-field");
+      console.log(
+        ` Found ${allDateFields.length} spl-date-field elements:`,
+        allDateFields
+      );
+
+      if (fieldName.toLowerCase().includes("start")) {
+        dateInput =
+          formContainer.querySelector('spl-date-field[label="From"]') ||
+          formContainer.querySelector('spl-date-field[label*="Start"]') ||
+          formContainer.querySelector('spl-date-field[label*="start"]') ||
+          Array.from(allDateFields).find(
+            (field) =>
+              field.getAttribute("label")?.toLowerCase().includes("from") ||
+              field.getAttribute("label")?.toLowerCase().includes("start")
+          ) ||
+          allDateFields[0]; // First date field as fallback
+
+        console.log(` Found start date field:`, dateInput);
+      } else if (fieldName.toLowerCase().includes("end")) {
+        dateInput =
+          formContainer.querySelector('spl-date-field[label="To"]') ||
+          formContainer.querySelector('spl-date-field[label*="End"]') ||
+          formContainer.querySelector('spl-date-field[label*="end"]') ||
+          Array.from(allDateFields).find(
+            (field) =>
+              field.getAttribute("label")?.toLowerCase().includes("to") ||
+              field.getAttribute("label")?.toLowerCase().includes("end")
+          ) ||
+          allDateFields[1] ||
+          allDateFields[0]; // Second date field as fallback
+
+        console.log(` Found end date field:`, dateInput);
+      }
+
+      // Method 2: If no specific label match, use position-based selection
+      if (!dateInput && allDateFields.length > 0) {
+        if (fieldName.toLowerCase().includes("start")) {
+          dateInput = allDateFields[0];
+          console.log(` Using first date field as start:`, dateInput);
+        } else if (fieldName.toLowerCase().includes("end")) {
+          dateInput =
+            allDateFields.length > 1 ? allDateFields[1] : allDateFields[0];
+          console.log(` Using second date field as end:`, dateInput);
+        }
+      }
+
+      // Method 3: Search for other date-related elements as fallback
+      if (!dateInput) {
+        const dateFields = formContainer.querySelectorAll(
+          'spl-date-field, spl-date-picker, [type="month-year"], [placeholder="Pick a date"]'
+        );
+        console.log(
+          ` Found ${dateFields.length} date fields as fallback:`,
+          dateFields
+        );
+
+        if (fieldName.toLowerCase().includes("start")) {
+          dateInput = dateFields[0];
+        } else if (fieldName.toLowerCase().includes("end")) {
+          dateInput = dateFields.length > 1 ? dateFields[1] : dateFields[0];
+        }
+      }
+
+      if (!dateInput) {
+        console.warn(` Date input not found with any selector: ${selector}`);
+        return;
+      }
+
+      console.log(` Found date input element:`, dateInput);
+
+      if (!domHelpers.isVisible(dateInput as HTMLElement)) {
+        console.warn(` Date input is not visible: ${selector}`);
+        return;
+      }
+
+      // Find the actual input element within the date picker - prioritize shadow DOM
+      let inputElement: HTMLInputElement | null = null;
+
+      const searchMethods = [
+        () => dateInput.querySelector("input"),
+        () => (dateInput as any).shadowRoot?.querySelector("input"),
+        () => dateInput.querySelector('[contenteditable="true"]'),
+        () => dateInput.querySelector('input[type="text"]'),
+        () => dateInput.querySelector('input[type="date"]'),
+        () => dateInput.querySelector('input[placeholder="Pick a date"]'),
+        () => {
+          if (dateInput.tagName === "SPL-DATE-FIELD") {
+            const shadow = (dateInput as any).shadowRoot;
+            return (
+              shadow?.querySelector("input") ||
+              shadow?.querySelector('[type="date"]')
+            );
+          }
+          return null;
+        },
+      ];
+
+      for (const method of searchMethods) {
+        const found = method();
+        if (found) {
+          inputElement = found as HTMLInputElement;
+          break;
+        }
+      }
+
+      // Fallback to the dateInput itself if no input found
+      if (!inputElement) {
+        inputElement = dateInput as HTMLInputElement;
+      }
+
+      console.log(` Found input element:`, inputElement);
+
+      // For spl-date-field, try interacting with the calendar UI
+      if (dateInput.tagName === "SPL-DATE-FIELD") {
+        console.log(
+          ` Handling spl-date-field for ${fieldName} by interacting with calendar UI.`
+        );
+
+        (dateInput as HTMLElement).click();
+        await domHelpers.delay(700);
+
+        // Try calendar container
+        const calendarContainer = await domHelpers.waitForElement(
+          '.flatpickr-calendar, .spl-date-picker-calendar, [role="dialog"][aria-label*="calendar"]',
+          3000
+        );
+
+        if (calendarContainer) {
+          console.log(` Found calendar container:`, calendarContainer);
+
+          const [year, month] = dateStr.split("-").map(Number);
+
+          // Year
+          let yearSelector = calendarContainer.querySelector(
+            ".cur-year"
+          ) as HTMLInputElement;
+          if (!yearSelector) {
+            yearSelector = calendarContainer.querySelector(
+              "select.flatpickr-monthDropdown-months + .numInput"
+            ) as HTMLInputElement;
+          }
+          if (yearSelector) {
+            yearSelector.value = year.toString();
+            yearSelector.dispatchEvent(new Event("input", { bubbles: true }));
+            yearSelector.dispatchEvent(new Event("change", { bubbles: true }));
+            await domHelpers.delay(200);
+          }
+
+          // Month
+          let monthDropdown = calendarContainer.querySelector(
+            `.flatpickr-monthDropdown-months`
+          ) as HTMLSelectElement;
+          if (!monthDropdown) {
+            monthDropdown = calendarContainer.querySelector(
+              `select[aria-label*="month"]`
+            ) as HTMLSelectElement;
+          }
+          if (monthDropdown) {
+            monthDropdown.value = (month - 1).toString();
+            monthDropdown.dispatchEvent(new Event("input", { bubbles: true }));
+            monthDropdown.dispatchEvent(new Event("change", { bubbles: true }));
+            await domHelpers.delay(200);
+          }
+
+          // Pick a day
+          const dayToClick =
+            calendarContainer.querySelector(".flatpickr-day.today") ||
+            calendarContainer.querySelector(
+              ".flatpickr-day:not(.prevMonthDay):not(.nextMonthDay)"
+            ) ||
+            calendarContainer.querySelector(".spl-calendar-day");
+
+          if (dayToClick) {
+            (dayToClick as HTMLElement).click();
+            await domHelpers.delay(300);
+          }
+
+          (dateInput as HTMLElement).dispatchEvent(
+            new Event("blur", { bubbles: true })
+          );
+          await domHelpers.delay(200);
+
+          console.log(
+            ` Date picker filled successfully for ${fieldName} via calendar interaction.`
+          );
+          return;
+        }
+      }
+
+      // Fallback: type directly into input
+      let targetInput = inputElement;
+
+      if (!targetInput) {
+        console.warn(
+          ` No target input element found for date field ${fieldName}. Skipping.`
+        );
+        return;
+      }
+
+      console.log(
+        ` Attempting to fill date using generic typing approach for ${fieldName}: ${dateStr}`
+      );
+
+      targetInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      await domHelpers.delay(300);
+      targetInput.focus();
+      targetInput.click();
+      await domHelpers.delay(200);
+
+      // Clear the field
+      targetInput.value = "";
+      targetInput.dispatchEvent(
+        new Event("input", { bubbles: true, composed: true })
+      );
+      targetInput.dispatchEvent(
+        new Event("change", { bubbles: true, composed: true })
+      );
+      await domHelpers.delay(100);
+
+      // Type characters
+      for (const char of dateStr) {
+        targetInput.value += char;
+        targetInput.dispatchEvent(
+          new Event("input", { bubbles: true, composed: true })
+        );
+        await domHelpers.delay(50);
+      }
+
+      // Ensure final value
+      targetInput.value = dateStr;
+      targetInput.setAttribute("value", dateStr); // important for custom elements
+      targetInput.dispatchEvent(
+        new Event("input", { bubbles: true, composed: true })
+      );
+      targetInput.dispatchEvent(
+        new Event("change", { bubbles: true, composed: true })
+      );
       await domHelpers.delay(300);
 
-      const daySelector = `span[aria-label*="${year}"][aria-label*="${new Date(
-        year,
-        month - 1
-      ).toLocaleString("default", { month: "long" })} 1"]`;
-      const dayElement = calendar.querySelector(daySelector);
-      if (dayElement) (dayElement as HTMLElement).click();
-      else console.warn(` Could not select day for ${fieldName}.`);
+      // Also update host component directly (important for spl-date-field)
+      if (dateInput.tagName === "SPL-DATE-FIELD") {
+        (dateInput as any).value = new Date(dateStr); // use Date object
+        dateInput.setAttribute("value", dateStr);
 
-      console.log(` ${fieldName} date picker filled.`);
+        [
+          "input",
+          "change",
+          "blur",
+          "value-changed",
+          "date-changed",
+          "spl-change",
+        ].forEach((evt) => {
+          dateInput.dispatchEvent(
+            new CustomEvent(evt, {
+              detail: { value: new Date(dateStr) },
+              bubbles: true,
+              composed: true,
+            })
+          );
+        });
+
+        if (typeof (dateInput as any).reportValidity === "function") {
+          (dateInput as any).reportValidity();
+        }
+        if (typeof (dateInput as any).checkValidity === "function") {
+          (dateInput as any).checkValidity();
+        }
+      }
+
+      // Confirm with Enter if calendar is open
+      const calendar = document.querySelector(".flatpickr-calendar");
+      if (calendar && domHelpers.isVisible(calendar as HTMLElement)) {
+        const enterEvent = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+        });
+        targetInput.dispatchEvent(enterEvent);
+        await domHelpers.delay(500);
+      }
+
+      // Trigger blur
+      targetInput.dispatchEvent(
+        new Event("blur", { bubbles: true, composed: true })
+      );
+      await domHelpers.delay(300);
+
+      // Verify
+      if (targetInput.value !== dateStr) {
+        console.warn(
+          ` Value mismatch for ${fieldName}. Expected "${dateStr}", got "${targetInput.value}". Forcing value.`
+        );
+        targetInput.value = dateStr;
+        targetInput.setAttribute("value", dateStr);
+        targetInput.dispatchEvent(
+          new Event("input", { bubbles: true, composed: true })
+        );
+        targetInput.dispatchEvent(
+          new Event("change", { bubbles: true, composed: true })
+        );
+        targetInput.dispatchEvent(
+          new Event("blur", { bubbles: true, composed: true })
+        );
+        await domHelpers.delay(200);
+      }
+
+      console.log(
+        ` Date input filled successfully for ${fieldName}: ${targetInput.value}`
+      );
     } catch (error) {
-      console.error(` Error in ${fieldName} date picker:`, error);
+      console.error(`Error filling date input ${fieldName}:`, error);
     }
   };
 
@@ -1213,9 +1552,7 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
         input.focus();
         await domHelpers.delay(500);
 
-        console.log(
-          ` Pressing Arrow Down to select first autocomplete option`
-        );
+        console.log(` Pressing Arrow Down to select first autocomplete option`);
 
         const arrowDownEvent = new KeyboardEvent("keydown", {
           key: "ArrowDown",
@@ -1322,68 +1659,77 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
       }
 
       let dateInput = null;
-      
-      // Target specific spl-date-field elements by label attribute
-      console.log(` Searching for spl-date-field elements with specific labels...`);
-      
-      // Method 1: Direct targeting of spl-date-field by label
-      const allDateFields = formContainer.querySelectorAll('spl-date-field');
-      console.log(` Found ${allDateFields.length} spl-date-field elements:`, allDateFields);
-      
-      if (fieldName.toLowerCase().includes('start')) {
-        // Look for start date field with label="From"
-        dateInput = formContainer.querySelector('spl-date-field[label="From"]') ||
-                   formContainer.querySelector('spl-date-field[label*="Start"]') ||
-                   formContainer.querySelector('spl-date-field[label*="start"]') ||
-                   Array.from(allDateFields).find(field => 
-                     field.getAttribute('label')?.toLowerCase().includes('from') ||
-                     field.getAttribute('label')?.toLowerCase().includes('start')
-                   ) ||
-                   allDateFields[0]; // First date field as fallback
-        
+
+      console.log(
+        ` Searching for spl-date-field elements with specific labels...`
+      );
+
+      const allDateFields = formContainer.querySelectorAll("spl-date-field");
+      console.log(
+        ` Found ${allDateFields.length} spl-date-field elements:`,
+        allDateFields
+      );
+
+      if (fieldName.toLowerCase().includes("start")) {
+        dateInput =
+          formContainer.querySelector('spl-date-field[label="From"]') ||
+          formContainer.querySelector('spl-date-field[label*="Start"]') ||
+          formContainer.querySelector('spl-date-field[label*="start"]') ||
+          Array.from(allDateFields).find(
+            (field) =>
+              field.getAttribute("label")?.toLowerCase().includes("from") ||
+              field.getAttribute("label")?.toLowerCase().includes("start")
+          ) ||
+          allDateFields[0]; // First date field as fallback
+
         console.log(` Found start date field:`, dateInput);
-        
-      } else if (fieldName.toLowerCase().includes('end')) {
-        // Look for end date field with label="To"
-        dateInput = formContainer.querySelector('spl-date-field[label="To"]') ||
-                   formContainer.querySelector('spl-date-field[label*="End"]') ||
-                   formContainer.querySelector('spl-date-field[label*="end"]') ||
-                   Array.from(allDateFields).find(field => 
-                     field.getAttribute('label')?.toLowerCase().includes('to') ||
-                     field.getAttribute('label')?.toLowerCase().includes('end')
-                   ) ||
-                   allDateFields[1] || allDateFields[0]; // Second date field as fallback
-        
+      } else if (fieldName.toLowerCase().includes("end")) {
+        dateInput =
+          formContainer.querySelector('spl-date-field[label="To"]') ||
+          formContainer.querySelector('spl-date-field[label*="End"]') ||
+          formContainer.querySelector('spl-date-field[label*="end"]') ||
+          Array.from(allDateFields).find(
+            (field) =>
+              field.getAttribute("label")?.toLowerCase().includes("to") ||
+              field.getAttribute("label")?.toLowerCase().includes("end")
+          ) ||
+          allDateFields[1] ||
+          allDateFields[0]; // Second date field as fallback
+
         console.log(` Found end date field:`, dateInput);
       }
-      
+
       // Method 2: If no specific label match, use position-based selection
       if (!dateInput && allDateFields.length > 0) {
-        if (fieldName.toLowerCase().includes('start')) {
+        if (fieldName.toLowerCase().includes("start")) {
           dateInput = allDateFields[0];
           console.log(` Using first date field as start:`, dateInput);
-        } else if (fieldName.toLowerCase().includes('end')) {
-          dateInput = allDateFields.length > 1 ? allDateFields[1] : allDateFields[0];
+        } else if (fieldName.toLowerCase().includes("end")) {
+          dateInput =
+            allDateFields.length > 1 ? allDateFields[1] : allDateFields[0];
           console.log(` Using second date field as end:`, dateInput);
         }
       }
-      
+
       // Method 3: Search for other date-related elements as fallback
       if (!dateInput) {
-        const dateFields = formContainer.querySelectorAll('spl-date-field, spl-date-picker, [type="month-year"], [placeholder="Pick a date"]');
-        console.log(` Found ${dateFields.length} date fields as fallback:`, dateFields);
-        
-        if (fieldName.toLowerCase().includes('start')) {
+        const dateFields = formContainer.querySelectorAll(
+          'spl-date-field, spl-date-picker, [type="month-year"], [placeholder="Pick a date"]'
+        );
+        console.log(
+          ` Found ${dateFields.length} date fields as fallback:`,
+          dateFields
+        );
+
+        if (fieldName.toLowerCase().includes("start")) {
           dateInput = dateFields[0];
-        } else if (fieldName.toLowerCase().includes('end')) {
+        } else if (fieldName.toLowerCase().includes("end")) {
           dateInput = dateFields.length > 1 ? dateFields[1] : dateFields[0];
         }
       }
 
       if (!dateInput) {
-        console.warn(
-          ` Date input not found with any selector: ${selector}`
-        );
+        console.warn(` Date input not found with any selector: ${selector}`);
         return;
       }
 
@@ -1396,17 +1742,26 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
 
       // Find the actual input element within the date picker - prioritize shadow DOM
       let inputElement: HTMLInputElement | null = null;
-      
-      // Try multiple approaches to find the actual input
+
       const searchMethods = [
-        () => dateInput.querySelector('input'),
-        () => dateInput.shadowRoot?.querySelector('input'),
+        () => dateInput.querySelector("input"),
+        () => (dateInput as any).shadowRoot?.querySelector("input"),
         () => dateInput.querySelector('[contenteditable="true"]'),
         () => dateInput.querySelector('input[type="text"]'),
         () => dateInput.querySelector('input[type="date"]'),
         () => dateInput.querySelector('input[placeholder="Pick a date"]'),
+        () => {
+          if (dateInput.tagName === "SPL-DATE-FIELD") {
+            const shadow = (dateInput as any).shadowRoot;
+            return (
+              shadow?.querySelector("input") ||
+              shadow?.querySelector('[type="date"]')
+            );
+          }
+          return null;
+        },
       ];
-      
+
       for (const method of searchMethods) {
         const found = method();
         if (found) {
@@ -1414,193 +1769,214 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
           break;
         }
       }
-      
+
       // Fallback to the dateInput itself if no input found
       if (!inputElement) {
         inputElement = dateInput as HTMLInputElement;
       }
-      
+
       console.log(` Found input element:`, inputElement);
 
-      // For spl-date-field, find the actual input inside shadow DOM
-      if (dateInput.tagName === 'SPL-DATE-FIELD') {
-        console.log(` Finding actual input inside spl-date-field...`);
-        
-        // Look for the actual input element within shadow DOM
-        let actualInput: HTMLInputElement | null = null;
-        
-        // Try multiple selectors for the actual input
-        const selectors = [
-          'input[placeholder="Pick a date"]',
-          'input[type="text"]',
-          'input',
-          '[contenteditable="true"]'
-        ];
-        
-        for (const selector of selectors) {
-          actualInput = dateInput.shadowRoot?.querySelector(selector) as HTMLInputElement;
-          if (actualInput) {
-            console.log(` Found actual input:`, actualInput);
-            break;
-          }
-        }
-        
-        if (actualInput) {
-          // Format date as MM/YYYY for month-year type
-          const [year, month] = dateStr.split('-');
-          const formattedDate = `${month}/${year}`;
-          
-          console.log(` Setting formatted date: ${formattedDate}`);
-          
-          // Set the value directly
-          actualInput.value = formattedDate;
-          actualInput.dispatchEvent(new Event('input', { bubbles: true }));
-          actualInput.dispatchEvent(new Event('change', { bubbles: true }));
-          actualInput.dispatchEvent(new Event('blur', { bubbles: true }));
-          
-          console.log(` Date set successfully: ${formattedDate}`);
-          return;
-        } else {
-          // Fallback: click the date field and type the date
-          console.log(` Shadow DOM input not found, clicking and typing...`);
-          
-          // Click the date field to open picker
-          (dateInput as HTMLElement).click();
-          await domHelpers.delay(300);
-          
-          // Try to find input after click
-          const inputAfterClick = dateInput.shadowRoot?.querySelector('input') as HTMLInputElement;
-          if (inputAfterClick) {
-            const [year, month] = dateStr.split('-');
-            const formattedDate = `${month}/${year}`;
-            
-            inputAfterClick.value = formattedDate;
-            inputAfterClick.dispatchEvent(new Event('input', { bubbles: true }));
-            inputAfterClick.dispatchEvent(new Event('change', { bubbles: true }));
-            inputAfterClick.dispatchEvent(new Event('blur', { bubbles: true }));
-            
-            console.log(` Date typed successfully: ${formattedDate}`);
-            return;
-          }
-        }
-      }
-      
-      // For regular input elements, use the typing approach
-      let targetInput = inputElement;
-      
-      // Clear the field by selecting all and deleting
-      if (targetInput.select && typeof targetInput.select === 'function') {
-        try {
-          targetInput.select();
-          targetInput.value = '';
-        } catch (e) {
-          // Fallback to backspace clearing
-          const valLength = targetInput.value?.length || 0;
-          for (let i = 0; i < valLength + 2; i++) {
-            targetInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
-            await domHelpers.delay(10);
-          }
-        }
-      } else {
-        // Manual clearing for custom elements
-        const valLength = targetInput.value?.length || targetInput.textContent?.length || 0;
-        for (let i = 0; i < valLength + 2; i++) {
-          targetInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
-          await domHelpers.delay(10);
-        }
-      }
-      
-      await domHelpers.delay(100);
-      
-      // Ensure the date picker is properly focused
-      if (dateInput.tagName === 'SPL-DATE-FIELD') {
-        // Double-click to ensure the picker is fully activated
+      // For spl-date-field, try interacting with the calendar UI
+      if (dateInput.tagName === "SPL-DATE-FIELD") {
+        console.log(
+          ` Handling spl-date-field for ${fieldName} by interacting with calendar UI.`
+        );
+
         (dateInput as HTMLElement).click();
-        await domHelpers.delay(200);
+        await domHelpers.delay(700);
+
+        // Try calendar container
+        const calendarContainer = await domHelpers.waitForElement(
+          '.flatpickr-calendar, .spl-date-picker-calendar, [role="dialog"][aria-label*="calendar"]',
+          3000
+        );
+
+        if (calendarContainer) {
+          console.log(` Found calendar container:`, calendarContainer);
+
+          const [year, month] = dateStr.split("-").map(Number);
+
+          // Year
+          let yearSelector = calendarContainer.querySelector(
+            ".cur-year"
+          ) as HTMLInputElement;
+          if (!yearSelector) {
+            yearSelector = calendarContainer.querySelector(
+              "select.flatpickr-monthDropdown-months + .numInput"
+            ) as HTMLInputElement;
+          }
+          if (yearSelector) {
+            yearSelector.value = year.toString();
+            yearSelector.dispatchEvent(new Event("input", { bubbles: true }));
+            yearSelector.dispatchEvent(new Event("change", { bubbles: true }));
+            await domHelpers.delay(200);
+          }
+
+          // Month
+          let monthDropdown = calendarContainer.querySelector(
+            `.flatpickr-monthDropdown-months`
+          ) as HTMLSelectElement;
+          if (!monthDropdown) {
+            monthDropdown = calendarContainer.querySelector(
+              `select[aria-label*="month"]`
+            ) as HTMLSelectElement;
+          }
+          if (monthDropdown) {
+            monthDropdown.value = (month - 1).toString();
+            monthDropdown.dispatchEvent(new Event("input", { bubbles: true }));
+            monthDropdown.dispatchEvent(new Event("change", { bubbles: true }));
+            await domHelpers.delay(200);
+          }
+
+          // Pick a day
+          const dayToClick =
+            calendarContainer.querySelector(".flatpickr-day.today") ||
+            calendarContainer.querySelector(
+              ".flatpickr-day:not(.prevMonthDay):not(.nextMonthDay)"
+            ) ||
+            calendarContainer.querySelector(".spl-calendar-day");
+
+          if (dayToClick) {
+            (dayToClick as HTMLElement).click();
+            await domHelpers.delay(300);
+          }
+
+          (dateInput as HTMLElement).dispatchEvent(
+            new Event("blur", { bubbles: true })
+          );
+          await domHelpers.delay(200);
+
+          console.log(
+            ` Date picker filled successfully for ${fieldName} via calendar interaction.`
+          );
+          return;
+        }
       }
 
-      // Type the date character by character to ensure proper input
-      console.log(` Typing date: ${dateStr}`);
+      // Fallback: type directly into input
+      let targetInput = inputElement;
+
+      if (!targetInput) {
+        console.warn(
+          ` No target input element found for date field ${fieldName}. Skipping.`
+        );
+        return;
+      }
+
+      console.log(
+        ` Attempting to fill date using generic typing approach for ${fieldName}: ${dateStr}`
+      );
+
+      targetInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      await domHelpers.delay(300);
+      targetInput.focus();
+      targetInput.click();
+      await domHelpers.delay(200);
+
+      // Clear the field
+      targetInput.value = "";
+      targetInput.dispatchEvent(
+        new Event("input", { bubbles: true, composed: true })
+      );
+      targetInput.dispatchEvent(
+        new Event("change", { bubbles: true, composed: true })
+      );
+      await domHelpers.delay(100);
+
+      // Type characters
       for (const char of dateStr) {
-        const keyEvent = new KeyboardEvent('keydown', {
-          key: char,
-          bubbles: true,
-          cancelable: true
-        });
-        targetInput.dispatchEvent(keyEvent);
-        
-        const keyUpEvent = new KeyboardEvent('keyup', {
-          key: char,
-          bubbles: true,
-          cancelable: true
-        });
-        targetInput.dispatchEvent(keyUpEvent);
-        
-        // Set the value directly for reliability
-        if (targetInput.value !== undefined) {
-          targetInput.value = (targetInput.value || '') + char;
-        } else if (targetInput.textContent !== undefined) {
-          targetInput.textContent = (targetInput.textContent || '') + char;
-        }
-        
-        const inputEvent = new Event('input', { bubbles: true });
-        targetInput.dispatchEvent(inputEvent);
-        
+        targetInput.value += char;
+        targetInput.dispatchEvent(
+          new Event("input", { bubbles: true, composed: true })
+        );
         await domHelpers.delay(50);
       }
-      
-      // Ensure final value is set correctly
+
+      // Ensure final value
       targetInput.value = dateStr;
-
-      // Press Enter to confirm the date selection
-      console.log(` Pressing Enter to confirm date selection...`);
-      
-      // Create and dispatch Enter key events
-      const enterDownEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-      });
-      inputElement.dispatchEvent(enterDownEvent);
-      await domHelpers.delay(100);
-      
-      const enterUpEvent = new KeyboardEvent('keyup', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true,
-      });
-      inputElement.dispatchEvent(enterUpEvent);
-      await domHelpers.delay(200);
-      
-      // Click on the date field again to ensure the value is accepted
-      if (dateInput instanceof HTMLElement) {
-        console.log(` Final click on date field to confirm selection...`);
-        dateInput.click();
-        await domHelpers.delay(200);
-      }
-      
-      // Trigger change and blur to complete the input
-      targetInput.dispatchEvent(new Event('change', { bubbles: true }));
-      targetInput.dispatchEvent(new Event('blur', { bubbles: true }));
+      targetInput.setAttribute("value", dateStr); // important for custom elements
+      targetInput.dispatchEvent(
+        new Event("input", { bubbles: true, composed: true })
+      );
+      targetInput.dispatchEvent(
+        new Event("change", { bubbles: true, composed: true })
+      );
       await domHelpers.delay(300);
-      
-      // Final verification - click outside to ensure form validation
-      const bodyClick = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      });
-      document.body.dispatchEvent(bodyClick);
-      await domHelpers.delay(100);
 
-      console.log(` Date input filled successfully for ${fieldName}: ${dateStr}`);
+      // Also update host component directly (important for spl-date-field)
+      if (dateInput.tagName === "SPL-DATE-FIELD") {
+        (dateInput as any).value = new Date(dateStr); // use Date object
+        dateInput.setAttribute("value", dateStr);
+
+        [
+          "input",
+          "change",
+          "blur",
+          "value-changed",
+          "date-changed",
+          "spl-change",
+        ].forEach((evt) => {
+          dateInput.dispatchEvent(
+            new CustomEvent(evt, {
+              detail: { value: new Date(dateStr) },
+              bubbles: true,
+              composed: true,
+            })
+          );
+        });
+
+        if (typeof (dateInput as any).reportValidity === "function") {
+          (dateInput as any).reportValidity();
+        }
+        if (typeof (dateInput as any).checkValidity === "function") {
+          (dateInput as any).checkValidity();
+        }
+      }
+
+      // Confirm with Enter if calendar is open
+      const calendar = document.querySelector(".flatpickr-calendar");
+      if (calendar && domHelpers.isVisible(calendar as HTMLElement)) {
+        const enterEvent = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+        });
+        targetInput.dispatchEvent(enterEvent);
+        await domHelpers.delay(500);
+      }
+
+      // Trigger blur
+      targetInput.dispatchEvent(
+        new Event("blur", { bubbles: true, composed: true })
+      );
+      await domHelpers.delay(300);
+
+      // Verify
+      if (targetInput.value !== dateStr) {
+        console.warn(
+          ` Value mismatch for ${fieldName}. Expected "${dateStr}", got "${targetInput.value}". Forcing value.`
+        );
+        targetInput.value = dateStr;
+        targetInput.setAttribute("value", dateStr);
+        targetInput.dispatchEvent(
+          new Event("input", { bubbles: true, composed: true })
+        );
+        targetInput.dispatchEvent(
+          new Event("change", { bubbles: true, composed: true })
+        );
+        targetInput.dispatchEvent(
+          new Event("blur", { bubbles: true, composed: true })
+        );
+      }
+
+      console.log(
+        ` Date input filled successfully for ${fieldName}: ${targetInput.value}`
+      );
     } catch (error) {
       console.error(`Error filling date input ${fieldName}:`, error);
     }
@@ -1641,7 +2017,7 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
       checkbox.click();
       await domHelpers.delay(200);
     } else {
-      console.warn('I currently work here checkbox not found.');
+      console.warn("I currently work here checkbox not found.");
     }
   } else {
     console.log("Not a current job, filling end date.");
@@ -1661,9 +2037,7 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
     await domHelpers.delay(1000);
     console.log(" Experience entry saved successfully.");
   } else {
-    console.warn(
-      " Save button not found. Experience entry may not be saved."
-    );
+    console.warn(" Save button not found. Experience entry may not be saved.");
   }
 }
 
@@ -1768,9 +2142,7 @@ async function fillExperience(experienceData: any[]) {
       'oc-button[data-test="add-experience"]'
     ) as HTMLElement;
     if (!addButton) {
-      console.warn(
-        " Add Experience button not found. Cannot add new entries."
-      );
+      console.warn(" Add Experience button not found. Cannot add new entries.");
       break;
     }
     console.log('Clicking "+ Add Experience" button...');
@@ -1871,9 +2243,7 @@ async function fillEducation(educationData: any[]) {
     ) as HTMLElement;
 
     if (!addButton) {
-      console.error(
-        'Add Education" button not found. Cannot add new entries.'
-      );
+      console.error('Add Education" button not found. Cannot add new entries.');
       break;
     }
 
@@ -1892,10 +2262,7 @@ async function fillEducation(educationData: any[]) {
         await fillEducationForm(newForm, education);
         console.log(`✅ Education entry ${entryNumber} processing complete.`);
       } catch (error) {
-        console.error(
-          ` Error filling education entry ${entryNumber}:`,
-          error
-        );
+        console.error(` Error filling education entry ${entryNumber}:`, error);
       }
     } else {
       console.error(
@@ -1907,7 +2274,6 @@ async function fillEducation(educationData: any[]) {
 
   console.log("Education section processing finished.");
 }
-
 
 function initializePreliminaryQuestions() {
   console.log(
@@ -1965,9 +2331,7 @@ function initializePreliminaryQuestions() {
     attributes: false,
   });
 
-  console.log(
-    " Mutation observer started for preliminary questions detection"
-  );
+  console.log(" Mutation observer started for preliminary questions detection");
 }
 
 // Initialize when DOM is ready
@@ -2104,10 +2468,7 @@ export default async function fillSmartRecruitersForm(userData: any) {
 
     console.log(" SmartRecruiters Autofill Script Finished!");
   } catch (error) {
-    console.error(
-      " An error occurred during SmartRecruiters autofill:",
-      error
-    );
+    console.error(" An error occurred during SmartRecruiters autofill:", error);
   }
 }
 
@@ -2117,24 +2478,26 @@ async function handlePrivacyPolicyCheckbox(): Promise<void> {
   try {
     // Common privacy policy checkbox selectors and text patterns
     const privacyPatterns = [
-      'privacy policy',
-      'terms and conditions',
-      'terms of service',
-      'read and understand',
-      'agree to the',
-      'accept the',
-      'consent to',
-      'acknowledge the'
+      "privacy policy",
+      "terms and conditions",
+      "terms of service",
+      "read and understand",
+      "agree to the",
+      "accept the",
+      "consent to",
+      "acknowledge the",
     ];
 
     // Look for checkbox containers with privacy-related text
-    const checkboxContainers = document.querySelectorAll('div[class*="checkbox"], div[class*="consent"], div[class*="agreement"]');
+    const checkboxContainers = document.querySelectorAll(
+      'div[class*="checkbox"], div[class*="consent"], div[class*="agreement"]'
+    );
 
     for (const container of checkboxContainers) {
-      const containerText = container.textContent?.toLowerCase() || '';
+      const containerText = container.textContent?.toLowerCase() || "";
 
       // Check if this container contains privacy policy text
-      const isPrivacyRelated = privacyPatterns.some(pattern =>
+      const isPrivacyRelated = privacyPatterns.some((pattern) =>
         containerText.includes(pattern.toLowerCase())
       );
 
@@ -2145,22 +2508,32 @@ async function handlePrivacyPolicyCheckbox(): Promise<void> {
         let checkboxInput: HTMLInputElement | null = null;
 
         // Try different selectors for the checkbox
-        checkboxInput = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+        checkboxInput = container.querySelector(
+          'input[type="checkbox"]'
+        ) as HTMLInputElement;
         if (!checkboxInput) {
-          checkboxInput = container.querySelector('.c-spl-checkbox__input') as HTMLInputElement;
+          checkboxInput = container.querySelector(
+            ".c-spl-checkbox__input"
+          ) as HTMLInputElement;
         }
         if (!checkboxInput) {
-          checkboxInput = container.querySelector('spl-checkbox input[type="checkbox"]') as HTMLInputElement;
+          checkboxInput = container.querySelector(
+            'spl-checkbox input[type="checkbox"]'
+          ) as HTMLInputElement;
         }
         if (!checkboxInput) {
-          checkboxInput = container.querySelector('[type="checkbox"]') as HTMLInputElement;
+          checkboxInput = container.querySelector(
+            '[type="checkbox"]'
+          ) as HTMLInputElement;
         }
 
         // Also check for SmartRecruiters custom components
         if (!checkboxInput) {
-          const customCheckbox = container.querySelector('spl-checkbox');
+          const customCheckbox = container.querySelector("spl-checkbox");
           if (customCheckbox && customCheckbox.shadowRoot) {
-            checkboxInput = customCheckbox.shadowRoot.querySelector('input[type="checkbox"]') as HTMLInputElement;
+            checkboxInput = customCheckbox.shadowRoot.querySelector(
+              'input[type="checkbox"]'
+            ) as HTMLInputElement;
           }
         }
 
@@ -2176,14 +2549,20 @@ async function handlePrivacyPolicyCheckbox(): Promise<void> {
             // Method 2: If still not checked, try setting checked property
             if (!checkboxInput.checked) {
               checkboxInput.checked = true;
-              checkboxInput.dispatchEvent(new Event('change', { bubbles: true }));
-              checkboxInput.dispatchEvent(new Event('input', { bubbles: true }));
+              checkboxInput.dispatchEvent(
+                new Event("change", { bubbles: true })
+              );
+              checkboxInput.dispatchEvent(
+                new Event("input", { bubbles: true })
+              );
               await domHelpers.delay(100);
             }
 
             // Method 3: For SmartRecruiters custom components
             if (!checkboxInput.checked) {
-              const parentWrapper = checkboxInput.closest('.c-spl-checkbox-wrapper, spl-checkbox');
+              const parentWrapper = checkboxInput.closest(
+                ".c-spl-checkbox-wrapper, spl-checkbox"
+              );
               if (parentWrapper && parentWrapper instanceof HTMLElement) {
                 parentWrapper.click();
                 await domHelpers.delay(200);
@@ -2193,20 +2572,29 @@ async function handlePrivacyPolicyCheckbox(): Promise<void> {
             console.log("✅ Privacy policy checkbox successfully checked!");
             return; // Found and handled the checkbox
           } catch (clickError) {
-            console.error("❌ Error clicking privacy policy checkbox:", clickError);
+            console.error(
+              "❌ Error clicking privacy policy checkbox:",
+              clickError
+            );
           }
         }
       }
     }
 
     // Fallback: Look for any unchecked checkbox with required attribute
-    const requiredCheckboxes = document.querySelectorAll('input[type="checkbox"][required]:not(:checked)');
+    const requiredCheckboxes = document.querySelectorAll(
+      'input[type="checkbox"][required]:not(:checked)'
+    );
     for (const checkbox of requiredCheckboxes) {
       const checkboxElement = checkbox as HTMLInputElement;
-      const checkboxContainer = checkboxElement.closest('div, label');
-      const containerText = checkboxContainer?.textContent?.toLowerCase() || '';
+      const checkboxContainer = checkboxElement.closest("div, label");
+      const containerText = checkboxContainer?.textContent?.toLowerCase() || "";
 
-      if (privacyPatterns.some(pattern => containerText.includes(pattern.toLowerCase()))) {
+      if (
+        privacyPatterns.some((pattern) =>
+          containerText.includes(pattern.toLowerCase())
+        )
+      ) {
         console.log("✅ Found required privacy checkbox via fallback method");
         checkboxElement.click();
         await domHelpers.delay(200);
