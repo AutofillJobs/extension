@@ -47,6 +47,8 @@ export const domHelpers = {
   },
 
   delay: (ms: number) => new Promise((r) => setTimeout(r, ms)),
+  // quickDelay caps the wait to 300 ms to keep script responsive
+  quickDelay: (ms: number) => new Promise((r) => setTimeout(r, Math.min(ms, 300))),
 };
 
 const waitForNewForm = async (
@@ -347,7 +349,7 @@ async function clickNextButton(): Promise<boolean> {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       await domHelpers.delay(400);
       el.click();
-      await domHelpers.delay(3000);
+await domHelpers.quickDelay(600);
       return true;
     }
   }
@@ -745,7 +747,6 @@ async function fillPersonalInfo(details: any) {
             });
           }
 
-          // Check regular DOM
           if (element instanceof Document || element instanceof ShadowRoot) {
             const regularInputs = element.querySelectorAll("input");
             regularInputs.forEach((input) =>
@@ -766,19 +767,15 @@ async function fillPersonalInfo(details: any) {
         return inputs;
       }
 
-      // Search across all possible layers
       const allInputs = deepFindInputs(splInternalFormField.shadowRoot);
       console.log(" Ultra-deep search found inputs:", allInputs.length);
 
-      // Also search in parent containers
       const parentInputs = deepFindInputs(document);
       console.log(" Document-wide search found inputs:", parentInputs.length);
 
-      // Combine and deduplicate
       const uniqueInputs = [...new Set([...allInputs, ...parentInputs])];
       console.log(" Total unique inputs found:", uniqueInputs.length);
 
-      // Smart phone input detection
       let phoneInput: HTMLInputElement | null = null;
 
       const phoneKeywords = ["phone", "tel", "mobile", "cell", "contact"];
@@ -814,7 +811,6 @@ async function fillPersonalInfo(details: any) {
         }
       }
 
-      // Fallback to first text/tel input
       const phoneValue = details.phoneNumber || "+55 2025550147";
       if (!phoneInput) {
         phoneInput =
@@ -907,9 +903,9 @@ async function fillEducationForm(form: HTMLElement, education: any) {
       input.value = value;
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await domHelpers.delay(1500);
+await domHelpers.quickDelay(300);
 
-      await domHelpers.delay(3000);
+await domHelpers.quickDelay(500);
 
       const autocompleteSelectors = [
         ".c-spl-autocomplete-default-option",
@@ -951,7 +947,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         });
 
         input.dispatchEvent(arrowDownEvent);
-        await domHelpers.delay(400);
+await domHelpers.quickDelay(200);
 
         console.log(`⏎ Pressing Enter to confirm selection`);
         const enterEvent = new KeyboardEvent("keydown", {
@@ -965,7 +961,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         });
 
         input.dispatchEvent(enterEvent);
-        await domHelpers.delay(600);
+await domHelpers.quickDelay(300);
 
         input.dispatchEvent(
           new KeyboardEvent("keyup", {
@@ -1014,7 +1010,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
     console.log(` Filling date for ${fieldName} with value: "${dateStr}"`);
 
     try {
-      // Find the experience form container first
       const formContainer = await domHelpers.waitForElement(selector, 5000);
       if (!formContainer) {
         console.warn(` Experience form container not found: ${selector}`);
@@ -1043,7 +1038,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
               field.getAttribute("label")?.toLowerCase().includes("from") ||
               field.getAttribute("label")?.toLowerCase().includes("start")
           ) ||
-          allDateFields[0]; // First date field as fallback
+          allDateFields[0];
 
         console.log(` Found start date field:`, dateInput);
       } else if (fieldName.toLowerCase().includes("end")) {
@@ -1057,12 +1052,11 @@ async function fillEducationForm(form: HTMLElement, education: any) {
               field.getAttribute("label")?.toLowerCase().includes("end")
           ) ||
           allDateFields[1] ||
-          allDateFields[0]; // Second date field as fallback
+          allDateFields[0];
 
         console.log(` Found end date field:`, dateInput);
       }
 
-      // Method 2: If no specific label match, use position-based selection
       if (!dateInput && allDateFields.length > 0) {
         if (fieldName.toLowerCase().includes("start")) {
           dateInput = allDateFields[0];
@@ -1074,7 +1068,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         }
       }
 
-      // Method 3: Search for other date-related elements as fallback
       if (!dateInput) {
         const dateFields = formContainer.querySelectorAll(
           'spl-date-field, spl-date-picker, [type="month-year"], [placeholder="Pick a date"]'
@@ -1103,7 +1096,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         return;
       }
 
-      // Find the actual input element within the date picker - prioritize shadow DOM
       let inputElement: HTMLInputElement | null = null;
 
       const searchMethods = [
@@ -1133,14 +1125,12 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         }
       }
 
-      // Fallback to the dateInput itself if no input found
       if (!inputElement) {
         inputElement = dateInput as HTMLInputElement;
       }
 
       console.log(` Found input element:`, inputElement);
 
-      // For spl-date-field, try interacting with the calendar UI
       if (dateInput.tagName === "SPL-DATE-FIELD") {
         console.log(
           ` Handling spl-date-field for ${fieldName} by interacting with calendar UI.`
@@ -1149,7 +1139,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         (dateInput as HTMLElement).click();
         await domHelpers.delay(700);
 
-        // Try calendar container
         const calendarContainer = await domHelpers.waitForElement(
           '.flatpickr-calendar, .spl-date-picker-calendar, [role="dialog"][aria-label*="calendar"]',
           3000
@@ -1160,7 +1149,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
 
           const [year, month] = dateStr.split("-").map(Number);
 
-          // Year
           let yearSelector = calendarContainer.querySelector(
             ".cur-year"
           ) as HTMLInputElement;
@@ -1176,7 +1164,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
             await domHelpers.delay(200);
           }
 
-          // Month
           let monthDropdown = calendarContainer.querySelector(
             `.flatpickr-monthDropdown-months`
           ) as HTMLSelectElement;
@@ -1192,7 +1179,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
             await domHelpers.delay(200);
           }
 
-          // Pick a day
           const dayToClick =
             calendarContainer.querySelector(".flatpickr-day.today") ||
             calendarContainer.querySelector(
@@ -1202,7 +1188,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
 
           if (dayToClick) {
             (dayToClick as HTMLElement).click();
-            await domHelpers.delay(300);
+await domHelpers.quickDelay(150);
           }
 
           (dateInput as HTMLElement).dispatchEvent(
@@ -1217,7 +1203,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         }
       }
 
-      // Fallback: type directly into input
       let targetInput = inputElement;
 
       if (!targetInput) {
@@ -1237,7 +1222,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
       targetInput.click();
       await domHelpers.delay(200);
 
-      // Clear the field
       targetInput.value = "";
       targetInput.dispatchEvent(
         new Event("input", { bubbles: true, composed: true })
@@ -1247,7 +1231,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
       );
       await domHelpers.delay(100);
 
-      // Type characters
       for (const char of dateStr) {
         targetInput.value += char;
         targetInput.dispatchEvent(
@@ -1256,9 +1239,8 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         await domHelpers.delay(50);
       }
 
-      // Ensure final value
       targetInput.value = dateStr;
-      targetInput.setAttribute("value", dateStr); // important for custom elements
+      targetInput.setAttribute("value", dateStr);
       targetInput.dispatchEvent(
         new Event("input", { bubbles: true, composed: true })
       );
@@ -1267,9 +1249,8 @@ async function fillEducationForm(form: HTMLElement, education: any) {
       );
       await domHelpers.delay(300);
 
-      // Also update host component directly (important for spl-date-field)
       if (dateInput.tagName === "SPL-DATE-FIELD") {
-        (dateInput as any).value = new Date(dateStr); // use Date object
+        (dateInput as any).value = new Date(dateStr);
         dateInput.setAttribute("value", dateStr);
 
         [
@@ -1297,7 +1278,6 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         }
       }
 
-      // Confirm with Enter if calendar is open
       const calendar = document.querySelector(".flatpickr-calendar");
       if (calendar && domHelpers.isVisible(calendar as HTMLElement)) {
         const enterEvent = new KeyboardEvent("keydown", {
@@ -1310,16 +1290,14 @@ async function fillEducationForm(form: HTMLElement, education: any) {
           composed: true,
         });
         targetInput.dispatchEvent(enterEvent);
-        await domHelpers.delay(500);
+await domHelpers.quickDelay(200);
       }
 
-      // Trigger blur
       targetInput.dispatchEvent(
         new Event("blur", { bubbles: true, composed: true })
       );
       await domHelpers.delay(300);
 
-      // Verify
       if (targetInput.value !== dateStr) {
         console.warn(
           ` Value mismatch for ${fieldName}. Expected "${dateStr}", got "${targetInput.value}". Forcing value.`
@@ -1396,7 +1374,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
   ) as HTMLElement;
   if (saveButton) {
     saveButton.click();
-    await domHelpers.delay(1000);
+await domHelpers.quickDelay(300);
     console.log("Education entry saved.");
   } else {
     console.warn(" Save button not found.");
@@ -1499,31 +1477,33 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
       console.log(` Filling ${fieldName} with value: "${value}"`);
 
       input.scrollIntoView({ behavior: "smooth", block: "center" });
-      await domHelpers.delay(300);
+      await domHelpers.quickDelay(150);
       input.focus();
       input.click();
-      await domHelpers.delay(100);
+      await domHelpers.quickDelay(50);
       input.blur();
-      await domHelpers.delay(100);
+      await domHelpers.quickDelay(50);
       input.focus();
-      await domHelpers.delay(200);
+      await domHelpers.quickDelay(100);
 
-      input.value = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      const needsAutocomplete = element.tagName === 'SPL-AUTOCOMPLETE' || fieldName.toLowerCase().includes('location') || fieldName.toLowerCase().includes('title') || fieldName.toLowerCase().includes('company');
 
-      for (const char of value) {
-        input.dispatchEvent(
-          new KeyboardEvent("keydown", { key: char, bubbles: true })
-        );
-        input.value += char;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(
-          new KeyboardEvent("keyup", { key: char, bubbles: true })
-        );
-        await domHelpers.delay(75);
+      if (needsAutocomplete) {
+input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  // small pause so SmartRecruiters autocomplete can generate the list
+  await domHelpers.quickDelay(200);
+  input.dispatchEvent(new KeyboardEvent('keydown', { key:'ArrowDown', code:'ArrowDown', keyCode:40, bubbles:true }));
+        await domHelpers.quickDelay(150);
+input.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, bubbles:true }));
+  input.dispatchEvent(new Event('change', { bubbles:true }));
+  // brief pause to let selection stick
+  await domHelpers.quickDelay(150);
+      } else {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
-      await domHelpers.delay(3000);
 
       const autocompleteSelectors = [
         ".c-spl-autocomplete-default-option",
