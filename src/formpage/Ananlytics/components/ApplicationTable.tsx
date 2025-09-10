@@ -56,7 +56,10 @@ const ApplicationTable: React.FC<ApplicationTableProps> = ({ apps, onStatusChang
                   </a>
                 </td>
                 <td>
+                    <label htmlFor={`status-select-${index}`} className="sr-only">Status</label>
                   <select
+                      id={`status-select-${index}`}
+                      aria-label="Application status"
                     className="status-dropdown"
                     value={app.status}
                     onChange={(e) => onStatusChange(index, e.target.value)}

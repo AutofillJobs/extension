@@ -1,5 +1,5 @@
 import { initializeStorage, getToggleState, getUserData } from '../utils/storageHandler';
-import { setupMessageListeners, setupBubbleMessageListener } from './messageListener';
+import { setupMessageListeners, setupBubbleMessageListener, userData } from './messageListener';
 import { initializeFormFiller } from './autoFormFill/formFiller';
 import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
@@ -8,6 +8,8 @@ import fillZohoForm from './zoho/zohoScript';
 import fillSuccessFactorsForm from './successFactors/successfactorScript'
 import { countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
 import fillLeverForm from './lever/leverScript';
+import fillOracleForm from './oracle/oracleScript'
+
 // Utility: Wait for input in DOM
 const waitForInput = (selector: string, timeout = 5000) => {
   return new Promise<HTMLInputElement | null>((resolve) => {
@@ -51,6 +53,8 @@ async function initialize() {
   const isZohoSite = window.location.hostname.includes('zoho');
   const isSuccessFactorsSite = window.location.hostname.includes('successfactors') || window.location.hostname.includes('dzconnex');
   const isLeverSite = window.location.hostname.includes('lever');
+  const isOracle = window.location.hostname.includes('oracle');
+
 
   getToggleState((toggleState) => {
     if (isWorkdaySite && toggleState) {
@@ -68,7 +72,18 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) autofillICIMS(userData, null);
       });
-    } else if (isZohoSite && toggleState) {
+    } 
+    else if(isOracle && toggleState) {
+      console.log("Filling Oracle Form");
+      getUserData((userData) => {
+        if(userData?.data?.details){
+          fillOracleForm(userData);
+          console.log(userData);
+          
+        }
+      })
+    } 
+    else if (isZohoSite && toggleState) {
       console.log("Filling ZOHO form");
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);

@@ -1,11 +1,11 @@
 import { FormData } from "../utils/types";
 export default function fillWorkdayForm(data: FormData): void {
     let saveClicked = false;
-    
+
     // Page detection function for Application Questions
     const detectApplicationQuestionsPage = (): 'app-questions-1' | 'app-questions-2' | 'unknown' => {
         console.log('[workdaynewScript] Starting page detection...');
-        
+
         // Enhanced selectors for page headings and content
         const selectors = [
             'h1, h2, h3, h4, h5, h6',
@@ -18,24 +18,24 @@ export default function fillWorkdayForm(data: FormData): void {
             'span[class*="title"]',
             '[aria-level]'
         ];
-        
+
         // Check each selector type
         for (const selector of selectors) {
             try {
                 const elements = document.querySelectorAll(selector);
                 console.log(`[workdaynewScript] Found ${elements.length} elements with selector: ${selector}`);
-                
+
                 for (const element of elements) {
                     const elementText = element.textContent?.trim() || '';
                     console.log(`[workdaynewScript] Checking element text: "${elementText}"`);
-                    
-                    if (elementText.includes('Application Questions 1 of 2') || 
+
+                    if (elementText.includes('Application Questions 1 of 2') ||
                         elementText.includes('Application Questions (1 of 2)') ||
                         elementText.includes('Application Questions - 1 of 2')) {
                         console.log('[workdaynewScript] Detected Application Questions 1 of 2 page');
                         return 'app-questions-1';
                     }
-                    if (elementText.includes('Application Questions 2 of 2') || 
+                    if (elementText.includes('Application Questions 2 of 2') ||
                         elementText.includes('Application Questions (2 of 2)') ||
                         elementText.includes('Application Questions - 2 of 2')) {
                         console.log('[workdaynewScript] Detected Application Questions 2 of 2 page');
@@ -46,7 +46,7 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.warn(`[workdaynewScript] Error with selector ${selector}:`, error);
             }
         }
-        
+
         // Check for Application Questions indicators
         const questionIndicators = [
             'fieldset',
@@ -54,7 +54,7 @@ export default function fillWorkdayForm(data: FormData): void {
             'button[aria-haspopup="listbox"]',
             '.wd-input-dropdown'
         ];
-        
+
         let hasDropdownQuestions = false;
         for (const indicator of questionIndicators) {
             const elements = document.querySelectorAll(indicator);
@@ -64,20 +64,20 @@ export default function fillWorkdayForm(data: FormData): void {
                 break;
             }
         }
-        
+
         // If we have dropdown questions but no clear page indicator, assume it's page 1
         if (hasDropdownQuestions) {
             console.log('[workdaynewScript] Found dropdown questions, assuming Application Questions 1 of 2');
             return 'app-questions-1';
         }
-        
+
         // Final fallback: search entire document text
         const bodyText = document.body.textContent?.toLowerCase() || '';
         if (bodyText.includes('application questions')) {
             console.log('[workdaynewScript] Found "application questions" in body text, assuming page 1');
             return 'app-questions-1';
         }
-        
+
         console.log('[workdaynewScript] Could not detect Application Questions page');
         return 'unknown';
     };
@@ -339,7 +339,7 @@ export default function fillWorkdayForm(data: FormData): void {
         const inputs = document.querySelectorAll<HTMLInputElement>("input");
         console.log('[workdaynewScript] Found inputs:', inputs.length);
         console.log('[workdaynewScript] Data details:', data.data?.details);
-        
+
         inputs.forEach(input => {
             const fieldName = (input.name || input.id || "").toLowerCase();
             const details = data.data?.details;
@@ -347,7 +347,7 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.warn('[workdaynewScript] No details found in data');
                 return;
             }
-            
+
             console.log('[workdaynewScript] Processing input:', fieldName, 'Element:', input);
 
             if (fieldName.includes("firstname")) input.value = details.firstName ?? "";
@@ -359,13 +359,14 @@ export default function fillWorkdayForm(data: FormData): void {
             else if (input.id === "phoneNumber--phoneNumber" || (fieldName.includes("phonenumber") && !fieldName.includes("countryphone") && !fieldName.includes("code"))) {
                 input.value = String(details.phoneNumber || '2025550147');
                 console.log('[workdaynewScript] Phone number field found:', fieldName, 'ID:', input.id, 'Value set:', details.phoneNumber || '2025550147', 'Input element:', input);
-                
+
                 // Trigger events to ensure Workday recognizes the value
                 input.dispatchEvent(new Event("input", { bubbles: true }));
                 input.dispatchEvent(new Event("change", { bubbles: true }));
                 input.focus();
                 input.blur();
             }
+
             if (fieldName.includes("linkedinaccount")) {
                 const linkedinUrl = details.linkedinUrl;
                 input.value = linkedinUrl || ''; // Accept exact format without validation
@@ -398,19 +399,19 @@ export default function fillWorkdayForm(data: FormData): void {
                 // Country phone code dropdown selection - avoid source field
                 setTimeout(async () => {
                     const phoneCode = details.phoneCode || "+1";
-                    
+
                     // Find country phone code search input - exclude source field
                     const phoneCodeSearch = document.querySelector<HTMLInputElement>('input[id="phoneNumber--countryPhoneCode"]') ||
-                                          document.querySelector<HTMLInputElement>('input[id*="countryPhoneCode"]:not([id*="source"])') ||
-                                          document.querySelector<HTMLInputElement>('input[data-automation-id="searchBox"]:not([id*="source"])') ||
-                                          document.querySelector<HTMLInputElement>('input[placeholder="Search"]:not([id*="source"])');
-                    
+                        document.querySelector<HTMLInputElement>('input[id*="countryPhoneCode"]:not([id*="source"])') ||
+                        document.querySelector<HTMLInputElement>('input[data-automation-id="searchBox"]:not([id*="source"])') ||
+                        document.querySelector<HTMLInputElement>('input[placeholder="Search"]:not([id*="source"])');
+
                     if (phoneCodeSearch && !phoneCodeSearch.id.includes('source')) {
                         phoneCodeSearch.focus();
                         phoneCodeSearch.value = phoneCode;
                         phoneCodeSearch.dispatchEvent(new Event('input', { bubbles: true }));
                         phoneCodeSearch.dispatchEvent(new Event('change', { bubbles: true }));
-                        
+
                         // Wait for dropdown options and select matching phone code
                         setTimeout(async () => {
                             const codeOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
@@ -437,16 +438,16 @@ export default function fillWorkdayForm(data: FormData): void {
                         'source of application',
                         'where did you hear about us'
                     ];
-                    
+
                     let sourceContainer = null;
                     let sourceButton = null;
-                    
+
                     // Search for the question text in the DOM
                     for (const questionText of questionTexts) {
                         const allText = document.body.textContent?.toLowerCase() || '';
                         if (allText.includes(questionText)) {
                             console.log(`[workdaynewScript] Found source question: ${questionText}`);
-                            
+
                             // Find the associated dropdown button for this question
                             const containers = document.querySelectorAll('fieldset, .css-1w0k4b1, [data-automation-id*="formField"]');
                             for (const container of containers) {
@@ -454,29 +455,29 @@ export default function fillWorkdayForm(data: FormData): void {
                                 if (containerText.includes(questionText)) {
                                     // Look for dropdown button within this container
                                     sourceButton = container.querySelector('button[aria-haspopup="listbox"]') ||
-                                                  container.querySelector('button[data-automation-id*="formField"]') ||
-                                                  container.querySelector('button');
+                                        container.querySelector('button[data-automation-id*="formField"]') ||
+                                        container.querySelector('button');
                                     if (sourceButton) {
                                         sourceContainer = container;
                                         break;
                                     }
                                 }
                             }
-                            
+
                             if (sourceButton) break;
                         }
                     }
-                    
+
                     // Fallback to direct source field detection if question text approach fails
                     if (!sourceButton) {
                         sourceButton = document.querySelector('button[aria-label*="How did you hear"]') ||
-                                      document.querySelector('button[data-automation-id*="source"]') ||
-                                      document.querySelector('button[aria-describedby*="source"]');
+                            document.querySelector('button[data-automation-id*="source"]') ||
+                            document.querySelector('button[aria-describedby*="source"]');
                     }
-                    
+
                     if (sourceButton && sourceButton instanceof HTMLElement) {
                         console.log('[workdaynewScript] Found source dropdown button, proceeding with selection...');
-                        
+
                         // Click to open dropdown
                         sourceButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         await wait(300);
@@ -484,7 +485,7 @@ export default function fillWorkdayForm(data: FormData): void {
 
                         // Wait for options to appear
                         await wait(1500);
-                        
+
                         // Look for LinkedIn first, then fallback to first option
                         const options = document.querySelectorAll<HTMLElement>('[role="option"]');
                         let linkedInFound = false;
@@ -498,7 +499,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 break;
                             }
                         }
-                        
+
                         if (!linkedInFound && options.length > 0) {
                             options[0].click();
                             console.log('[workdaynewScript] Successfully completed source selection');
@@ -541,11 +542,11 @@ export default function fillWorkdayForm(data: FormData): void {
             // Robust country dropdown selection - works across job boards
             const country = data.data?.details?.country;
             if (!country) return;
-            console.log("Countrty is : " + country )
-            
+            console.log("Countrty is : " + country)
+
             // Find country dropdown using multiple robust selectors
             let countryDropdownBtn: HTMLButtonElement | null = null;
-            
+
             // Primary selectors for country dropdown - including exact button structure
             const countrySelectors = [
                 'button[name="country"]',
@@ -563,17 +564,17 @@ export default function fillWorkdayForm(data: FormData): void {
                 'input[id*="country"]',
                 'input[id*="Country"]'
             ];
-            
+
             // Try each selector until we find the country dropdown
             for (const selector of countrySelectors) {
-                const element = document.querySelector<HTMLButtonElement>(selector) || 
-                               document.querySelector<HTMLInputElement>(selector);
+                const element = document.querySelector<HTMLButtonElement>(selector) ||
+                    document.querySelector<HTMLInputElement>(selector);
                 if (element) {
                     countryDropdownBtn = element as HTMLButtonElement;
                     break;
                 }
             }
-            
+
             // Fallback: find any element that contains country-related text or exact button structure
             if (!countryDropdownBtn) {
                 // Try exact button structure first
@@ -584,10 +585,10 @@ export default function fillWorkdayForm(data: FormData): void {
                     // Fallback to text-based search
                     const allButtons = document.querySelectorAll('button, input');
                     for (const element of allButtons) {
-                        const text = element.textContent?.toLowerCase() || 
-                                   element.getAttribute('aria-label')?.toLowerCase() || 
-                                   element.getAttribute('placeholder')?.toLowerCase() || '';
-                        
+                        const text = element.textContent?.toLowerCase() ||
+                            element.getAttribute('aria-label')?.toLowerCase() ||
+                            element.getAttribute('placeholder')?.toLowerCase() || '';
+
                         if (text.includes('country') || text.includes('territory')) {
                             countryDropdownBtn = element as HTMLButtonElement;
                             break;
@@ -595,21 +596,21 @@ export default function fillWorkdayForm(data: FormData): void {
                     }
                 }
             }
-            
+
             if (!countryDropdownBtn) return;
-            
+
             // Click the country dropdown button
             countryDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             await wait(500);
             countryDropdownBtn.click();
-            
+
             // Wait for dropdown to open and search for country
             setTimeout(async () => {
                 // Look for search input in dropdown
-                const searchInput = document.querySelector<HTMLInputElement>('input[data-automation-id="searchInput"]') || 
-                                  document.querySelector<HTMLInputElement>('input[placeholder*="Search"]') ||
-                                  document.querySelector<HTMLInputElement>('input[type="text"]');
-                
+                const searchInput = document.querySelector<HTMLInputElement>('input[data-automation-id="searchInput"]') ||
+                    document.querySelector<HTMLInputElement>('input[placeholder*="Search"]') ||
+                    document.querySelector<HTMLInputElement>('input[type="text"]');
+
                 if (searchInput) {
                     // Type country name in search
                     searchInput.focus();
@@ -617,12 +618,12 @@ export default function fillWorkdayForm(data: FormData): void {
                     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
                     await wait(1000);
                 }
-                
+
                 // Find and click the matching country option
                 const options = document.querySelectorAll<HTMLElement>('[role="option"]');
                 for (const option of options) {
                     const optionText = option.textContent?.trim().toLowerCase();
-                    if (optionText === country.toLowerCase() || 
+                    if (optionText === country.toLowerCase() ||
                         optionText?.includes(country.toLowerCase()) ||
                         country.toLowerCase().includes(optionText || '')) {
                         option.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -632,14 +633,14 @@ export default function fillWorkdayForm(data: FormData): void {
                     }
                 }
             }, 1000);
-            
+
             // Phone device type dropdown selection
             setTimeout(async () => {
                 const phoneDeviceType = data.data?.details?.phoneDeviceType || "Mobile";
-                
+
                 // Find phone device type dropdown
                 let phoneDeviceBtn: HTMLButtonElement | null = null;
-                
+
                 const phoneSelectors = [
                     'button[name="phoneType"]',
                     'button[id="phoneNumber--phoneType"]',
@@ -647,7 +648,7 @@ export default function fillWorkdayForm(data: FormData): void {
                     'button[data-automation-id*="phone"]',
                     'button[id*="phone"]'
                 ];
-                
+
                 for (const selector of phoneSelectors) {
                     const element = document.querySelector<HTMLButtonElement>(selector);
                     if (element) {
@@ -655,36 +656,36 @@ export default function fillWorkdayForm(data: FormData): void {
                         break;
                     }
                 }
-                
+
                 if (!phoneDeviceBtn) {
                     // Fallback search for phone device dropdown
                     const allButtons = document.querySelectorAll('button');
                     for (const button of allButtons) {
-                        const text = button.textContent?.toLowerCase() || 
-                                   button.getAttribute('aria-label')?.toLowerCase() || '';
-                        
+                        const text = button.textContent?.toLowerCase() ||
+                            button.getAttribute('aria-label')?.toLowerCase() || '';
+
                         if (text.includes('phone device') || text.includes('device type')) {
                             phoneDeviceBtn = button as HTMLButtonElement;
                             break;
                         }
                     }
                 }
-                
+
                 if (phoneDeviceBtn) {
                     phoneDeviceBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     await wait(500);
                     phoneDeviceBtn.click();
-                    
+
                     // Wait for dropdown and select device type
                     setTimeout(async () => {
                         const deviceOptions = document.querySelectorAll<HTMLElement>('[role="option"]');
                         let selected = false;
-                        
+
                         for (const option of deviceOptions) {
                             const optionText = option.textContent?.trim().toLowerCase();
                             const targetType = phoneDeviceType.toLowerCase();
-                            
-                            if (optionText === targetType || 
+
+                            if (optionText === targetType ||
                                 optionText?.includes(targetType) ||
                                 targetType.includes(optionText || '')) {
                                 option.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -694,7 +695,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 break;
                             }
                         }
-                        
+
                         // If exact match not found, select Mobile as fallback
                         if (!selected) {
                             for (const option of deviceOptions) {
@@ -748,9 +749,10 @@ export default function fillWorkdayForm(data: FormData): void {
         };
     }
     // Application Questions 1 of 2 - Main application questions with proper validation
-    async function fillApplicationQuestions1() {
+    async function fillApplicationQuestions1
+    () {
         console.log('[workdaynewScript] Starting Application Questions 1 of 2...');
-        
+
         const questionMapping = [
             {
                 question: 'Would you consider relocating for this role?',
@@ -816,17 +818,17 @@ export default function fillWorkdayForm(data: FormData): void {
 
         const maxRetries = 5;
         let retryCount = 0;
-        
+
         // Wait for form to be ready
         await wait(2000);
-        
+
         // Process all questions with retry mechanism
         while (retryCount < maxRetries) {
             console.log(`[workdaynewScript] Application Questions attempt ${retryCount + 1}/${maxRetries}`);
-            
+
             let allQuestionsAnswered = true;
             let questionsProcessed = 0;
-            
+
             for (const mapping of questionMapping) {
                 try {
                     // Enhanced selectors for Application Questions dropdown buttons
@@ -843,16 +845,16 @@ export default function fillWorkdayForm(data: FormData): void {
                         `button[role="combobox"]`,
                         `button.wd-input`
                     ];
-                    
+
                     let dropdownButton: HTMLButtonElement | null = null;
-                    
+
                     // Try direct selectors first
                     for (const selector of selectors) {
                         const buttons = document.querySelectorAll(selector);
                         for (const button of buttons) {
                             const buttonElement = button as HTMLButtonElement;
                             // Check if this button is for a dropdown (has listbox popup or combobox role)
-                            if (buttonElement.getAttribute('aria-haspopup') === 'listbox' || 
+                            if (buttonElement.getAttribute('aria-haspopup') === 'listbox' ||
                                 buttonElement.getAttribute('role') === 'combobox' ||
                                 buttonElement.textContent?.trim() === 'Select One') {
                                 dropdownButton = buttonElement;
@@ -862,18 +864,18 @@ export default function fillWorkdayForm(data: FormData): void {
                         }
                         if (dropdownButton) break;
                     }
-                    
+
                     // Fallback to fieldset text matching using keywords
                     if (!dropdownButton) {
                         const fieldsets = document.querySelectorAll('fieldset');
                         for (const fieldset of fieldsets) {
                             const legendText = fieldset.querySelector('legend')?.textContent?.toLowerCase() || '';
-                            
+
                             // Check if any keywords match
-                            const keywordMatch = mapping.keywords.some(keyword => 
+                            const keywordMatch = mapping.keywords.some(keyword =>
                                 legendText.includes(keyword.toLowerCase())
                             );
-                            
+
                             if (keywordMatch) {
                                 console.log(`[workdaynewScript] Found fieldset match using keywords: ${mapping.keywords}`);
                                 dropdownButton = fieldset.querySelector('button[aria-haspopup="listbox"]');
@@ -881,7 +883,7 @@ export default function fillWorkdayForm(data: FormData): void {
                             }
                         }
                     }
-                    
+
                     // Additional fallback: search by question text proximity
                     if (!dropdownButton) {
                         const allButtons = document.querySelectorAll('button');
@@ -889,16 +891,16 @@ export default function fillWorkdayForm(data: FormData): void {
                             const buttonElement = button as HTMLButtonElement;
                             const parentElement = buttonElement.closest('fieldset') || buttonElement.parentElement;
                             const contextText = parentElement?.textContent?.toLowerCase() || '';
-                            
+
                             // Check if this is a dropdown button and matches our question
-                            const isDropdownButton = buttonElement.getAttribute('aria-haspopup') === 'listbox' || 
-                                                   buttonElement.getAttribute('role') === 'combobox' ||
-                                                   buttonElement.textContent?.trim() === 'Select One';
-                            
-                            const keywordMatch = mapping.keywords.some(keyword => 
+                            const isDropdownButton = buttonElement.getAttribute('aria-haspopup') === 'listbox' ||
+                                buttonElement.getAttribute('role') === 'combobox' ||
+                                buttonElement.textContent?.trim() === 'Select One';
+
+                            const keywordMatch = mapping.keywords.some(keyword =>
                                 contextText.includes(keyword.toLowerCase())
                             );
-                            
+
                             if (isDropdownButton && keywordMatch) {
                                 console.log(`[workdaynewScript] Found button match using context keywords: ${mapping.keywords}`);
                                 dropdownButton = buttonElement;
@@ -906,42 +908,42 @@ export default function fillWorkdayForm(data: FormData): void {
                             }
                         }
                     }
-                    
+
                     if (!dropdownButton) {
                         console.warn(`[workdaynewScript] Dropdown not found: ${mapping.question}`);
                         continue; // Skip to next question instead of failing
                     }
-                    
+
                     // Check current value
                     const currentValue = dropdownButton.textContent?.trim();
                     if (currentValue && currentValue !== 'Select One') {
                         questionsProcessed++;
                         continue; // Already answered
                     }
-                    
+
                     // Answer the question with improved dropdown handling
                     console.log(`[workdaynewScript] Processing question: ${mapping.question}`);
                     console.log(`[workdaynewScript] Found dropdown button:`, dropdownButton);
-                    
+
                     // Ensure button is visible and clickable
                     dropdownButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     await wait(500);
-                    
+
                     // Multiple click strategies to ensure dropdown opens
                     console.log(`[workdaynewScript] Clicking dropdown button for: ${mapping.question}`);
-                    
+
                     // Strategy 1: Direct click
                     dropdownButton.focus();
                     await wait(300);
                     dropdownButton.click();
                     await wait(800);
-                    
+
                     // Check if dropdown opened by looking for options
                     let optionsVisible = document.querySelectorAll('li[role="option"], div[role="option"]').length > 0;
-                    
+
                     if (!optionsVisible) {
                         console.log(`[workdaynewScript] Dropdown not opened, trying alternative click methods`);
-                        
+
                         // Strategy 2: Mouse events
                         const clickEvent = new MouseEvent('click', {
                             bubbles: true,
@@ -950,13 +952,13 @@ export default function fillWorkdayForm(data: FormData): void {
                         });
                         dropdownButton.dispatchEvent(clickEvent);
                         await wait(800);
-                        
+
                         optionsVisible = document.querySelectorAll('li[role="option"], div[role="option"]').length > 0;
                     }
-                    
+
                     if (!optionsVisible) {
                         console.log(`[workdaynewScript] Still no options visible, trying keyboard approach`);
-                        
+
                         // Strategy 3: Keyboard events
                         dropdownButton.focus();
                         const keydownEvent = new KeyboardEvent('keydown', {
@@ -967,53 +969,53 @@ export default function fillWorkdayForm(data: FormData): void {
                         dropdownButton.dispatchEvent(keydownEvent);
                         await wait(800);
                     }
-                    
+
                     // Final wait for options to appear
                     await wait(500);
-                    
+
                     // Find and select option with multiple strategies
                     let optionSelected = false;
                     const maxOptionAttempts = 3;
-                    
+
                     for (let attempt = 0; attempt < maxOptionAttempts && !optionSelected; attempt++) {
                         console.log(`[workdaynewScript] Option selection attempt ${attempt + 1} for: ${mapping.question}`);
-                        
+
                         // Wait a bit more for options to load
                         await wait(300);
-                        
+
                         const optionSelectors = [
                             'li[role="option"]',
                             'div[role="option"]',
                             '[data-automation-id*="option"]',
                             '.wd-popup-list-item'
                         ];
-                        
+
                         for (const selector of optionSelectors) {
                             const options = document.querySelectorAll(selector);
                             console.log(`[workdaynewScript] Found ${options.length} options with selector: ${selector}`);
-                            
+
                             for (const option of options) {
                                 const optionText = option.textContent?.trim().toLowerCase() || '';
                                 const answerText = mapping.answer.toLowerCase();
-                                
+
                                 console.log(`[workdaynewScript] Comparing option: "${optionText}" with answer: "${answerText}"`);
-                                
+
                                 // Enhanced matching logic
                                 const isExactMatch = optionText === answerText;
                                 const isContainedMatch = optionText.includes(answerText) || answerText.includes(optionText);
-                                const isYesNoMatch = (answerText.includes('yes') && optionText.includes('yes')) || 
-                                                   (answerText.includes('no') && optionText.includes('no'));
-                                
+                                const isYesNoMatch = (answerText.includes('yes') && optionText.includes('yes')) ||
+                                    (answerText.includes('no') && optionText.includes('no'));
+
                                 if (isExactMatch || isContainedMatch || isYesNoMatch) {
                                     console.log(`[workdaynewScript] Selecting option: "${optionText}"`);
-                                    
+
                                     // Multiple click strategies
                                     try {
                                         (option as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
                                         await wait(200);
                                         (option as HTMLElement).click();
                                         await wait(500);
-                                        
+
                                         // Verify selection worked
                                         const updatedButtonText = dropdownButton.textContent?.trim();
                                         if (updatedButtonText && updatedButtonText !== 'Select One') {
@@ -1027,10 +1029,10 @@ export default function fillWorkdayForm(data: FormData): void {
                                     }
                                 }
                             }
-                            
+
                             if (optionSelected) break;
                         }
-                        
+
                         if (!optionSelected && attempt < maxOptionAttempts - 1) {
                             console.log(`[workdaynewScript] Option not selected, retrying...`);
                             // Close and reopen dropdown
@@ -1040,36 +1042,36 @@ export default function fillWorkdayForm(data: FormData): void {
                             await wait(800);
                         }
                     }
-                    
+
                     if (!optionSelected) {
                         console.warn(`[workdaynewScript] Failed to select option for: ${mapping.question} - ${mapping.answer}`);
                         document.body.click(); // Close dropdown
                         allQuestionsAnswered = false;
                     }
-                    
+
                 } catch (error) {
                     console.error(`[workdaynewScript] Error with question: ${mapping.question}`, error);
                     allQuestionsAnswered = false;
                 }
-                
+
                 await wait(200); // Brief pause between questions
             }
-            
+
             // Check if all questions are answered
             const remainingQuestions = await checkRemainingApplicationQuestions();
-            
+
             if (remainingQuestions === 0) {
                 console.log('[workdaynewScript] All Application Questions 1 completed successfully');
                 break;
             }
-            
+
             retryCount++;
             if (retryCount < maxRetries) {
                 console.log(`[workdaynewScript] ${remainingQuestions} questions remaining, retrying...`);
                 await wait(1500);
             }
         }
-        
+
         // Final validation check
         const remaining = await checkRemainingApplicationQuestions();
         if (remaining === 0) {
@@ -1077,10 +1079,10 @@ export default function fillWorkdayForm(data: FormData): void {
         } else {
             console.warn(`[workdaynewScript] ${remaining} questions still need attention`);
         }
-        
+
         // Wait for form validation to complete before clicking Save
         await waitUntilFormIsValid();
-        
+
         // Click Save & Continue
         // await waitAndClickButton();
     }
@@ -1092,9 +1094,9 @@ export default function fillWorkdayForm(data: FormData): void {
             'button[aria-haspopup="listbox"]',
             'fieldset button'
         ];
-        
+
         let unansweredCount = 0;
-        
+
         for (const selector of unansweredSelectors) {
             const buttons = document.querySelectorAll(selector);
             for (const button of buttons) {
@@ -1104,7 +1106,7 @@ export default function fillWorkdayForm(data: FormData): void {
                 }
             }
         }
-        
+
         console.log(`[workdaynewScript] Found ${unansweredCount} unanswered questions`);
         return unansweredCount;
     }
@@ -1113,26 +1115,26 @@ export default function fillWorkdayForm(data: FormData): void {
     async function waitUntilFormIsValid(): Promise<void> {
         const maxAttempts = 10;
         let attempts = 0;
-        
+
         while (attempts < maxAttempts) {
             const invalidFields = document.querySelectorAll('.invalid');
             if (invalidFields.length === 0) {
                 console.log('[workdaynewScript] Form is valid');
                 return;
             }
-            
+
             console.log(`[workdaynewScript] Form is not valid, waiting...`);
             await wait(500);
             attempts++;
         }
-        
+
         console.warn('[workdaynewScript] Form is still not valid after waiting');
     }
 
     // Application Questions 2 of 2 - Employee relations and acknowledgment questions
     async function fillApplicationQuestions2() {
         console.log('[workdaynewScript] Filling Application Questions 2 of 2...');
-        
+
         // Updated mapping for second page questions
         const questionMapping = [
             {
@@ -1165,11 +1167,11 @@ export default function fillWorkdayForm(data: FormData): void {
         // Process all questions with retry mechanism
         let retryCount = 0;
         const maxRetries = 3;
-        
+
         while (retryCount < maxRetries) {
             let allQuestionsAnswered = true;
             let questionsProcessed = 0;
-            
+
             for (const mapping of questionMapping) {
                 try {
                     const selectors = [
@@ -1181,17 +1183,17 @@ export default function fillWorkdayForm(data: FormData): void {
                         `button[role="combobox"]`,
                         `button.wd-input`
                     ];
-                    
+
                     let dropdownButton: HTMLButtonElement | null = null;
-                    
+
                     // Try direct selectors first
                     for (const selector of selectors) {
                         const buttons = document.querySelectorAll(selector);
                         for (const button of buttons) {
                             const buttonElement = button as HTMLButtonElement;
                             const parentText = buttonElement.closest('fieldset, .css-1bnjvia')?.textContent?.toLowerCase() || '';
-                            
-                            if (parentText.includes(mapping.question.toLowerCase()) || 
+
+                            if (parentText.includes(mapping.question.toLowerCase()) ||
                                 buttonElement.textContent?.trim() === 'Select One') {
                                 dropdownButton = buttonElement;
                                 break;
@@ -1199,18 +1201,18 @@ export default function fillWorkdayForm(data: FormData): void {
                         }
                         if (dropdownButton) break;
                     }
-                    
+
                     if (dropdownButton) {
                         const currentValue = dropdownButton.textContent?.trim();
                         if (currentValue && currentValue !== 'Select One') {
                             questionsProcessed++;
                             continue;
                         }
-                        
+
                         dropdownButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         dropdownButton.focus();
                         dropdownButton.click();
-                        
+
                         // Wait and select option
                         setTimeout(() => {
                             const options = document.querySelectorAll('li[role="option"], div[role="option"]');
@@ -1221,50 +1223,50 @@ export default function fillWorkdayForm(data: FormData): void {
                                 }
                             });
                         }, 500);
-                        
+
                         questionsProcessed++;
                     } else {
                         allQuestionsAnswered = false;
                     }
-                    
+
                 } catch (error) {
                     console.error(`Error with question: ${mapping.question}`, error);
                     allQuestionsAnswered = false;
                 }
             }
-            
+
             if (allQuestionsAnswered && questionsProcessed === questionMapping.length) {
                 console.log('All voluntary disclosure questions answered successfully');
                 break;
             }
-            
+
             retryCount++;
             if (retryCount < maxRetries) {
                 console.log(`Retrying voluntary disclosure questions... Attempt ${retryCount + 1}`);
-                setTimeout(() => {}, 1000);
+                setTimeout(() => { }, 1000);
             }
         }
     }
-    
+
     async function fillVoluntaryDisclosure() {
         console.log('[workdaynewScript] Processing voluntary disclosure section...');
-        
+
         const details = data.data?.details;
         if (!details) {
             console.warn('[workdaynewScript] No details found for voluntary disclosure');
             return;
         }
-        
+
         // Handle gender selection
         if (details.gender) {
             console.log(`[workdaynewScript] Processing gender selection: ${details.gender}`);
-            
+
             // Find gender dropdown button - targeting the specific button provided
             const genderDropdown = document.querySelector<HTMLButtonElement>('button[name="gender"]') ||
-                                  document.querySelector<HTMLButtonElement>('#personalInfoPerson--gender') ||
-                                  document.querySelector<HTMLButtonElement>('button[aria-label*="gender" i]') ||
-                                  document.querySelector<HTMLButtonElement>('button[aria-label*="Select One"]');
-            
+                document.querySelector<HTMLButtonElement>('#personalInfoPerson--gender') ||
+                document.querySelector<HTMLButtonElement>('button[aria-label*="gender" i]') ||
+                document.querySelector<HTMLButtonElement>('button[aria-label*="Select One"]');
+
             if (genderDropdown) {
                 console.log('[workdaynewScript] Found gender dropdown, attempting to open...');
                 genderDropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1278,7 +1280,7 @@ export default function fillWorkdayForm(data: FormData): void {
                     view: window
                 });
                 genderDropdown.dispatchEvent(clickEvent);
-                
+
                 // Wait for dropdown options to appear
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -1316,16 +1318,16 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.warn('[workdaynewScript] Gender dropdown not found');
             }
         }
-        
+
         // Handle terms and conditions checkbox
         const termsCheckbox = document.getElementById('termsAndConditions--acceptTermsAndAgreements') as HTMLInputElement;
-        
+
         if (termsCheckbox) {
             console.log('[workdaynewScript] Found terms and conditions checkbox');
-            
+
             // Scroll checkbox into view
             termsCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             // Click checkbox if not already checked
             if (!termsCheckbox.checked) {
                 console.log('[workdaynewScript] Clicking terms and conditions checkbox');
@@ -1335,7 +1337,7 @@ export default function fillWorkdayForm(data: FormData): void {
             }
         } else {
             console.warn('[workdaynewScript] Terms and conditions checkbox not found');
-            
+
             // Fallback: find any checkbox in the voluntary disclosure section
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
@@ -1346,18 +1348,32 @@ export default function fillWorkdayForm(data: FormData): void {
                 }
             });
         }
-        
+
         // Handle other demographic dropdowns (ethnicity, veteran status, etc.)
         if (details.ethnicity) {
             console.log(`[workdaynewScript] Processing ethnicity: ${details.ethnicity}`);
             // Similar dropdown handling for ethnicity
         }
-        
+
         if (details.veteran) {
             console.log(`[workdaynewScript] Processing veteran status: ${details.veteran}`);
             // Similar dropdown handling for veteran status
         }
     }
+
+    async function clickNextButton() {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for autofill to finish
+        const nextBtn = document.querySelector<HTMLButtonElement>('button[data-automation-id="pageFooterNextButton"]');
+        if (nextBtn && !nextBtn.disabled) {
+            nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nextBtn.focus();
+            nextBtn.click();
+            console.log('[workdaynewScript] Save and Continue button clicked automatically.');
+        } else {
+            console.warn('[workdaynewScript] Save and Continue button not found or disabled.');
+        }
+    }
+
     const fillExperience = (index: number): void => {
         const workExperiences = data?.data?.workExperiences;
         if (!workExperiences || !Array.isArray(workExperiences)) return;
@@ -1397,11 +1413,11 @@ export default function fillWorkdayForm(data: FormData): void {
                 input.value = endYear || '';
                 input.focus();
             }
-            
+
             input.dispatchEvent(new Event("input", { bubbles: true }));
             input.dispatchEvent(new Event("change", { bubbles: true }));
         });
-        
+
         const textarea = section.querySelector<HTMLTextAreaElement>("textarea[id*='roleDescription']");
         if (textarea) {
             textarea.value = exp.description || '';
@@ -1454,7 +1470,7 @@ export default function fillWorkdayForm(data: FormData): void {
 
                 let optionFound = false;
                 const targetDegree = edu.educationType.toLowerCase();
-                
+
                 // Create flexible degree mappings
                 const degreeMappings: Record<string, string[]> = {
                     'bachelor': ['bachelor', 'bachelors', 'bs', 'ba', 'b.sc', 'bachelor\'s'],
@@ -1463,12 +1479,12 @@ export default function fillWorkdayForm(data: FormData): void {
                     'high school': ['high school', 'highschool', 'hs', 'secondary'],
                     'associates': ['associates', 'associate', 'associate\'s']
                 };
-                
+
                 for (const option of options) {
                     const optionText = option.innerText.trim().toLowerCase();
-                    
+
                     console.log(`[workdaynewScript] Checking option: "${optionText}" against "${targetDegree}"`);
-                    
+
                     // Direct match
                     if (optionText === targetDegree || optionText.includes(targetDegree) || targetDegree.includes(optionText)) {
                         console.log(`[workdaynewScript] Selecting degree option: ${optionText}`);
@@ -1476,7 +1492,7 @@ export default function fillWorkdayForm(data: FormData): void {
                         optionFound = true;
                         break;
                     }
-                    
+
                     // Flexible matching using degree mappings
                     for (const [standardDegree, variations] of Object.entries(degreeMappings)) {
                         // Check if target contains standard degree
@@ -1490,7 +1506,7 @@ export default function fillWorkdayForm(data: FormData): void {
                             }
                         }
                     }
-                    
+
                     if (optionFound) break;
                 }
 
@@ -1556,7 +1572,7 @@ export default function fillWorkdayForm(data: FormData): void {
             const proficiencyDropdownBtn = languageContainer.querySelector<HTMLButtonElement>(`button[aria-label*="${proficiency}"]`);
 
             if (proficiencyDropdownBtn) {
-                 // Check if a value is already selected
+                // Check if a value is already selected
                 if (proficiencyDropdownBtn.textContent?.trim().toLowerCase() !== 'select one') {
                     console.log(`[workdaynewScript] Proficiency for '${proficiency}' is already set to '${proficiencyDropdownBtn.textContent?.trim()}'. Skipping.`);
                     continue;
@@ -1582,7 +1598,7 @@ export default function fillWorkdayForm(data: FormData): void {
 
                 if (!optionSelected) {
                     console.warn(`[workdaynewScript] Could not find option '${targetProficiency}' for '${proficiency}'. Closing dropdown.`);
-                     // If the desired option isn't found, click body to close the dropdown to avoid getting stuck
+                    // If the desired option isn't found, click body to close the dropdown to avoid getting stuck
                     document.body.click();
                     await wait(300);
                 }
@@ -1604,11 +1620,11 @@ export default function fillWorkdayForm(data: FormData): void {
                     const input = element.querySelector<HTMLInputElement>("input");
                     if (input) {
                         shouldFillForm = true;
-                        
+
                         // Detect which Application Questions page we're on
                         const currentPage = detectApplicationQuestionsPage();
                         console.log(`[workdaynewScript] Detected page: ${currentPage}`);
-                        
+
                         if (currentPage === 'app-questions-1') {
                             await fillApplicationQuestions1();
                             console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
@@ -1619,7 +1635,7 @@ export default function fillWorkdayForm(data: FormData): void {
                             // await clickSaveAndContinue();
                         }
                         // No fallback needed - page detection handles all application question pages
-                        
+
                         fillVoluntaryDisclosure();
                     }
 
@@ -1656,7 +1672,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 // After education filling, click Save & Continue
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                                 console.log('[workdaynewScript] Education filling complete, clicking Save & Continue...');
-                                
+
                             }
                         });
                     }, 500);
@@ -1666,23 +1682,28 @@ export default function fillWorkdayForm(data: FormData): void {
         if (shouldFillForm) {
             console.log("Filling form...");
             fillPersonalInfo();
-            
+            await clickNextButton();
+
             // Use page detection for Application Questions and wait for completion
             const currentPage = detectApplicationQuestionsPage();
             if (currentPage === 'app-questions-1') {
                 await fillApplicationQuestions1();
                 console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
                 // await clickSaveAndContinue();
+                await clickNextButton();
             } else if (currentPage === 'app-questions-2') {
                 await fillApplicationQuestions2();
                 console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
                 // await clickSaveAndContinue();
+                await clickNextButton();
             }
             // No fallback needed - page detection handles all application question pages
-            
+
             fillVoluntaryDisclosure();
+            await clickNextButton();
         }
     });
+
 
     observer.observe(document.body, { childList: true, subtree: true });
 }

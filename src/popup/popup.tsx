@@ -16,13 +16,11 @@ const App = () => {
   const [applicationsTotal, setApplicationsTotal] = useState(0);
   const [goal, setGoal] = useState(10);
   const [recentApplications, setRecentApplications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // useEffect hook to load data and toggle state on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      
+    const fetchData = () => {
       // Load toggle state from chrome storage
       chrome.storage.local.get(['toggleState'], (result) => {
         if (result.toggleState !== undefined) {
@@ -32,10 +30,6 @@ const App = () => {
           setAutofillEnabled(true);
         }
       });
-      
-      // Simulating API call delay with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Placeholder data for demonstration
       setApplicationsToday(5);
       setApplicationsTotal(123);
@@ -44,10 +38,8 @@ const App = () => {
         { id: 2, title: 'Product Manager at Meta', date: '5 minutes ago' },
         { id: 3, title: 'Data Scientist at Amazon', date: '1 hour ago' },
       ]);
-      
       setIsLoading(false);
     };
-
     fetchData();
   }, []);
 
@@ -74,14 +66,7 @@ const App = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full w-full bg-slate-900 text-white p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4">Loading data...</p>
-        </div>
-      </div>
-    );
+  // Instantly render UI, no loading state
   }
 
   return (
