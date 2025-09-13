@@ -16,10 +16,9 @@ interface RecentApplication {
 }
 
 // Main App component for the extension popup
-import { SavedJob } from "../contentScript/utils/types";
 
 const App = () => {
-  const analyticsUrl = chrome.runtime.getURL("formpage.html");
+const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
   // State variables for the popup UI
   const [autofillEnabled, setAutofillEnabled] = useState(true);
   const [autoClickEnabled, setAutoClickEnabled] = useState(true);
@@ -132,25 +131,21 @@ const App = () => {
 
   // Function to handle Add Job to Analytics click
   const handleAddJobClick = () => {
-    // Get current tab info
+    console.log('[Popup] 🎯 Add Job to Analytics button clicked');
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0] || tabs[0].id === undefined) return;
-      const title = tabs[0].title || "Untitled Job";
-      const url = tabs[0].url || "";
-      const job: SavedJob = {
-        id: Date.now().toString(),
-        title,
-        url,
-        dateAdded: new Date().toISOString(),
-      };
-      chrome.storage.local.get(["analyticsJobs"], (result) => {
-        const jobs: SavedJob[] = result.analyticsJobs || [];
-        jobs.push(job);
-        chrome.storage.local.set({ analyticsJobs: jobs }, () => {
-          console.log("[Popup] Job added to analytics:", job);
+      if (!tabs[0] || tabs[0].id === undefined) {
+        console.error('[Popup] ❌ No active tab found');
+        return;
+      }
+      console.log('[Popup] 📋 Active tab:', tabs[0].title, tabs[0].url);
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'SAVE_APPLICATION_MANUAL' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[Popup] ❌ Message send error:', chrome.runtime.lastError.message);
+        } else {
+          console.log('[Popup] ✅ Save application response:', response);
           setJobAddedFeedback(true);
           setTimeout(() => setJobAddedFeedback(false), 4000);
-        });
+        }
       });
     });
   };
@@ -210,7 +205,7 @@ const App = () => {
             </div>
             {/* Auto-Click Toggle */}
             <div className="flex items-center space-x-2">
-              <span className="text-xs text-white font-medium">Auto-Click</span>
+              <span className="text-xs text-white font-medium">Auto-Click Next</span>
               <div
                 onClick={handleAutoClickToggle}
                 className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500

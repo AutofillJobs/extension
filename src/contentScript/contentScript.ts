@@ -350,7 +350,6 @@ const saveApplication = (jobId: string | null) => {
     const stableJobId = jobId || websiteLink;
     const uniqueKey = `${stableJobId}-${jobTitle}`; // ✅ uniqueness by jobId + title only
 
-    // ✅ Add formatted date/time
     const now = new Date();
     const formattedDate = now.toLocaleString("en-GB", {
       day: "2-digit",
@@ -377,12 +376,12 @@ const saveApplication = (jobId: string | null) => {
     if (!isAlreadySaved) {
       applications.push(newApplication);
       chrome.storage.local.set({ applications }, () => {
-        console.log("✅ Career form saved:", newApplication);
+        console.log("Career form saved:", newApplication);
         chrome.storage.local.remove("lastJobTitle");
       });
     } else {
       console.log(
-        `⚠️ Application already exists for this job (${uniqueKey}). Skipping save.`
+        ` Application already exists for this job (${uniqueKey}). Skipping save.`
       );
     }
   });
@@ -420,9 +419,107 @@ const detectConfirmationPage = () => {
   saveApplication(jobId);
 };
 
-// Event listeners
 document.addEventListener("submit", handleFormSubmission, true);
 window.addEventListener("load", detectConfirmationPage);
+
+const saveJobToAnalytics = () => {
+  const websiteLink = window.location.href;
+  let jobTitle = "Unknown Job";
+  
+  // Site-specific selectors
+  if (window.location.hostname.includes("linkedin.com")) {
+    jobTitle = document.querySelector<HTMLElement>('h2.top-card-layout__title')?.innerText.trim() ||
+               document.querySelector<HTMLElement>('h1.top-card-layout__title')?.innerText.trim() ||
+               document.querySelector('title')?.textContent?.replace(/\|.*$/, '').trim() ||
+               jobTitle;
+  } else if (window.location.hostname.includes("indeed.com")) {
+    jobTitle = document.querySelector<HTMLElement>('h1.jobsearch-JobInfoHeader-title')?.innerText.trim() || jobTitle;
+  } else if (window.location.hostname.includes("smartrecruiters.com")) {
+    jobTitle = document.querySelector<HTMLElement>('[data-test="job-title"]')?.innerText.trim() ||
+               document.querySelector<HTMLElement>('.job-title')?.innerText.trim() ||
+               document.querySelector<HTMLElement>('h1[data-test-id="job-title"]')?.innerText.trim() ||
+               jobTitle;
+  } else if (window.location.hostname.includes("workday")) {
+    jobTitle = document.querySelector<HTMLElement>('[data-automation-id="jobPostingHeader"] h1')?.innerText.trim() ||
+               document.querySelector<HTMLElement>('h1[data-automation-id="job-title"]')?.innerText.trim() ||
+               jobTitle;
+  } else if (window.location.hostname.includes("greenhouse")) {
+    jobTitle = document.querySelector<HTMLElement>('.app-title')?.innerText.trim() ||
+               document.querySelector<HTMLElement>('h1.app-title')?.innerText.trim() ||
+               jobTitle;
+  }
+
+  // Generic fallback (avoid title tag with warnings/errors)
+  if (jobTitle === "Unknown Job") {
+    const titleElement = document.querySelector('h1, h2, h3');
+    if (titleElement?.textContent) {
+      const titleText = titleElement.textContent.trim();
+      // Skip titles that look like error messages or warnings
+      if (!titleText.toLowerCase().includes('sorry') && 
+          !titleText.toLowerCase().includes('error') &&
+          !titleText.toLowerCase().includes('not supported') &&
+          titleText.length > 10) {
+        jobTitle = titleText;
+      }
+    }
+    
+    // Last resort: try title tag but clean it up
+    if (jobTitle === "Unknown Job") {
+      const pageTitle = document.querySelector('title')?.textContent?.trim();
+      if (pageTitle && 
+          !pageTitle.toLowerCase().includes('sorry') &&
+          !pageTitle.toLowerCase().includes('error') &&
+          !pageTitle.toLowerCase().includes('not supported')) {
+        jobTitle = pageTitle.split('|')[0].split('-')[0].trim();
+      }
+    }
+  }
+  
+  console.log('[ContentScript] Saving job to analytics:', { jobTitle, websiteLink });
+  
+  chrome.storage.local.get(["savedJobsAnalytics"], (result) => {
+    const savedJobs = result.savedJobsAnalytics || [];
+    const jobId = Date.now().toString();
+    
+    const newSavedJob = {
+      id: jobId,
+      title: jobTitle,
+      url: websiteLink,
+      dateAdded: new Date().toISOString(),
+    };
+    
+    const existingJob = savedJobs.find((job: any) => job.url === websiteLink);
+    if (existingJob) {
+      console.log('Job already saved to analytics:', websiteLink);
+      return;
+    }
+    
+    savedJobs.push(newSavedJob);
+    chrome.storage.local.set({ savedJobsAnalytics: savedJobs }, () => {
+      console.log('Job saved to analytics storage:', newSavedJob);
+    });
+  });
+};
+
+// Message listener for manual save from popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse)=>{
+  console.log('[ContentScript] Message received:', msg);
+  if(msg && msg.type === 'SAVE_APPLICATION_MANUAL'){
+    console.log('[ContentScript] Processing SAVE_APPLICATION_MANUAL request');
+    console.log('[ContentScript] Current URL:', window.location.href);
+    try {
+      saveJobToAnalytics();
+      console.log('[ContentScript] saveJobToAnalytics called, sending success response');
+      sendResponse({success: true});
+    } catch (error : any) {
+      console.error('[ContentScript] Error saving job:', error);
+      sendResponse({success: false, error: error.message});
+    }
+    return true; // Keep message port open for async response
+  } else {
+    console.log('[ContentScript] Message type not handled:', msg?.type);
+  }
+});
 
 // Expose function for debugging
 (window as any).detectCareerPage = detectCareerPage;
