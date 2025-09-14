@@ -5,7 +5,8 @@ import fillWorkdayForm from './workDay/workdaynewScript';
 import fillGreenhouseFields from './greenhouse/greenhouseScript';
 import { autofillICIMS } from './icims/icimsScript';
 import fillZohoForm from './zoho/zohoScript';
-import fillSuccessFactorsForm from './successFactors/successfactorScript'
+import fillSuccessFactorsForm from './successFactors/successfactorScript';
+import fillSmartRecruitersForm from './SmartRecruit/smartRecruitContent';
 import { countVisibleUsableInputs, saveInteractiveElements } from './inputCounter/countCounter';
 import fillLeverForm from './lever/leverScript';
 // Utility: Wait for input in DOM
@@ -51,6 +52,7 @@ async function initialize() {
   const isZohoSite = window.location.hostname.includes('zoho');
   const isSuccessFactorsSite = window.location.hostname.includes('successfactors') || window.location.hostname.includes('dzconnex');
   const isLeverSite = window.location.hostname.includes('lever');
+  const isSmartRecruitersSite = window.location.hostname.includes('smartrecruiters');
 
   getToggleState((toggleState) => {
     if (isWorkdaySite && toggleState) {
@@ -78,12 +80,17 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) fillSuccessFactorsForm(userData);
       });
-    }else if (isLeverSite && toggleState) {
-  console.log("Filling Lever form");
-  getUserData((userData) => {
-    if (userData?.data?.details) fillLeverForm(userData);
-  });
-} else {
+    } else if (isLeverSite && toggleState) {
+      console.log("Filling Lever form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillLeverForm(userData);
+      });
+    } else if (isSmartRecruitersSite && toggleState) {
+      console.log("Filling SmartRecruiters form");
+      getUserData((userData) => {
+        if (userData?.data?.details) fillSmartRecruitersForm(userData);
+      });
+    } else {
       initializeFormFiller();
     }
   });

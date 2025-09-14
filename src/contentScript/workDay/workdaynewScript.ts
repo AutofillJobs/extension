@@ -331,8 +331,7 @@ export default function fillWorkdayForm(data: FormData): void {
             }
         }
 
-        // return await waitAndClickButton();
-        return false;
+        return await waitAndClickButton();
     };
 
     const fillPersonalInfo = async (websiteIndex = 0): Promise<void> => {
@@ -743,7 +742,7 @@ export default function fillWorkdayForm(data: FormData): void {
             // After personal info form filling is complete, click Save & Continue
             setTimeout(async () => {
                 console.log('[workdaynewScript] Personal info filling complete, attempting Save & Continue...');
-                // await waitAndClickButton();
+                await waitAndClickButton();
             }, 3000);
         };
     }
@@ -1082,7 +1081,7 @@ export default function fillWorkdayForm(data: FormData): void {
         await waitUntilFormIsValid();
         
         // Click Save & Continue
-        // await waitAndClickButton();
+        await waitAndClickButton();
     }
 
     // Helper function to check remaining unanswered application questions
@@ -1612,11 +1611,11 @@ export default function fillWorkdayForm(data: FormData): void {
                         if (currentPage === 'app-questions-1') {
                             await fillApplicationQuestions1();
                             console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
-                            // await clickSaveAndContinue();
+                            await clickSaveAndContinue();
                         } else if (currentPage === 'app-questions-2') {
                             await fillApplicationQuestions2();
                             console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
-                            // await clickSaveAndContinue();
+                            await clickSaveAndContinue();
                         }
                         // No fallback needed - page detection handles all application question pages
                         
@@ -1644,7 +1643,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                                 console.log('[workdaynewScript] Work experience filling complete, clicking Save & Continue...');
                                 saveClicked = false; // Reset flag to allow step 2 save click
-                                // await clickSaveAndContinue();
+                                await clickSaveAndContinue();
                             } else if (sectionTitle.includes('Education')) {
                                 const educationExperiences = data.data.educationExperiences
                                 if (!educationExperiences || !Array.isArray(educationExperiences)) return;
@@ -1672,11 +1671,11 @@ export default function fillWorkdayForm(data: FormData): void {
             if (currentPage === 'app-questions-1') {
                 await fillApplicationQuestions1();
                 console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
-                // await clickSaveAndContinue();
+                await clickSaveAndContinue();
             } else if (currentPage === 'app-questions-2') {
                 await fillApplicationQuestions2();
                 console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
-                // await clickSaveAndContinue();
+                await clickSaveAndContinue();
             }
             // No fallback needed - page detection handles all application question pages
             
