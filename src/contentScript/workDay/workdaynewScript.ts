@@ -87,7 +87,19 @@ export default function fillWorkdayForm(data: FormData): void {
             return false;
         }
 
-        console.log('[workdaynewScript] Starting Save & Continue button clicking...');
+        // 🚨 Check auto-click toggle state first!
+        console.log('[workdaynewScript] 🔍 Checking auto-click toggle state before clicking Save & Continue...');
+        const autoClickAllowed = await isAutoClickEnabled();
+        console.log('[workdaynewScript] 📊 Auto-click toggle result:', autoClickAllowed);
+        
+        if (!autoClickAllowed) {
+            console.warn('[workdaynewScript] ❌ AUTO-CLICK IS DISABLED - Save & Continue will NOT be clicked automatically.');
+            console.warn('[workdaynewScript] 📝 Please click the Save & Continue button manually to proceed.');
+            saveClicked = false; // Reset flag since we're not clicking
+            return false;
+        }
+
+        console.log('[workdaynewScript] ✅ Auto-click enabled - Starting Save & Continue button clicking...');
         saveClicked = true;
 
         return new Promise((resolve) => {
@@ -235,7 +247,25 @@ export default function fillWorkdayForm(data: FormData): void {
         return false;
     };
 
+    // Helper function to check if auto-click is enabled
+    const isAutoClickEnabled = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            chrome.storage.local.get(['autoClickToggleState'], (result) => {
+                const enabled = result.autoClickToggleState !== false; // Default to true if not set
+                console.log('[WorkdayNew] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
+                resolve(enabled);
+            });
+        });
+    };
+
     const waitAndClickButton = async (): Promise<boolean> => {
+        // Check auto-click toggle state first
+        const autoClickAllowed = await isAutoClickEnabled();
+        if (!autoClickAllowed) {
+            console.warn('[workdaynewScript] Auto-click is disabled via toggle. Save & Continue button will not be clicked automatically.');
+            return false;
+        }
+
         // Enhanced scroll and click mechanism for Save & Continue
         const maxScrollAttempts = 5;
         let scrollAttempts = 0;
@@ -331,8 +361,7 @@ export default function fillWorkdayForm(data: FormData): void {
             }
         }
 
-        // return await waitAndClickButton();
-        return false;
+        return await waitAndClickButton();
     };
 
     const fillPersonalInfo = async (websiteIndex = 0): Promise<void> => {
@@ -744,7 +773,7 @@ export default function fillWorkdayForm(data: FormData): void {
             // After personal info form filling is complete, click Save & Continue
             setTimeout(async () => {
                 console.log('[workdaynewScript] Personal info filling complete, attempting Save & Continue...');
-                // await waitAndClickButton();
+                await waitAndClickButton();
             }, 3000);
         };
     }
@@ -1084,7 +1113,7 @@ export default function fillWorkdayForm(data: FormData): void {
         await waitUntilFormIsValid();
 
         // Click Save & Continue
-        // await waitAndClickButton();
+        await waitAndClickButton();
     }
 
     // Helper function to check remaining unanswered application questions
@@ -1628,11 +1657,11 @@ export default function fillWorkdayForm(data: FormData): void {
                         if (currentPage === 'app-questions-1') {
                             await fillApplicationQuestions1();
                             console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
-                            // await clickSaveAndContinue();
+                            await clickSaveAndContinue();
                         } else if (currentPage === 'app-questions-2') {
                             await fillApplicationQuestions2();
                             console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
-                            // await clickSaveAndContinue();
+                            await clickSaveAndContinue();
                         }
                         // No fallback needed - page detection handles all application question pages
 
@@ -1660,7 +1689,7 @@ export default function fillWorkdayForm(data: FormData): void {
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                                 console.log('[workdaynewScript] Work experience filling complete, clicking Save & Continue...');
                                 saveClicked = false; // Reset flag to allow step 2 save click
-                                // await clickSaveAndContinue();
+                                await clickSaveAndContinue();
                             } else if (sectionTitle.includes('Education')) {
                                 const educationExperiences = data.data.educationExperiences
                                 if (!educationExperiences || !Array.isArray(educationExperiences)) return;

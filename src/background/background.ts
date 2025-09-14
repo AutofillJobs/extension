@@ -112,6 +112,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true; // keep channel open for async
   }
+  
+  // Handle auto-click toggle state changes
+  if (message.type === 'AUTO_CLICK_TOGGLE_CHANGED') {
+    console.log('Auto-click toggle state changed to:', message.value);
+    // Broadcast the change to all content scripts
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'AUTO_CLICK_TOGGLE_UPDATE',
+            autoClickEnabled: message.value
+          }).catch(() => {
+            // Ignore errors for tabs that don't have content scripts
+          });
+        }
+      });
+    });
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  // Handle existing toggle state changes
+  if (message.type === 'TOGGLE_STATE_CHANGED') {
+    console.log('Autofill toggle state changed to:', message.value);
+    sendResponse({ success: true });
+    return true;
+  }
 });
 function updateUninstallURLFromStorage() {
   chrome.storage.local.get(["formData"], (result) => {

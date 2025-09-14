@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface AnalyticsCardsProps {
   stats: {
@@ -9,6 +9,8 @@ interface AnalyticsCardsProps {
 }
 
 const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ stats }) => {
+  const displayStats = stats;
+
   return (
     <section className="analytics-cards-container" aria-label="Job analytics cards">
       <div className="analytics-card">
@@ -47,7 +49,7 @@ const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ stats }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .analytics-cards-container {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

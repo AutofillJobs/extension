@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./Dashboard";
+import AnalyticsPage from "./Ananlytics/ AnalyticsPage";
 import './tailwind.css';
 import './index.css';
 
@@ -15,7 +17,14 @@ function init() {
     }
 
     const root = createRoot(appContainer);
-    root.render(<Dashboard />);
+    root.render(
+        <HashRouter>
+            <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+            </Routes>
+        </HashRouter>
+    );
 }
 
 init();
