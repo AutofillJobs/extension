@@ -155,7 +155,7 @@ class BackendService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch(
-        `${this.config.baseUrl}/obj/userinfo/${userId}`,
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo/${userId}`,
         {
           method: "PUT",
           headers: this.getHeaders(),
@@ -190,7 +190,7 @@ class BackendService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch(
-        `${this.config.baseUrl}/obj/userinfo/${userId}`,
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo/${userId}`,
         {
           method: "PATCH",
           headers: this.getHeaders(),
@@ -313,10 +313,13 @@ class BackendService {
    */
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/obj/userinfo`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -341,10 +344,13 @@ class BackendService {
     error?: string;
   }> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/obj/userinfo`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
