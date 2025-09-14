@@ -8,14 +8,25 @@ import {
   User,
 } from 'lucide-react';
 
+// Define interface for recent applications
+interface RecentApplication {
+  id: number;
+  title: string;
+  date: string;
+}
+
 // Main App component for the extension popup
+
 const App = () => {
+const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
   // State variables for the popup UI
   const [autofillEnabled, setAutofillEnabled] = useState(true);
+  const [autoClickEnabled, setAutoClickEnabled] = useState(true);
   const [applicationsToday, setApplicationsToday] = useState(0);
   const [applicationsTotal, setApplicationsTotal] = useState(0);
+  const [jobAddedFeedback, setJobAddedFeedback] = useState(false);
   const [goal, setGoal] = useState(10);
-  const [recentApplications, setRecentApplications] = useState([]);
+  const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // useEffect hook to load data and toggle state on component mount
@@ -24,13 +35,28 @@ const App = () => {
       setIsLoading(true);
       
       // Load toggle state from chrome storage
-      chrome.storage.local.get(['toggleState'], (result) => {
+      chrome.storage.local.get(['toggleState', 'autoClickToggleState'], (result) => {
+        console.log('[Popup] Loading toggle states from storage:', result);
+        
         if (result.toggleState !== undefined) {
+          console.log('[Popup] Setting autofill to:', result.toggleState);
           setAutofillEnabled(result.toggleState);
         } else {
+          console.log('[Popup] No autofill state found, defaulting to true');
           chrome.storage.local.set({ toggleState: true });
           setAutofillEnabled(true);
         }
+        
+        if (result.autoClickToggleState !== undefined) {
+          console.log('[Popup] Setting auto-click to:', result.autoClickToggleState);
+          setAutoClickEnabled(result.autoClickToggleState);
+        } else {
+          console.log('[Popup] No auto-click state found, defaulting to true');
+          chrome.storage.local.set({ autoClickToggleState: true });
+          setAutoClickEnabled(true);
+        }
+        
+        console.log('[Popup] Final states - Autofill:', result.toggleState !== undefined ? result.toggleState : true, 'Auto-click:', result.autoClickToggleState !== undefined ? result.autoClickToggleState : true);
       });
       
       // Simulating API call delay with a timeout
@@ -54,16 +80,46 @@ const App = () => {
   // Function to handle the autofill toggle
   const handleAutofillToggle = () => {
     const newToggleState = !autofillEnabled;
+    console.log('[Popup] Autofill toggle clicked - changing from', autofillEnabled, 'to', newToggleState);
     setAutofillEnabled(newToggleState);
-    chrome.storage.local.set({ toggleState: newToggleState });
+    chrome.storage.local.set({ toggleState: newToggleState }, () => {
+      console.log('[Popup] Autofill toggle saved to storage:', newToggleState);
+    });
     chrome.runtime.sendMessage({ type: 'TOGGLE_STATE_CHANGED', value: newToggleState });
+    console.log('[Popup] Autofill toggle message sent to background');
+  };
+
+  // Function to handle the auto-click toggle
+  const handleAutoClickToggle = () => {
+    const newAutoClickState = !autoClickEnabled;
+    console.log('[Popup] 🔄 Auto-click toggle clicked - changing from', autoClickEnabled, 'to', newAutoClickState);
+    setAutoClickEnabled(newAutoClickState);
+    
+    chrome.storage.local.set({ autoClickToggleState: newAutoClickState }, () => {
+      console.log('[Popup] ✅ Auto-click toggle saved to storage:', newAutoClickState);
+      
+      // Verify it was saved correctly
+      chrome.storage.local.get(['autoClickToggleState'], (result) => {
+        console.log('[Popup] 🔍 Verification - Auto-click state in storage:', result.autoClickToggleState);
+        if (result.autoClickToggleState !== newAutoClickState) {
+          console.error('[Popup] ❌ ERROR: Storage value does not match expected value!');
+        }
+      });
+    });
+    
+    chrome.runtime.sendMessage({ type: 'AUTO_CLICK_TOGGLE_CHANGED', value: newAutoClickState });
+    console.log('[Popup] 📤 Auto-click toggle message sent to background script');
   };
 
   // Function to handle the "Fill Application" button click
   const handleFillApplication = () => {
     if (autofillEnabled) {
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "refetchData" });
+        if (tabs[0] && tabs[0].id !== undefined) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "refetchData" });
+        } else {
+          console.error("No active tab found or tab ID is undefined");
+        }
       });
     }
   };
@@ -71,6 +127,32 @@ const App = () => {
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") });
+  };
+
+  // Function to handle Add Job to Analytics click
+  const handleAddJobClick = () => {
+    console.log('[Popup] 🎯 Add Job to Analytics button clicked');
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0] || tabs[0].id === undefined) {
+        console.error('[Popup] ❌ No active tab found');
+        return;
+      }
+      console.log('[Popup] 📋 Active tab:', tabs[0].title, tabs[0].url);
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'SAVE_APPLICATION_MANUAL' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[Popup] ❌ Message send error:', chrome.runtime.lastError.message);
+        } else {
+          console.log('[Popup] ✅ Save application response:', response);
+          setJobAddedFeedback(true);
+          setTimeout(() => setJobAddedFeedback(false), 4000);
+        }
+      });
+    });
+  };
+
+  // Function to handle Scan CV button click
+  const handleScanCVClick = () => {
+    chrome.tabs.create({ url: "https://applygoat.com/ats" });
   };
 
   if (isLoading) {
@@ -101,22 +183,43 @@ const App = () => {
             /> */}
             <h1 className="text-2xl font-extrabold font-abeezee tracking-tighter text-white">applyGOAT</h1>
           </div>
-          {/* Custom Toggle Switch */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-white font-medium">Autofill</span>
-            <div
-              onClick={handleAutofillToggle}
-              className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500
-                ${autofillEnabled ? 'bg-indigo-500' : 'bg-slate-600'}
-              `}
-            >
-              <span className="sr-only">Toggle Autofill</span>
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200
-                  ${autofillEnabled ? 'translate-x-5' : 'translate-x-0'}
+          {/* Toggle Switches Container */}
+          <div className="flex flex-col items-end space-y-2">
+            {/* Autofill Toggle */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-white font-medium">Autofill</span>
+              <div
+                onClick={handleAutofillToggle}
+                className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500
+                  ${autofillEnabled ? 'bg-indigo-500' : 'bg-slate-600'}
                 `}
-              ></span>
+              >
+                <span className="sr-only">Toggle Autofill</span>
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200
+                    ${autofillEnabled ? 'translate-x-4' : 'translate-x-0'}
+                  `}
+                ></span>
+              </div>
+            </div>
+            {/* Auto-Click Toggle */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-white font-medium">Auto-Click Next</span>
+              <div
+                onClick={handleAutoClickToggle}
+                className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500
+                  ${autoClickEnabled ? 'bg-green-500' : 'bg-slate-600'}
+                `}
+              >
+                <span className="sr-only">Toggle Auto-Click</span>
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200
+                    ${autoClickEnabled ? 'translate-x-4' : 'translate-x-0'}
+                  `}
+                ></span>
+              </div>
             </div>
           </div>
         </div>
@@ -155,6 +258,31 @@ const App = () => {
           >
             <Zap className="h-5 w-5 inline-block mr-2 -mt-1" />
             Fill Application
+          </button>
+          <button
+            onClick={handleAddJobClick}
+            className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95"
+          >
+            Add Job to Analytics
+          </button>
+          {jobAddedFeedback && (
+            <div className="text-center text-sm text-white mt-1">
+              ✓ Job added to analytics –
+              <a
+href={analyticsUrl}
+                target="_blank"
+                className="underline ml-1 hover:text-amber-300"
+              >
+                view dashboard
+              </a>
+            </div>
+          )}
+
+          <button
+            onClick={handleScanCVClick}
+            className="w-full py-3 px-4 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-medium shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95"
+          >
+            Scan CV for Job
           </button>
           <button
             onClick={handleEditDetailsClick}
@@ -212,293 +340,3 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from 'react';
-// import { Button } from '@shadcn/ui/components/ui/button';
-// import { Switch } from '@shadcn/ui/components/ui/switch';
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn/ui/components/ui/card';
-// import { Badge } from '@shadcn/ui/components/ui/badge';
-// import {
-//   Cog,
-//   FileText,
-//   User,
-//   Zap,
-//   BarChart2,
-//   ListTodo,
-//   CalendarDays,
-//   CheckCircle2,
-//   Clock,
-//   Briefcase
-// } from 'lucide-react';
-
-// // Main App component for the extension popup
-// const App = () => {
-//   // State variables for the popup UI
-//   const [autofillEnabled, setAutofillEnabled] = useState(true);
-//   const [applicationsToday, setApplicationsToday] = useState(0);
-//   const [applicationsTotal, setApplicationsTotal] = useState(0);
-//   const [goal, setGoal] = useState(10);
-//   const [recentApplications, setRecentApplications] = useState([]);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   // useEffect hook to simulate data fetching on component mount
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       setIsLoading(true);
-//       // Simulating API call delay with a timeout
-//       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-//       // Placeholder data for demonstration
-//       setApplicationsToday(5);
-//       setApplicationsTotal(123);
-//       setRecentApplications([
-//         { id: 1, title: 'Software Engineer at Google', date: 'Just now' },
-//         { id: 2, title: 'Product Manager at Meta', date: '5 minutes ago' },
-//         { id: 3, title: 'Data Scientist at Amazon', date: '1 hour ago' },
-//       ]);
-      
-//       setIsLoading(false);
-//     };
-
-//     fetchData();
-//   }, []);
-
-//   // Function to handle the autofill toggle
-//   const handleAutofillToggle = () => {
-//     setAutofillEnabled(!autofillEnabled);
-//     // TODO: Add logic to save the setting to storage and send a message to the content script
-//   };
-
-//   // Function to handle the "Fill Application" button click
-//   const handleFillApplication = () => {
-//     // TODO: Add logic to send a message to the content script to trigger autofill
-//     console.log('Filling application...');
-//   };
-
-//   if (isLoading) {
-//     return (
-//       <div className="flex items-center justify-center h-full w-full bg-slate-900 text-white p-4">
-//         <div className="text-center">
-//           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto"></div>
-//           <p className="mt-4">Loading data...</p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="flex flex-col h-full w-full bg-slate-950 text-slate-100 font-sans p-4 antialiased">
-//       <div className="flex items-center justify-between mb-6">
-//         <div className="flex items-center space-x-2">
-//           <Briefcase className="h-6 w-6 text-indigo-400" />
-//           <h1 className="text-xl font-bold tracking-tight text-white">CareerFlow</h1>
-//         </div>
-//         <div className="flex items-center space-x-2">
-//           <span className="text-xs text-slate-400 font-medium">Autofill</span>
-//           <Switch
-//             checked={autofillEnabled}
-//             onCheckedChange={handleAutofillToggle}
-//             className="data-[state=checked]:bg-indigo-500"
-//           />
-//         </div>
-//       </div>
-
-//       {/* Main content area with cards */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-//         {/* Applications Today Card */}
-//         <Card className="bg-slate-900 border-slate-800 text-slate-50">
-//           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-//             <CardTitle className="text-sm font-medium text-slate-400">Applications Today</CardTitle>
-//             <CalendarDays className="h-4 w-4 text-slate-400" />
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-4xl font-bold mb-1">{applicationsToday}</div>
-//             <p className="text-xs text-slate-500">Goal: {goal}</p>
-//           </CardContent>
-//         </Card>
-
-//         {/* Total Applications Card */}
-//         <Card className="bg-slate-900 border-slate-800 text-slate-50">
-//           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-//             <CardTitle className="text-sm font-medium text-slate-400">Total Applications</CardTitle>
-//             <BarChart2 className="h-4 w-4 text-slate-400" />
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-4xl font-bold mb-1">{applicationsTotal}</div>
-//             <p className="text-xs text-slate-500">Since you started</p>
-//           </CardContent>
-//         </Card>
-//       </div>
-
-//       {/* Actions and Quick Access */}
-//       <div className="space-y-4 mb-6">
-//         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Quick Actions</h2>
-//         <div className="grid grid-cols-2 gap-3">
-//           <Button
-//             onClick={handleFillApplication}
-//             disabled={!autofillEnabled}
-//             className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-lg transition-transform transform hover:scale-105 active:scale-95 duration-200"
-//           >
-//             <Zap className="h-4 w-4 mr-2" /> Fill Application
-//           </Button>
-//           <Button
-//             className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-lg shadow-lg transition-transform transform hover:scale-105 active:scale-95 duration-200"
-//           >
-//             <Cog className="h-4 w-4 mr-2" /> Settings
-//           </Button>
-//         </div>
-//       </div>
-      
-//       {/* Recent Applications List */}
-//       <div className="flex-1 overflow-y-auto custom-scrollbar">
-//         <Card className="bg-slate-900 border-slate-800 text-slate-50 h-full">
-//           <CardHeader className="flex flex-row items-center justify-between">
-//             <CardTitle className="text-base font-semibold text-white">Recent Applications</CardTitle>
-//             <ListTodo className="h-4 w-4 text-slate-400" />
-//           </CardHeader>
-//           <CardContent className="space-y-3">
-//             {recentApplications.length > 0 ? (
-//               recentApplications.map((app) => (
-//                 <div key={app.id} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-b-0">
-//                   <div className="flex items-center">
-//                     <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-//                     <span className="text-sm font-medium truncate">{app.title}</span>
-//                   </div>
-//                   <Badge variant="secondary" className="bg-slate-800 text-slate-400 hover:bg-slate-700 ml-2 whitespace-nowrap">
-//                     <Clock className="h-3 w-3 mr-1" />
-//                     {app.date}
-//                   </Badge>
-//                 </div>
-//               ))
-//             ) : (
-//               <p className="text-center text-sm text-slate-500 py-4">No applications filled yet.</p>
-//             )}
-//           </CardContent>
-//         </Card>
-//       </div>
-      
-//       {/* Custom scrollbar style */}
-//       <style>{`
-//         .custom-scrollbar::-webkit-scrollbar {
-//           width: 6px;
-//         }
-//         .custom-scrollbar::-webkit-scrollbar-track {
-//           background: #0f172a;
-//           border-radius: 10px;
-//         }
-//         .custom-scrollbar::-webkit-scrollbar-thumb {
-//           background: #475569;
-//           border-radius: 10px;
-//         }
-//         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-//           background: #64748b;
-//         }
-//       `}</style>
-//     </div>
-//   );
-// };
-
-// export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import "./popup.css";
-
-// const Popup = () => {
-//   const [isToggled, setIsToggled] = useState(true);
-
-//   useEffect(() => {
-//     chrome.storage.local.get(['toggleState'], (result) => {
-//       if (result.toggleState !== undefined) {
-//         setIsToggled(result.toggleState);
-//       } else {
-//         chrome.storage.local.set({ toggleState: true });
-//         setIsToggled(true);
-//       }
-//     });
-//   }, []);
-
-//   const handleRefetchClick = () => {
-//     if (isToggled) {
-//       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-//         chrome.tabs.sendMessage(tabs[0].id, { action: "refetchData" });
-//       });
-//     }
-//   };
-
-//   const toggleSwitch = () => {
-//     const newToggleState = !isToggled;
-//     setIsToggled(newToggleState);
-//     chrome.storage.local.set({ toggleState: newToggleState });
-//     chrome.runtime.sendMessage({ type: 'TOGGLE_STATE_CHANGED', value: newToggleState });
-//   };
-
-//   const handleEditDetailsClick = () => {
-//     chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") });
-//   };
-
-//   return (
-//     <div className="w-full p-8 relative bg-white">
-//       <div className="header-container mb-8">
-//         <a href="https://autofilljobs.com" target="_blank" className="text-3xl font-extrabold text-primary">
-//         Apply<span className="text-black">GOAT</span>
-//         </a>
-//         <span className="toggle-switch">
-//           <label className="toggle-switch">
-//             <input type="checkbox" className="toggle-input" checked={isToggled} onChange={toggleSwitch} />
-//             <span className="toggle-slider"></span>
-//           </label>
-//           <span className="text-black">{isToggled ? 'On' : 'Off'}</span>
-//         </span>
-//       </div>
-
-//       <div className="text-center flex flex-col justify-center items-center">
-//         <button
-//           className="btn-primary flex items-center justify-center py-2 px-4"
-//           onClick={handleEditDetailsClick}
-//         >
-//           <span className="flex items-center text-lg font-semibold">
-//             <img className="w-5 h-5 mr-2" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAACeUlEQVR4nO2a3U4TQRSAB1u9setDoDWR+giK8Sf0CXgAkQsNBqIPUZcHAG5tvMDoJTyFF2AQXwGu7ZUYk8+MTJPatLIzZecMu+dLNml3s3N+MjtzzpxjjKIoiqIoiqJEAciALrA8dtl7makyQAc4ZTr22YKpKsA+F7NnqggwB/wo4IABcM1cRYBHwAugPeHZPMWZn/B+G1gFFk1qAE2gP2LAbyAHbowsfPZ/UfLhgmjHAHpuzCFWVtMkZPzuFEMOgR03rX2x72wDB1OefxR3AtAAPiDHZ1En8O+0l6IvZfwi6fBQwgGrpMOKhAPaYyuzFFaHO9EdYHHbkzTvjBTAdeCLoPGHw1hD0glbnkofARsuMbrpro67981zrG1p4zOPIOcn8Op/cb6LK9aAs4JjDkRSaM4TGxvbb3oY/9hj/CceTsidLnOx8vn9gND2ZYCs154yBk63TpnT/RR/jkLSW/c5HAfIszq2ynBAlzA2ZpD5JlDm0uVab/4qY8/tQgg+4gLuB8pcTskBrRk/uyvvgGwGmbeq4ICFqnwC3bovglngNmjD20bgNvg9QN5JKdugxU7nwEBozXgCrHvKsDrtAfdMxFA4L6icDWufeoz/DPhVcOzNaKHwjMnQmQtvGxdM+3UP42WSoVHc0bUPx25xsyt8y13299uAb37LSMJ50eIrdT0QoXg6XCY9KePv1vpQFD0WJ6XCyIPoMyCh0th7U+Pi6KcUKsRNV6qexIGLE0LL4ztuq5vEbmo9Av2xlbl3iQ0SebINEqPYKi3wHLhdUovMikglWKBJKn5iE4Nat8kVbJQ8iZLPJ9oqu1TaSY6iKIqiKIqimHH+AL2UKkksfcEMAAAAAElFTkSuQmCC"
-//               alt="settings" /> Edit Details
-//           </span>
-//         </button>
-
-//         <p className="text-gray-600 mt-8 mb-4">
-//           Click the extension icon or the button below to autofill your details!
-//         </p>
-
-//         <button
-//           className="btn-primary text-lg py-3 px-8"
-//           onClick={handleRefetchClick}
-//         >
-//           Fill Details
-//         </button>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Popup;
-

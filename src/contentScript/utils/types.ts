@@ -1,3 +1,11 @@
+export interface SavedJob {
+  id: string;
+  title: string;
+  company?: string;
+  url: string;
+  dateAdded: string;
+}
+
 export interface FormData {
     data: {
       details?: Record<string, string>;

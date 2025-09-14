@@ -22,7 +22,10 @@ const ComingSoon = () => {
 
 
 const Dashboard = () => {
-  const [currentPage, setCurrentPage] = useState('profile');
+const [currentPage, setCurrentPage] = useState('profile');
+// when on /analytics route, show that page directly
+const pathname = window.location.hash.replace('#','');
+if(pathname==='/analytics') return <AnalyticsPage />;
   const [user] = useState({
     name: 'John Doe',
     email: 'john.doe@example.com'

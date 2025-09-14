@@ -2,6 +2,23 @@
 function createWorkdayFormFiller(userData:any) {
   // All variables and functions from the original script go here
   console.log("Workday Form Filler created");
+
+  // Helper function to check if auto-click is enabled
+  async function isAutoClickEnabled(): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(['autoClickToggleState'], (result) => {
+          const enabled = result.autoClickToggleState !== false; // Default to true if not set
+          console.log('[Workday] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
+          resolve(enabled);
+        });
+      } catch (e) {
+        // If chrome storage is not accessible, default to true to preserve existing behavior
+        console.log('[Workday] Chrome storage not accessible, defaulting to true');
+        resolve(true);
+      }
+    });
+  }
   let currentGlobalStepHint: number = 1;
   let isFormFillingInProgress: boolean = false;
 
@@ -659,7 +676,20 @@ function createWorkdayFormFiller(userData:any) {
   }
 
   async function clickSaveAndContinue(): Promise<boolean> {
-    console.log('[Form Filler] clickSaveAndContinue: Attempting to find and click Save/Continue/Next button.');
+    console.log('[Form Filler] 🎯 clickSaveAndContinue: ENTRY POINT - Attempting to find and click Save/Continue/Next button.');
+
+    // Respect global auto-click toggle
+    console.log('[Form Filler] 🔍 Checking auto-click toggle state...');
+    const autoClickAllowed = await isAutoClickEnabled();
+    console.log('[Form Filler] 📊 Auto-click toggle result:', autoClickAllowed);
+    
+    if (!autoClickAllowed) {
+      console.warn('[Form Filler] ❌ AUTO-CLICK IS DISABLED - Skipping automatic button click and returning false.');
+      console.warn('[Form Filler] 📝 This should prevent any button clicking in Workday script.');
+      return false;
+    }
+    
+    console.log('[Form Filler] ✅ Auto-click is enabled, proceeding with button detection and clicking...');
     
     // Wait for form validation and button enablement
     await waitForFormValidation();
