@@ -31,9 +31,7 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
 
   // useEffect hook to load data and toggle state on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      
+    const fetchData = () => {
       // Load toggle state from chrome storage
       chrome.storage.local.get(['toggleState', 'autoClickToggleState'], (result) => {
         console.log('[Popup] Loading toggle states from storage:', result);
@@ -58,10 +56,6 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
         
         console.log('[Popup] Final states - Autofill:', result.toggleState !== undefined ? result.toggleState : true, 'Auto-click:', result.autoClickToggleState !== undefined ? result.autoClickToggleState : true);
       });
-      
-      // Simulating API call delay with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Placeholder data for demonstration
       setApplicationsToday(5);
       setApplicationsTotal(123);
@@ -70,10 +64,8 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
         { id: 2, title: 'Product Manager at Meta', date: '5 minutes ago' },
         { id: 3, title: 'Data Scientist at Amazon', date: '1 hour ago' },
       ]);
-      
       setIsLoading(false);
     };
-
     fetchData();
   }, []);
 
@@ -156,14 +148,7 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full w-full bg-slate-900 text-white p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4">Loading data...</p>
-        </div>
-      </div>
-    );
+  // Instantly render UI, no loading state
   }
 
   return (
