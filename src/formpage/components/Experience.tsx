@@ -147,17 +147,23 @@ const SkillsCard = ({ experience, refreshKey }) => {
 
   // Collect skills from experiences
   useEffect(() => {
-    const skillsSet = new Set();
+    const skillsSet = new Set<string>();
 
-    experience?.workExperiences?.forEach((w) => {
-      w?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
-    });
-    experience?.projectExperiences?.forEach((p) => {
-      p?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
-    });
-    experience?.educationExperiences?.forEach((e) => {
-      e?.skills?.forEach((s) => s && s.trim() && skillsSet.add(s.trim()));
-    });
+    const addSkills = (skillField: any) => {
+      if (!skillField) return;
+      if (Array.isArray(skillField)) {
+        skillField.forEach((s) => addSkills(s));
+      } else if (typeof skillField === "string") {
+        skillField.split(",").forEach((raw) => {
+          const s = raw.trim();
+          if (s) skillsSet.add(s);
+        });
+      }
+    };
+
+    experience?.workExperiences?.forEach((w) => addSkills(w?.skills));
+    experience?.projectExperiences?.forEach((p) => addSkills(p?.skills));
+    experience?.educationExperiences?.forEach((e) => addSkills(e?.skills));
 
     setExperienceSkills(Array.from(skillsSet).sort());
   }, [experience]);
@@ -236,10 +242,10 @@ const SkillsCard = ({ experience, refreshKey }) => {
   );
 };
 
-export default function Experience() {
+export default function Experience({ experience: incomingExperience }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [experience, setExperience] = useState(null);
+  const [experience, setExperience] = useState(incomingExperience);
   const [selectedDisplayOption, setSelectedDisplayOption] = useState({
     type: "",
     data: null,
@@ -248,6 +254,11 @@ export default function Experience() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
+
+  // update local state whenever parent passes new experience
+  React.useEffect(() => {
+    setExperience(incomingExperience);
+  }, [incomingExperience]);
   const toggleDropdown = () => setIsOpen((v) => !v);
 
   useEffect(() => {

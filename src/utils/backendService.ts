@@ -7,7 +7,7 @@ interface BackendConfig {
 
 interface UserDataPayload {
   email: string;
-  // password: string;
+  password: string;
   address: string;
   "number of applications"?: number;
 }
@@ -33,6 +33,55 @@ interface BubbleResponse {
 interface BubbleCreateResponse {
   status: string;
   id: string;
+}
+
+interface LinkedInScrapedData {
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  source: string;
+  city: string;
+  state: string;
+  gender: string;
+  country: string;
+  linkedinUrl: string;
+  workedPreviously: string;
+  degree: string;
+  workExperiences: Array<{
+    jobTitle: string;
+    companyName: string;
+    startDate: string;
+    endDate: string;
+    skills: string[];
+    stillWorking: boolean;
+    description: string;
+    location: string;
+    workType: string;
+  }>;
+  projectExperiences: Array<{
+    projectName: string;
+    startDate: string;
+    endDate: string;
+    skills: string[];
+    stillWorking: boolean;
+    description: string;
+    gitUrl: string;
+    hostUrl: string;
+  }>;
+  educationExperiences: Array<{
+    courseName: string;
+    field: string;
+    collegeName: string;
+    startDate: string;
+    endDate: string;
+    skills: string[];
+    stillStudying: boolean;
+    description: string;
+    grade: string;
+    location: string;
+    educationType: string;
+  }>;
+  scrapedAt: string;
 }
 
 class BackendService {
@@ -370,6 +419,7 @@ class BackendService {
 // Import configuration
 import { getConfig } from "./config";
 
+
 // Create and export the service instance with dynamic configuration
 let backendServiceInstance: BackendService | null = null;
 
@@ -390,5 +440,55 @@ export const backendService = new BackendService({
   apiKey: "e02abfdc4f4c029b6ebecf5cd18a8c97",
 });
 
+/**
+ * Scrape LinkedIn profile data
+ */
+
+export async function scrapeLinkedInProfile(
+  profileUrl: string,
+  port: number = 5001
+): Promise<{ success: boolean; data?: LinkedInScrapedData; error?: string }> {
+  try {
+    if (!profileUrl || !profileUrl.includes('linkedin.com')) {
+      console.log("Invalid LinkedIn URL validation failed");
+      return {
+        success: false,
+        error: 'Invalid LinkedIn URL provided'
+      };
+    }
+
+    console.log("Making fetch request to:", `http://localhost:${port}/scrape`);
+    const response = await fetch(`http://localhost:${port}/scrape`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ profileUrl }),
+    });
+    console.log("Fetch response received:", response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `HTTP ${response.status}: ${errorData.error || response.statusText}`
+      );
+    }
+
+    const data: LinkedInScrapedData = await response.json();
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error scraping LinkedIn profile:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Unknown error occurred while scraping',
+    };
+  }
+}
+
 // Export the class for testing or custom configurations
-export { BackendService, type BackendConfig, type UserDataPayload };
+export { BackendService, type BackendConfig, type UserDataPayload, type LinkedInScrapedData };

@@ -270,7 +270,7 @@ const FormSteps = ({
         return (
           <div className="space-y-6">
             <div className="education-section">
-              <LazyExperience />
+<LazyExperience experience={formData} />
             </div>
             <div className="file-upload-section">
               <h3 className="file-upload-heading">Upload Documents</h3>
