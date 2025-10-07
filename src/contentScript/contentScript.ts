@@ -1,3 +1,5 @@
+
+import fillOracleForm from './oracle/oracleScript'
 import {
   initializeStorage,
   getToggleState,
@@ -62,6 +64,8 @@ async function initialize() {
 
   const isWorkdaySite = window.location.hostname.includes("workday");
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
+  const isOracle = window.location.hostname.includes('oracle');
+
   const icimsSite = window.location.hostname.includes("icims");
   const isZohoSite = window.location.hostname.includes("zoho");
   const isSuccessFactorsSite =
@@ -97,7 +101,18 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) autofillICIMS(userData, null);
       });
-    } else if (isZohoSite && toggleState) {
+    } 
+    else if(isOracle && toggleState) {
+      console.log("Filling Oracle Form");
+      getUserData((userData) => {
+        if(userData?.data?.details){
+          fillOracleForm(userData);
+          console.log(userData);
+          
+        }
+      })
+    } 
+    else if (isZohoSite && toggleState) {
       console.log("Filling ZOHO form");
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);

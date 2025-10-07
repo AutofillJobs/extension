@@ -30,8 +30,13 @@ const Navbar: React.FC<NavbarProps> = ({
         }}
       >
         <div
-          className="text-white text-2xl font-abeezee font-bold cursor-pointer hover:text-white/90 transition-colors duration-200"
-          onClick={() => window.open("https://applygoat.com/", "_blank")}
+          onClick={() =>
+            window.open(
+              "https://applygoat.com/autofill-job-applications",
+              "_blank"
+            )
+          }
+          className="text-2xl font-extrabold font-abeezee tracking-tighter text-white cursor-pointer hover:text-amber-300 transition-colors duration-200"
           title="Visit applyGOAT website"
         >
           applyGOAT
@@ -39,7 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Navigation */}
         {/* <div className="hidden md:flex items-center"> */}
-          <div className="flex items-center">
+        <div className="flex items-center">
           {navItems.map(({ label, key }) => (
             <React.Fragment key={key}>
               <div className="mr-4">

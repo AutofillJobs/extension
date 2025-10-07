@@ -1,0 +1,273 @@
+title Optimized diagram
+User[icon: user, color: blue] {
+  id string pk
+  email string unique
+  password string
+  first_name string
+  middle_name string
+  last_name string
+  preferred_name string
+  prefix string
+  gender string
+  dob date
+  marital_status string
+  phone_number string
+  alt_phone_number string
+  country string
+  stripe_id string
+  subscription_end date
+  number_of_applications number
+  pdf file
+  created_date date
+  modified_date date
+  slug string unique
+}
+
+UserProfile[icon: user_profile, color: green] {
+  id string pk
+  user User
+  address1 string
+  address2 string
+  apartment string
+  building string
+  city string
+  state string
+  zip string
+  house_number string
+  floor string
+  region string
+  nationality string
+  ethnicity string
+  alt_email string
+  phone_code string
+  phone_device_type string
+  alt_phone_number string
+  linkedin_url string
+  github_url string
+  twitter_url string
+  summary text
+  expected_salary number
+  gross_salary number
+  notice_period string
+  degree string
+  field string
+  work_authorization bool
+  visa_sponsorship bool
+  disability bool
+  veteran bool
+  served_in_military bool
+  worked_previously bool
+  ats_upload_count number
+  coverletter_count number
+  username string unique
+  created_date date
+  modified_date date
+  slug string
+}
+
+AutofillOnlyFields[icon: autofill_only, color: green] {
+
+id string pk
+user User
+nationality string
+ethnicity string
+phone_code string
+phone_device_type string
+work_authorization bool
+visa_sponsorship bool
+disability bool
+veteran bool
+served_in_military bool
+worked_previously bool
+number_of_applications number
+username string unique
+}
+
+
+
+UserResume[icon: user_resume, color: green] {
+  id string pk
+  user User
+  file file
+  created_date date
+  modified_date date
+  slug string
+}
+
+UserCoverLetter[icon: user_cover_letter, color: green] {
+  id string pk
+  user User
+  file file
+  content text
+  created_date date
+  modified_date date
+  slug string
+}
+
+UserSkill[icon: user_skill, color: green] {
+  id string pk
+  user User
+  skill_name string
+  created_date date
+  modified_date date
+  slug string
+}
+
+UserWorkExperience[icon: user_work_experience, color: green] {
+  id string pk
+  user User
+  company_name string
+  job_title string
+  description text
+  start_date date
+  end_date date
+  still_working bool
+  location string
+  skills string
+  work_type string
+  created_date date
+  modified_date date
+  slug string
+}
+
+AtsOutput[icon: ats_output, color: green] {
+  id string pk
+  user User
+  cv_text text
+  jd_text text
+  created_date date
+  modified_date date
+  slug string
+}
+
+ChatMessage[icon: chat_message, color: green] {
+  id string pk
+  user User
+  session_id string
+  role string
+  content text
+  created_date date
+  modified_date date
+  slug string
+}
+
+EducationExperience[icon: education_experience, color: green] {
+  id string pk
+  user User
+  college_name string
+  course_name string
+  field string
+  description text
+  start_date date
+  end_date date
+  still_studying bool
+  grade string
+  location string
+  skills string
+  education_type string
+  created_date date
+  modified_date date
+  slug string
+}
+
+JobScan[icon: job_scan, color: green] {
+  id string pk
+  user User
+  job string
+  resume string
+  cover_letter string
+  cover_letter_content text
+  follow_up string
+  status string
+  created_date date
+  modified_date date
+  slug string
+}
+
+Newsletter[icon: newsletter, color: green] {
+  id string pk
+  email string unique
+  created_date date
+  modified_date date
+  slug string
+}
+
+ProjectExperience[icon: project_experience, color: green] {
+  id string pk
+  user User
+  project_name string
+  description text
+  start_date date
+  end_date date
+  still_working bool
+  git_url string
+  host_url string
+  skills string
+  created_date date
+  modified_date date
+  slug string
+}
+
+Subscription[icon: subscription, color: blue] {
+  id string pk
+  user User
+  customer_id string
+  plan_amount number
+  plan_interval string
+  duration string
+  end_date date
+  cancel_at string
+  canceled_at string
+  cancel_period_end string
+  invoice_pdf string
+  created_date date
+  modified_date date
+  slug string
+}
+
+UninstallResponse[icon: uninstall_response, color: purple] {
+  id string pk
+  user User
+  email string
+  country string
+  response text
+  created_date date
+  modified_date date
+  slug string
+}
+
+InstalledUserDetails[icon: installedUserDetails, color: green] {
+  id string pk
+  country string
+  region string
+  creator User
+  modifiedDate date
+  createdDate date
+  slug text
+}
+
+UserChromeExtensionInfo[icon: userInfo, color: green] {
+  id string pk
+  address string
+  email string
+  last_modified_date date
+  no_of_fields_filled number
+  password string
+  creator User
+  modifiedDate date
+  createdDate date
+  slug string
+}
+
+
+UserProfile.user > User.id
+UserResume.user > User.id
+UserCoverLetter.user > User.id
+UserSkill.user > User.id
+UserWorkExperience.user > User.id
+AtsOutput.user > User.id
+ChatMessage.user > User.id
+EducationExperience.user > User.id
+JobScan.user > User.id
+ProjectExperience.user > User.id
+Subscription.user > User.id
