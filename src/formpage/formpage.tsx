@@ -587,7 +587,7 @@ uploadJSON((jsonData: any) => {
       </div>
 
       {/* LinkedIn Scraping Section */}
-      {/* <div className="linkedin-scrape-section" style={{ margin: '20px 0', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
+      <div className="linkedin-scrape-section" style={{ margin: '20px 0', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
         <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
           Fill from LinkedIn Profile
         </div>
@@ -638,7 +638,7 @@ uploadJSON((jsonData: any) => {
             {scrapeError}
           </div>
         )}
-      </div> */}
+      </div>
 
       {/* Form Content */}
       <div className="form-card">
