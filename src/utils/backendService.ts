@@ -204,7 +204,7 @@ class BackendService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch(
-        `${this.config.baseUrl}/obj/userinfo/${userId}`,
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo/${userId}`,
         {
           method: "PUT",
           headers: this.getHeaders(),
@@ -239,7 +239,7 @@ class BackendService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch(
-        `${this.config.baseUrl}/obj/userinfo/${userId}`,
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo/${userId}`,
         {
           method: "PATCH",
           headers: this.getHeaders(),
@@ -276,15 +276,15 @@ class BackendService {
       // Extract only the required fields
       const payload: UserDataPayload = {
         email: userData.email || "",
-        password: userData.password || "",
+        // password: userData.password || "",
         address: userData.address || userData.country || "",
       };
 
       // Validate required fields
-      if (!payload.email || !payload.password || !payload.address) {
+      // if (!payload.email || !payload.password || !payload.address) {
+      if (!payload.email || !payload.address) {
         console.warn("Missing required fields for sync:", {
           email: !!payload.email,
-          password: !!payload.password,
           address: !!payload.address,
         });
         return {
@@ -362,10 +362,13 @@ class BackendService {
    */
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/obj/userinfo`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -390,10 +393,13 @@ class BackendService {
     error?: string;
   }> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/obj/userinfo`, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
+      const response = await fetch(
+        `${this.config.baseUrl}/obj/userChromeExtensionInfo`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

@@ -2,18 +2,14 @@
   "manifest_version": 3,
   "name": "Autofill, job tracker - applyGOAT",
   "description": "Autofill job application forms using AI",
-  "version": "2.1.4",
+  "version": "2.1.6",
   "action": {
     "default_popup": "popup.html",
     "default_title": "applyGOAT",
     "default_icon": "icon.png"
   },
   "permissions": [
-    "storage",
-    "activeTab",
-    "tabs",
-    "management",
-    "nativeMessaging"
+    "storage"
   ],
   "icons": {
     "16": "icon.png",
