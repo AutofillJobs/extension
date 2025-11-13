@@ -58,6 +58,71 @@ export default function fillZohoForm(data: FormData): void {
             }
         });
     }
+    // Zoho auto-next button function
+    async function clickZohoNextButton(): Promise<boolean> {
+        console.log("🔄 Zoho: Looking for next/continue button...");
+        
+        // Wait for form validation
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Zoho-specific button selectors
+        const buttonSelectors = [
+            'input[type="submit"][value*="Submit"]',
+            'input[type="submit"][value*="Continue"]',
+            'input[type="submit"][value*="Next"]',
+            'button[type="submit"]',
+            'button.btn-primary',
+            'button.btn-success',
+            '.btn-submit',
+            '.submit-button',
+            'input[value="Submit Application"]',
+            'input[value="Continue"]',
+            'input[value="Next"]',
+            '.crc-form-submit',
+            '.form-submit-btn'
+        ];
+
+        for (const selector of buttonSelectors) {
+            const button = document.querySelector<HTMLButtonElement | HTMLInputElement>(selector);
+            if (button && !button.disabled && button.offsetParent !== null) {
+                console.log(`✅ Zoho: Found button with selector: ${selector}`);
+                button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                try {
+                    button.click();
+                    console.log("✅ Zoho: Successfully clicked next button");
+                    return true;
+                } catch (error) {
+                    console.warn("⚠️ Zoho: Error clicking button:", error);
+                }
+            }
+        }
+
+        // Fallback: text-based search
+        const allButtons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input[type="submit"], input[type="button"]');
+        for (const button of allButtons) {
+            const text = (button.textContent || button.value || '').toLowerCase();
+            if ((text.includes('submit') || text.includes('continue') || text.includes('next')) && 
+                !button.disabled && button.offsetParent !== null) {
+                console.log(`✅ Zoho: Found button by text: ${text}`);
+                button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                try {
+                    button.click();
+                    console.log("✅ Zoho: Successfully clicked next button via text search");
+                    return true;
+                } catch (error) {
+                    console.warn("⚠️ Zoho: Error clicking button via text search:", error);
+                }
+            }
+        }
+
+        console.warn("❌ Zoho: No next/submit button found");
+        return false;
+    }
+
     let clicked = false;
     const observer = new MutationObserver((mutations) => {
         console.log("INSIDE OBSERVER");
@@ -71,11 +136,23 @@ export default function fillZohoForm(data: FormData): void {
                             fillExperience(index);
                         }
                         clicked = true;
+                        
+                        // Auto-click next button after filling experiences
+                        setTimeout(() => {
+                            clickZohoNextButton();
+                        }, 3000);
                     }
                 }
             });
         });
         fillPersonalInfo();
+        
+        // Auto-click next button after filling personal info (if no experiences)
+        if (data.data.workExperiences.length === 0) {
+            setTimeout(() => {
+                clickZohoNextButton();
+            }, 3000);
+        }
     });
 
     observer.observe(document.body, { subtree: true, childList: true });

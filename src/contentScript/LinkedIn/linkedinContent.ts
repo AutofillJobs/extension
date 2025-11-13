@@ -1,3 +1,4 @@
+import { saveJobToAnalytics } from "../utils/jobSaver";
 
 interface UserData {
   personalInfo: {
@@ -14,7 +15,7 @@ interface UserData {
     expectedCTC: string;
     totalITExperience: string;
     totalMonthsExperience: string;
-    currentSalary: string;
+    grossSalary: string;
     servingNoticePeriod: string;
     currentlyWorking?: boolean;
     immediateJoiner?: boolean;
@@ -134,6 +135,11 @@ async function findNextOrSubmitButton(): Promise<HTMLButtonElement | null> {
 }
 
 async function closeSuccessModal(): Promise<void> {
+    // Save job details before closing the modal
+    const jobTitle = document.querySelector('.jobs-unified-top-card__job-title')?.textContent?.trim();
+    const jobUrl = window.location.href;
+    await saveJobToAnalytics(jobTitle, jobUrl, 'Applied');
+    
     const closeButton = await domHelpers.waitForElement('button[aria-label="Dismiss"], .artdeco-modal__dismiss');
     if (closeButton) {
         closeButton.click();
@@ -151,10 +157,10 @@ const keywordMapping: { [key: string]: string } = {
   "authorized to work": "legalAndWorkAuth.authorizedToWorkIn",
   "visa": "legalAndWorkAuth.visaType",
   "sponsorship": "legalAndWorkAuth.needSponsorship",
-  "salary": "jobPreferences.expectedCTC",
+  "salary": "jobPreferences.grossSalary",
   "expected ctc": "jobPreferences.expectedCTC",
-  "expected compensation": "jobPreferences.expectedCTC",
-  "current salary": "jobPreferences.currentSalary",
+  "expected compensation": "jobPreferences.grossSalary",
+  "current salary": "jobPreferences.grossSalary",
   "total years of professional experience": "jobPreferences.totalITExperience",
   "bachelor's degree": "educationAndInternships.hasBachelorsDegree",
   "bachelor": "educationAndInternships.hasBachelorsDegree",
@@ -177,6 +183,13 @@ function getNumericAnswer(questionText: string, userData: UserData): string | nu
     const noticeVal = userData.jobPreferences?.noticePeriod || userData.jobPreferences?.servingNoticePeriod;
     return (noticeVal ? String(noticeVal) : '30').replace(/[^0-9.]/g, '');
   }
+  
+  // Skill rating questions (1-10 scale)
+  const skillRatingRegex = /(rate.*yourself|rate.*you|proficiency|skill.*level|scale.*of.*1.*to.*10|1.*to.*10.*scale)/i;
+  if (skillRatingRegex.test(questionText)) {
+    return '7'; // Default good rating for skill questions
+  }
+  
   return null;
 }
 
@@ -190,7 +203,7 @@ const log = (message: string) => console.log(`[LinkedIn Auto Apply] ${message}`)
 async function isAutoClickEnabled(): Promise<boolean> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['autoClickToggleState'], (result) => {
-      const enabled = result.autoClickToggleState === true;
+      const enabled = result.autoClickToggleState !== false; // Default to true if not set
       console.log('[LinkedIn] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
       resolve(enabled);
     });
@@ -301,6 +314,19 @@ async function handleMultiStepApplication(userData: UserData): Promise<void> {
 
       if (isFinalStep) {
         log("Final step detected. Submitting application.");
+        // Save job immediately after final submit click
+        try {
+          await domHelpers.delay(2000); // Wait a bit for submission to process
+          
+          // Extract job title and URL for LinkedIn
+          const jobTitle = document.querySelector('h1.top-card-layout__title, h2.top-card-layout__title, .job-details-jobs-unified-top-card__job-title h1, .jobs-unified-top-card__job-title h1, .jobs-unified-top-card__job-title a')?.textContent?.trim() || 'LinkedIn Job';
+          const jobUrl = window.location.href;
+          
+          await saveJobToAnalytics(jobTitle, jobUrl, 'Applied');
+          log(`Job saved to analytics after LinkedIn final submit: ${jobTitle}`);
+        } catch (e) {
+          log("Failed to save job to analytics: " + (e as Error).message);
+        }
         break; 
       }
     } else {
@@ -329,12 +355,31 @@ export default async function fillLinkedInForm(userData: UserData) {
         await handleMultiStepApplication(userData);
         await domHelpers.delay(4000);
 
-        const successMessage = await domHelpers.waitForElement('.jobs-easy-apply-content [aria-live="polite"]', 2000);
-        if (successMessage && (successMessage.textContent || "").toLowerCase().includes("application sent")) {
-            log("SUCCESS: Application submitted successfully!");
-            await closeSuccessModal();
+        // Try multiple success detection methods
+        const successSelectors = [
+          '.jobs-easy-apply-content [aria-live="polite"]',
+          '.artdeco-inline-feedback--success',
+          '.jobs-easy-apply-content .artdeco-inline-feedback--success',
+          '[data-test-modal-id="easy-apply-success-modal"]'
+        ];
+        
+        let successDetected = false;
+        for (const selector of successSelectors) {
+          const successElement = await domHelpers.waitForElement(selector, 3000);
+          if (successElement) {
+            const text = successElement.textContent?.toLowerCase() || '';
+            if (text.includes('application sent') || text.includes('submitted') || text.includes('success')) {
+              log("SUCCESS: Application confirmed via success element!");
+              successDetected = true;
+              break;
+            }
+          }
+        }
+        
+        if (successDetected) {
+          await closeSuccessModal();
         } else {
-            log("WARNING: Could not confirm submission success. Please verify manually.");
+          log("Could not detect success confirmation, but job may have been saved already.");
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";

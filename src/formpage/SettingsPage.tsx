@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LinkedInCredentialsSetup from '../server/LinkedInCredentialsSetup';
 
 const SettingsPage = () => {
   const [settings, setSettings] = useState({
@@ -55,6 +56,21 @@ const SettingsPage = () => {
               />
               <span className="font-medium text-gray-700">Dark Mode</span>
             </label>
+          </div>
+        </div>
+
+        <div className="border-b border-gray-200 pb-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">LinkedIn Integration</h3>
+          <div className="space-y-3">
+            <LinkedInCredentialsSetup 
+              onCredentialsSet={(success, error) => {
+                if (success) {
+                  console.log('LinkedIn credentials configured successfully');
+                } else {
+                  console.error('Failed to configure LinkedIn credentials:', error);
+                }
+              }}
+            />
           </div>
         </div>
 

@@ -1,4 +1,22 @@
+// Type definitions for extension messages
+interface SaveJobMessage {
+  type: "saveAppliedJob";
+  jobId: string;
+  jobTitle: string;
+  url: string;
+  appliedDateTime: string;
+}
+
+interface ToggleMessage {
+  type: "AUTO_CLICK_TOGGLE_CHANGED" | "TOGGLE_STATE_CHANGED";
+  value: boolean;
+}
+
+type ExtensionMessage = SaveJobMessage | ToggleMessage;
+
 chrome.runtime.onInstalled.addListener((details) => {
+  console.log("🔧 Extension installed/updated:", details.reason);
+
   if (details.reason === "install") {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
@@ -73,75 +91,86 @@ chrome.runtime.onInstalled.addListener((details) => {
 
       if (chrome.runtime.setUninstallURL) {
         console.log("Setting uninstall URL:", uninstallFeedbackUrl);
-        // chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
+        chrome.runtime.setUninstallURL(uninstallFeedbackUrl);
       }
     });
   }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "saveAppliedJob") {
-    const { jobId, jobTitle, url, appliedDateTime } = message;
+chrome.runtime.onMessage.addListener(
+  (
+    message: any,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: any) => void
+  ) => {
+    if (message.type === "saveAppliedJob") {
+      const { jobId, jobTitle, url, appliedDateTime } = message;
 
-    chrome.storage.local.get(["applications"], (result) => {
-      const applications = result.applications || [];
+      chrome.storage.local.get(["applications"], (result) => {
+        const applications = result.applications || [];
 
-      const uniqueKey = `${jobId}-${jobTitle}`;
-      const alreadySaved = applications.some(
-        (app: any) => `${app.jobId}-${app.jobTitle}` === uniqueKey
-      );
+        const uniqueKey = `${jobId}-${jobTitle}`;
+        const alreadySaved = applications.some(
+          (app: any) => `${app.jobId}-${app.jobTitle}` === uniqueKey
+        );
 
-      if (!alreadySaved) {
-        applications.push({
-          jobId,
-          companyLink: url,
-          jobTitle,
-          dateApplied: appliedDateTime,
-          status: "Applied",
-          isCareerForm: true,
-        });
-
-        chrome.storage.local.set({ applications }, () => {
-          console.log("✅ Application saved:", jobId, jobTitle);
-        });
-      } else {
-        console.log("⚠️ Duplicate application skipped:", uniqueKey);
-      }
-    });
-
-    sendResponse({ success: true });
-    return true; // keep channel open for async
-  }
-  
-  // Handle auto-click toggle state changes
-  if (message.type === 'AUTO_CLICK_TOGGLE_CHANGED') {
-    console.log('Auto-click toggle state changed to:', message.value);
-    // Broadcast the change to all content scripts
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        if (tab.id) {
-          chrome.tabs.sendMessage(tab.id, {
-            type: 'AUTO_CLICK_TOGGLE_UPDATE',
-            autoClickEnabled: message.value
-          }).catch(() => {
-            // Ignore errors for tabs that don't have content scripts
+        if (!alreadySaved) {
+          applications.push({
+            jobId,
+            companyLink: url,
+            jobTitle,
+            dateApplied: appliedDateTime,
+            status: "Applied",
+            isCareerForm: true,
           });
+
+          chrome.storage.local.set({ applications }, () => {
+            console.log("✅ Application saved:", jobId, jobTitle);
+          });
+        } else {
+          console.log("⚠️ Duplicate application skipped:", uniqueKey);
         }
       });
-    });
-    sendResponse({ success: true });
-    return true;
+
+      sendResponse({ success: true });
+      return true; // keep channel open for async
+    }
+
+    // Handle auto-click toggle state changes
+    if (message.type === "AUTO_CLICK_TOGGLE_CHANGED") {
+      console.log("Auto-click toggle state changed to:", message.value);
+      // Broadcast the change to all content scripts
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+          if (tab.id) {
+            chrome.tabs.sendMessage(
+              tab.id,
+              {
+                type: "AUTO_CLICK_TOGGLE_UPDATE",
+                autoClickEnabled: message.value,
+              },
+              () => {
+                // Silently handle any errors (e.g., no content script in tab)
+                void chrome.runtime.lastError;
+              }
+            );
+          }
+        });
+      });
+      sendResponse({ success: true });
+      return true;
+    }
+
+    // Handle existing toggle state changes
+    if (message.type === "TOGGLE_STATE_CHANGED") {
+      console.log("Autofill toggle state changed to:", message.value);
+      sendResponse({ success: true });
+      return true;
+    }
   }
-  
-  // Handle existing toggle state changes
-  if (message.type === 'TOGGLE_STATE_CHANGED') {
-    console.log('Autofill toggle state changed to:', message.value);
-    sendResponse({ success: true });
-    return true;
-  }
-});
+);
 function updateUninstallURLFromStorage() {
-  chrome.storage.local.get(["formData"], (result) => {
+  chrome.storage.local.get(["formData"], (result: { formData?: any }) => {
     if (chrome.runtime.lastError) {
       console.error(
         "Error accessing local storage:",

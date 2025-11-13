@@ -1,3 +1,23 @@
+import { saveJobToAnalytics } from "../utils/jobSaver";
+
+(function immediateSmartApplyCapture() {
+  if (!window.location.hostname.includes("smartapply.indeed.com")) return;
+
+  const interval = setInterval(() => {
+    const hdr = document.querySelector<HTMLElement>('h2#ia-JobHeader-title, .ia-JobHeader-title');
+    const headerText = hdr?.innerText.trim();
+
+    if (headerText && headerText !== 'Indeed_job') {
+      console.log('[Indeed Auto] Immediate SmartApply header capture:', headerText);
+  
+      chrome.storage.local.set({ tempJobTitle: headerText });
+      clearInterval(interval);
+    }
+  }, 500);
+
+  setTimeout(() => clearInterval(interval), 5000);
+})();
+
 interface UserData {
   Details: {
     fullName: string;
@@ -47,29 +67,26 @@ const domHelpers = {
   },
   delay: (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms)),
   isDisabled: (el: Element): boolean => {
-    const disabledAttr = (el as HTMLElement).getAttribute('disabled');
-    const ariaDisabled = (el as HTMLElement).getAttribute('aria-disabled');
-    const className = (el as HTMLElement).className || '';
+    const disabledAttr = (el as HTMLElement).getAttribute("disabled");
+    const ariaDisabled = (el as HTMLElement).getAttribute("aria-disabled");
+    const className = (el as HTMLElement).className || "";
     return (
       disabledAttr !== null ||
-      ariaDisabled === 'true' ||
+      ariaDisabled === "true" ||
       /disabled|is-disabled|btn--disabled/i.test(className)
     );
   },
-  clickWithRetry: async (
-    el: HTMLElement,
-    timeout = 6000
-  ): Promise<boolean> => {
+  clickWithRetry: async (el: HTMLElement, timeout = 6000): Promise<boolean> => {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       if (!domHelpers.isDisabled(el)) {
         try {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
           await domHelpers.delay(100);
           el.click();
           return true;
         } catch (e) {
-          // retry
+          
         }
       }
       await domHelpers.delay(250);
@@ -80,23 +97,106 @@ const domHelpers = {
 
 const log = (message: string) => console.log(`[Indeed Auto Apply] ${message}`);
 
+(function earlyIndeedCapture() {
+  const host = window.location.hostname;
+  const path = window.location.pathname.toLowerCase();
+  const search = window.location.search;
+  const params = new URLSearchParams(search);
+  const jk = params.get('jk') || params.get('jobkey') || params.get('jobid');
+
+  if (!/indeed\.com$/i.test(host)) return;
+
+  if (jk) {
+    const captureUrl = `https://${host.includes('indeed.com') ? 'in.' : ''}indeed.com/viewjob?jk=${jk}`;
+
+    chrome.storage.local.get(['savedJobsAnalytics', 'tempJobTitle', 'lastIndeedJobUrl'], res => {
+      if (res.tempJobTitle && res.lastIndeedJobUrl) {
+        // already captured in this tab
+        return;
+      }
+
+      // Try multiple selectors to find the job title
+      const titleSelectors = [
+        '[data-testid="jobsearch-JobInfoHeader-title"]',
+        '[data-testid="jobTitle"]',
+        '[data-testid="job-title"]',
+        '[data-testid="jobTitle-heading"]',
+        'h1.jobsearch-JobInfoHeader-title',
+        'h1.jobsearch-JobInfoHeader-title-color',
+        '.jobsearch-JobInfoHeader-title',
+        '.jobsearch-JobInfoHeader-title-container h1',
+        '.jobsearch-DesktopStickyContainer h1',
+        '.jobsearch-JobComponent-embeddedHeader h1',
+        '.jobsearch-JobTitle h1',
+        'h1.jobsearch-JobTitle',
+        '.icl-u-xs-mb--xs h1',
+        '.jobsearch-JobInfoHeader h1'
+      ];
+
+      let titleFromDoc = null;
+      for (const selector of titleSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          titleFromDoc = element.textContent?.trim();
+          if (titleFromDoc) {
+            log(`Found job title using selector "${selector}": ${titleFromDoc}`);
+            break;
+          }
+        }
+      }
+
+      if (!titleFromDoc) {
+        const metaTitleElement = document.querySelector('meta[property="og:title"], meta[name="title"]');
+        if (metaTitleElement) {
+          titleFromDoc = metaTitleElement.getAttribute('content')?.trim();
+          log(`Found job title from meta tag: ${titleFromDoc}`);
+        }
+      }
+
+
+      if (!titleFromDoc) {
+        const iframe = document.querySelector('iframe#indeed-apply-widget') as HTMLIFrameElement | null;
+        const hdr = iframe?.contentDocument?.querySelector<HTMLElement>('h2#ia-JobHeader-title, .ia-JobHeader-title');
+        if (hdr?.innerText.trim()) {
+          titleFromDoc = hdr.innerText.trim();
+          log(`Found job title from SmartApply iframe header: ${titleFromDoc}`);
+        }
+      }
+
+      // If still no title, use document title or fallback
+      if (!titleFromDoc) {
+        titleFromDoc = document.title.split('-')[0]?.trim() ||
+          document.title.split('|')[0]?.trim() ||
+          `Indeed_job`;
+        log(`Using platform fallback job title: ${titleFromDoc}`);
+      }
+
+      const data = {
+        tempJobTitle: titleFromDoc,
+        lastIndeedJobUrl: captureUrl,
+        lastIndeedCompanyName: document.querySelector('[data-testid="company-name"], .jobsearch-CompanyInfoContainer a')?.textContent?.trim() || 'Unknown Company',
+        tempJobApplyStartTime: Date.now()
+      };
+      log('Early capture – storing: ' + JSON.stringify(data));
+      chrome.storage.local.set(data, () => {
+        // also add as Viewed if not present
+        saveJobToAnalytics(titleFromDoc, captureUrl, 'Viewed');
+      });
+    });
+  }
+})();
+
 // Helper function to check if auto-click is enabled
 async function isAutoClickEnabled(): Promise<boolean> {
   return new Promise((resolve) => {
-<<<<<<< HEAD
-    chrome.storage.local.get(['autoClickToggleState'], (result) => {
-      const enabled = result.autoClickToggleState !== false; // Default to true if not set
-      console.log('[Indeed] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
-=======
     chrome.storage.local.get(["autoClickToggleState"], (result) => {
-      const enabled = result.autoClickToggleState === true;
+      const enabled = result.autoClickToggleState !== false;
       console.log(
         "[Indeed] Auto-click toggle state from storage:",
         result.autoClickToggleState,
         "Resolved to:",
         enabled
       );
->>>>>>> edbc764 (App-enhancement_working)
       resolve(enabled);
     });
   });
@@ -127,12 +227,13 @@ async function findActionButton(
   while (Date.now() - start < timeoutMs) {
     // 1) Prefer Mosaic "Continue" buttons by data-testid and visible span text
     const mosaicButtons = Array.from(
-      context.querySelectorAll<HTMLButtonElement>('button[data-testid]')
+      context.querySelectorAll<HTMLButtonElement>("button[data-testid]")
     );
     for (const btn of mosaicButtons) {
-      const txt = (btn.textContent || '').trim().toLowerCase();
-      const span = btn.querySelector('span')?.textContent?.trim().toLowerCase() || '';
-      if (txt.includes('continue') || span.includes('continue')) {
+      const txt = (btn.textContent || "").trim().toLowerCase();
+      const span =
+        btn.querySelector("span")?.textContent?.trim().toLowerCase() || "";
+      if (txt.includes("continue") || span.includes("continue")) {
         log(`✅ Found Continue button: "${btn.textContent?.trim()}"`);
         return btn as HTMLElement;
       }
@@ -143,32 +244,38 @@ async function findActionButton(
       context.querySelectorAll<HTMLElement>('button, input[type="submit"]')
     );
     for (const btn of generalButtons) {
-      const txt = (btn.textContent || '').trim().toLowerCase();
-      const span = btn.querySelector('span')?.textContent?.trim().toLowerCase() || '';
-      const aria = btn.getAttribute('aria-label')?.toLowerCase() || '';
+      const txt = (btn.textContent || "").trim().toLowerCase();
+      const span =
+        btn.querySelector("span")?.textContent?.trim().toLowerCase() || "";
+      const aria = btn.getAttribute("aria-label")?.toLowerCase() || "";
       if (
-        txt.includes('continue') ||
-        span.includes('continue') ||
-        aria.includes('continue')
+        txt.includes("continue") ||
+        span.includes("continue") ||
+        aria.includes("continue")
       ) {
-        log(`✅ Found Continue button (general): "${(btn.textContent || aria).trim()}"`);
+        log(
+          `✅ Found Continue button (general): "${(
+            btn.textContent || aria
+          ).trim()}"`
+        );
         return btn as HTMLElement;
       }
     }
 
     // 3) Submit buttons
     for (const btn of generalButtons) {
-      const txt = (btn.textContent || '').trim().toLowerCase();
-      const span = btn.querySelector('span')?.textContent?.trim().toLowerCase() || '';
-      const aria = btn.getAttribute('aria-label')?.toLowerCase() || '';
-      const val = (btn as HTMLInputElement).value?.toLowerCase() || '';
+      const txt = (btn.textContent || "").trim().toLowerCase();
+      const span =
+        btn.querySelector("span")?.textContent?.trim().toLowerCase() || "";
+      const aria = btn.getAttribute("aria-label")?.toLowerCase() || "";
+      const val = (btn as HTMLInputElement).value?.toLowerCase() || "";
       if (
-        txt.includes('submit application') ||
-        span.includes('submit application') ||
-        aria.includes('submit application') ||
-        val.includes('submit application') ||
-        (txt.includes('submit') && !txt.includes('submit for')) ||
-        (span.includes('submit') && !span.includes('submit for'))
+        txt.includes("submit application") ||
+        span.includes("submit application") ||
+        aria.includes("submit application") ||
+        val.includes("submit application") ||
+        (txt.includes("submit") && !txt.includes("submit for")) ||
+        (span.includes("submit") && !span.includes("submit for"))
       ) {
         log(`✅ Found Submit button: "${(btn.textContent || val).trim()}"`);
         return btn as HTMLElement;
@@ -233,20 +340,21 @@ const indeedRegexPatterns = [
   },
   // Location-based yes/no
   {
-    pattern: /(are\s*(you|u).*(located|based)|do\s*you\s*live\s*in|are\s*(you|u)\s*in\s+)/i,
+    pattern:
+      /(are\s*(you|u).*(located|based)|do\s*you\s*live\s*in|are\s*(you|u)\s*in\s+)/i,
     type: "radio",
     getAnswer: (userData: any, q: string) => {
       const details = (userData?.Details || userData) as any;
       const target = (
         q.match(/in\s+([\w\s,\-]+)/i)?.[1] ||
         q.match(/located\s*(in|at)\s*([\w\s,\-]+)/i)?.[2] ||
-        ''
+        ""
       )
         .toLowerCase()
         .trim();
 
       // If no explicit target found, default to Yes to avoid blocking
-      if (!target) return 'Yes';
+      if (!target) return "Yes";
 
       const haystackParts = [
         details?.city,
@@ -259,11 +367,13 @@ const indeedRegexPatterns = [
         .filter(Boolean)
         .map((s: string) => String(s).toLowerCase());
 
-      const hay = ` ${haystackParts.join(' ')} `;
+      const hay = ` ${haystackParts.join(" ")} `;
       const tokens = target.split(/[\s,\-]+/).filter(Boolean);
-      const matched = tokens.some((tok) => hay.includes(` ${tok} `) || hay.includes(tok));
+      const matched = tokens.some(
+        (tok) => hay.includes(` ${tok} `) || hay.includes(tok)
+      );
 
-      return matched ? 'Yes' : 'No';
+      return matched ? "Yes" : "No";
     },
   },
   {
@@ -695,6 +805,42 @@ const indeedRegexPatterns = [
     type: "radio",
     getAnswer: (userData: any) => userData?.acknowledgment || "Yes",
   },
+
+  // CTC patterns
+  {
+    pattern: /(current.*ctc|present.*ctc|ctc.*current)/i,
+    type: "text",
+    getAnswer: (userData: any) => {
+      const salary = userData?.grossSalary || userData?.Details?.grossSalary;
+      return salary ? salary.replace(/[^0-9]/g, "") : "90000";
+    },
+  },
+  {
+    pattern: /(expected.*ctc|ctc.*expectation|desired.*ctc)/i,
+    type: "text",
+    getAnswer: (userData: any) => {
+      const salary =
+        userData?.expectedSalary ||
+        userData?.Details?.expectedSalary ||
+        userData?.salaryExpectations;
+      return salary ? salary.replace(/[^0-9]/g, "") : "100000";
+    },
+  },
+  {
+    pattern: /\bctc\b(?!.*current)(?!.*expected)/i,
+    type: "text",
+    getAnswer: (userData: any) => {
+      // For generic CTC questions, prefer expected over current
+      const expectedSalary =
+        userData?.expectedSalary ||
+        userData?.Details?.expectedSalary ||
+        userData?.salaryExpectations;
+      const currentSalary =
+        userData?.grossSalary || userData?.Details?.grossSalary;
+      const salary = expectedSalary || currentSalary;
+      return salary ? salary.replace(/[^0-9]/g, "") : "100000";
+    },
+  },
 ];
 
 function getAnswerFromPath(userData: UserData, path: string): any {
@@ -725,9 +871,7 @@ async function handleSingleQuestion(
     if (regexPattern.pattern.test(questionText)) {
       answer = regexPattern.getAnswer(userData, questionText);
       questionType = regexPattern.type;
-      log(
-        ` Matched regex pattern, answer: "${answer}", type: ${questionType}`
-      );
+      log(` Matched regex pattern, answer: "${answer}", type: ${questionType}`);
       break;
     }
   }
@@ -817,14 +961,19 @@ async function fillSelectDropdown(
 }
 
 // ===== Additive helpers for Indeed Mosaic questions (data-testid based) =====
-function findQuestionByText(root: ParentNode, text: RegExp): HTMLElement | null {
+function findQuestionByText(
+  root: ParentNode,
+  text: RegExp
+): HTMLElement | null {
   const labels = Array.from(
     root.querySelectorAll<HTMLElement>('[data-testid$="-label"]')
   );
   for (const lab of labels) {
     const t = lab.textContent?.trim() || "";
     if (text.test(t)) {
-      const container = lab.closest('div.ia-Questions-item') as HTMLElement | null;
+      const container = lab.closest(
+        "div.ia-Questions-item"
+      ) as HTMLElement | null;
       if (container) return container;
     }
   }
@@ -832,20 +981,22 @@ function findQuestionByText(root: ParentNode, text: RegExp): HTMLElement | null 
 }
 
 function dispatchAll(el: HTMLElement) {
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-  el.dispatchEvent(new Event('blur', { bubbles: true }));
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.dispatchEvent(new Event("blur", { bubbles: true }));
 }
 
 async function waitForQuestions(context: Document, timeout = 10000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    if (context.querySelector('.ia-Questions')) return;
-    await new Promise(r => setTimeout(r, 150));
+    if (context.querySelector(".ia-Questions")) return;
+    await new Promise((r) => setTimeout(r, 150));
   }
 }
 
-function pad2(n: number): string { return n.toString().padStart(2, '0'); }
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
+}
 function formatISODateLocal(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
@@ -869,18 +1020,19 @@ function generateInterviewSlots(): string {
       const e = `${pad2(r.end.h)}:${pad2(r.end.m)}`;
       return `${s}–${e}`;
     });
-    lines.push(`${dateStr}: ${parts.join(', ')}`);
+    lines.push(`${dateStr}: ${parts.join(", ")}`);
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function normalizeEducationLabel(s: string): string {
-  const t = (s || '').toLowerCase();
+  const t = (s || "").toLowerCase();
   if (/doctor|phd|dphil/.test(t)) return "Doctorate";
   if (/master|ms\b|msc\b|ma\b|m\.?tech|mba/.test(t)) return "Master's";
   if (/bachelor|bs\b|ba\b|bsc\b|b\.?tech|be\b/.test(t)) return "Bachelor's";
   if (/diploma/.test(t)) return "Diploma";
-  if (/higher\s*secondary|12(th)?/.test(t)) return "Higher Secondary(12th Pass)";
+  if (/higher\s*secondary|12(th)?/.test(t))
+    return "Higher Secondary(12th Pass)";
   if (/secondary|10(th)?/.test(t)) return "Secondary(10th Pass)";
   return "Bachelor's";
 }
@@ -890,13 +1042,19 @@ async function fillSpecificMosaicQuestions(context: Document, userData: any) {
 
   // Years of total work experience
   try {
-    const qYears = findQuestionByText(context, /years of total work experience/i);
+    const qYears = findQuestionByText(
+      context,
+      /years of total work experience/i
+    );
     if (qYears) {
-      const input = qYears.querySelector<HTMLInputElement>('input[data-testid^="input-q_"][data-testid$="-input"]');
+      const input = qYears.querySelector<HTMLInputElement>(
+        'input[data-testid^="input-q_"][data-testid$="-input"]'
+      );
       if (input) {
         const details = (userData?.Details || userData) as any;
         // Derive years
-        let years: string | number = details?.totalITExperience || details?.totalExperience;
+        let years: string | number =
+          details?.totalITExperience || details?.totalExperience;
         if (years == null) {
           const currentYear = new Date().getFullYear();
           const startYear = userData?.workExperiences?.[0]?.startDate
@@ -904,7 +1062,7 @@ async function fillSpecificMosaicQuestions(context: Document, userData: any) {
             : currentYear - 3;
           years = Math.max(1, currentYear - startYear); // clamp to at least 1
         }
-        const safe = String(years).replace(/[^\d]/g, '').slice(0, 2) || '1';
+        const safe = String(years).replace(/[^\d]/g, "").slice(0, 2) || "1";
         input.focus();
         input.value = safe;
         dispatchAll(input);
@@ -919,16 +1077,32 @@ async function fillSpecificMosaicQuestions(context: Document, userData: any) {
   try {
     const qEdu = findQuestionByText(context, /highest level of education/i);
     if (qEdu) {
-      const sel = qEdu.querySelector<HTMLSelectElement>('select[data-testid^="input-q_"][data-testid$="-select"]');
+      const sel = qEdu.querySelector<HTMLSelectElement>(
+        'select[data-testid^="input-q_"][data-testid$="-select"]'
+      );
       if (sel) {
         const details = (userData?.Details || userData) as any;
         const desired = normalizeEducationLabel(
-          details?.educationLevel || details?.degree || details?.highestEducation || ''
+          details?.educationLevel ||
+          details?.degree ||
+          details?.highestEducation ||
+          ""
         );
         const options = Array.from(sel.options);
-        const exact = options.find(o => o.label.trim().toLowerCase() === desired.toLowerCase());
-        const contains = exact || options.find(o => o.label.toLowerCase().includes(desired.toLowerCase()));
-        const choice = contains || options.find(o => /bachelor|master|diploma|doctorate|secondary/i.test(o.label)) || options[1];
+        const exact = options.find(
+          (o) => o.label.trim().toLowerCase() === desired.toLowerCase()
+        );
+        const contains =
+          exact ||
+          options.find((o) =>
+            o.label.toLowerCase().includes(desired.toLowerCase())
+          );
+        const choice =
+          contains ||
+          options.find((o) =>
+            /bachelor|master|diploma|doctorate|secondary/i.test(o.label)
+          ) ||
+          options[1];
         if (choice) {
           sel.value = choice.value;
           dispatchAll(sel);
@@ -942,22 +1116,30 @@ async function fillSpecificMosaicQuestions(context: Document, userData: any) {
 }
 
 async function fillMosaicPageIfPresent(context: Document, userData: any) {
-  const heading = context.querySelector<HTMLElement>('h1[data-testid="questions-heading"]');
-  const text = heading?.textContent?.trim().toLowerCase() || '';
-  if (!text.includes('answer these questions from the employer')) return;
+  const heading = context.querySelector<HTMLElement>(
+    'h1[data-testid="questions-heading"]'
+  );
+  const text = heading?.textContent?.trim().toLowerCase() || "";
+  if (!text.includes("answer these questions from the employer")) return;
 
-  log(' Detected Mosaic questions page: "Answer these questions from the employer"');
+  log(
+    ' Detected Mosaic questions page: "Answer these questions from the employer"'
+  );
 
   await fillSpecificMosaicQuestions(context, userData);
 
-  const items = Array.from(context.querySelectorAll<HTMLElement>('div.ia-Questions-item'));
+  const items = Array.from(
+    context.querySelectorAll<HTMLElement>("div.ia-Questions-item")
+  );
   for (const item of items) {
     const labelEl = item.querySelector<HTMLElement>('[data-testid$="-label"]');
-    const qText = labelEl?.textContent?.trim() || '';
+    const qText = labelEl?.textContent?.trim() || "";
     if (!qText) continue;
 
     if (/interview/i.test(qText) && /(date|time)/i.test(qText)) {
-      const textarea = item.querySelector<HTMLTextAreaElement>('textarea[data-testid^="input-q_"][data-testid$="-input"], textarea');
+      const textarea = item.querySelector<HTMLTextAreaElement>(
+        'textarea[data-testid^="input-q_"][data-testid$="-input"], textarea'
+      );
       if (textarea) {
         const answer = generateInterviewSlots();
         textarea.focus();
@@ -969,7 +1151,7 @@ async function fillMosaicPageIfPresent(context: Document, userData: any) {
     }
 
     let answer: any = null;
-    let type: 'text' | 'select' | 'radio' = 'text';
+    let type: "text" | "select" | "radio" = "text";
     for (const rp of indeedRegexPatterns) {
       if (rp.pattern.test(qText)) {
         answer = rp.getAnswer((userData as any).Details || userData, qText);
@@ -981,24 +1163,40 @@ async function fillMosaicPageIfPresent(context: Document, userData: any) {
       const lower = qText.toLowerCase();
       for (const key in indeedKeywordMapping) {
         if (lower.includes(key)) {
-          answer = getAnswerFromPath((userData as any).Details || userData, indeedKeywordMapping[key]);
+          answer = getAnswerFromPath(
+            (userData as any).Details || userData,
+            indeedKeywordMapping[key]
+          );
           break;
         }
       }
     }
     if (answer === null || answer === undefined) continue;
 
-    const selectEl = item.querySelector<HTMLSelectElement>('select[data-testid^="input-q_"][data-testid$="-select"]');
-    const inputEl = item.querySelector<HTMLInputElement>('input[data-testid^="input-q_"][data-testid$="-input"]');
-    const textareaEl = item.querySelector<HTMLTextAreaElement>('textarea[data-testid^="input-q_"][data-testid$="-input"], textarea');
-    const radios = item.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    const selectEl = item.querySelector<HTMLSelectElement>(
+      'select[data-testid^="input-q_"][data-testid$="-select"]'
+    );
+    const inputEl = item.querySelector<HTMLInputElement>(
+      'input[data-testid^="input-q_"][data-testid$="-input"]'
+    );
+    const textareaEl = item.querySelector<HTMLTextAreaElement>(
+      'textarea[data-testid^="input-q_"][data-testid$="-input"], textarea'
+    );
+    const radios = item.querySelectorAll<HTMLInputElement>(
+      'input[type="radio"]'
+    );
 
     if (selectEl) {
-      
-      const val = /education|degree/i.test(qText) ? normalizeEducationLabel(String(answer)) : String(answer);
+      const val = /education|degree/i.test(qText)
+        ? normalizeEducationLabel(String(answer))
+        : String(answer);
       const options = Array.from(selectEl.options);
-      const exact = options.find(o => o.label.trim().toLowerCase() === val.toLowerCase());
-      const contains = exact || options.find(o => o.label.toLowerCase().includes(val.toLowerCase()));
+      const exact = options.find(
+        (o) => o.label.trim().toLowerCase() === val.toLowerCase()
+      );
+      const contains =
+        exact ||
+        options.find((o) => o.label.toLowerCase().includes(val.toLowerCase()));
       const choice = contains || options[1];
       if (choice) {
         selectEl.value = choice.value;
@@ -1020,8 +1218,8 @@ async function fillMosaicPageIfPresent(context: Document, userData: any) {
     if (inputEl) {
       let toType = String(answer);
       if (/year/i.test(qText)) {
-        const n = parseInt(toType.replace(/[^\d]/g, ''), 10);
-        if (!Number.isNaN(n) && n < 1) toType = '1';
+        const n = parseInt(toType.replace(/[^\d]/g, ""), 10);
+        if (!Number.isNaN(n) && n < 1) toType = "1";
       }
       inputEl.focus();
       inputEl.value = toType;
@@ -1033,7 +1231,7 @@ async function fillMosaicPageIfPresent(context: Document, userData: any) {
     if (radios.length) {
       const target = String(answer).toLowerCase();
       for (const r of Array.from(radios)) {
-        const lbl = (r.parentElement?.textContent || '').trim().toLowerCase();
+        const lbl = (r.parentElement?.textContent || "").trim().toLowerCase();
         if (lbl === target || lbl.includes(target)) {
           r.click();
           log(` Selected radio for "${qText}": ${lbl}`);
@@ -1073,17 +1271,13 @@ async function applicationLoop(userData: UserData) {
         );
         for (let i = 0; i < questions.length; i++) {
           const question = questions[i] as HTMLElement;
-          log(
-            ` Processing resume step question ${i + 1}/${questions.length}`
-          );
+          log(` Processing resume step question ${i + 1}/${questions.length}`);
           await handleSingleQuestion(question, userData);
           await domHelpers.delay(500);
         }
         await fillSpecificMosaicQuestions(appContext, userData);
 
-        log(
-          ` Completed filling ${questions.length} questions on resume step.`
-        );
+        log(` Completed filling ${questions.length} questions on resume step.`);
         await domHelpers.delay(1500);
       }
 
@@ -1098,12 +1292,20 @@ async function applicationLoop(userData: UserData) {
           const autoClickAllowed = await isAutoClickEnabled();
           if (autoClickAllowed) {
             log(" Clicking Continue button on resume upload step.");
-            const clicked = await domHelpers.clickWithRetry(continueButton as HTMLElement, 6000);
-            if (!clicked) log("Continue button was disabled or failed to click after retries.");
+            const clicked = await domHelpers.clickWithRetry(
+              continueButton as HTMLElement,
+              6000
+            );
+            if (!clicked)
+              log(
+                "Continue button was disabled or failed to click after retries."
+              );
             await domHelpers.delay(2000);
             continue;
           } else {
-            log(" Auto-click is disabled. Continue button found but not clicked automatically.");
+            log(
+              " Auto-click is disabled. Continue button found but not clicked automatically."
+            );
             log(" Please click the Continue button manually to proceed.");
             await domHelpers.delay(5000);
             continue;
@@ -1151,9 +1353,7 @@ async function applicationLoop(userData: UserData) {
       ) as HTMLInputElement | null;
 
       if (postalInput || cityInput || addressInput) {
-        log(
-          " Filling location details (postal, city/state, street address)…"
-        );
+        log(" Filling location details (postal, city/state, street address)…");
         const {
           postalCode,
           zip,
@@ -1199,8 +1399,7 @@ async function applicationLoop(userData: UserData) {
       const btnClass = btn.className;
       const btnTestId = btn.getAttribute("data-testid");
       log(
-        `Button ${
-          i + 1
+        `Button ${i + 1
         }: "${btnText}" (class: ${btnClass}, testid: ${btnTestId})`
       );
     }
@@ -1227,16 +1426,25 @@ async function applicationLoop(userData: UserData) {
           log(` Found fallback button: "${buttonText}"`);
           const autoClickAllowed = await isAutoClickEnabled();
           if (autoClickAllowed) {
-            const clicked = await domHelpers.clickWithRetry(fallbackButton as HTMLElement, 6000);
-            if (!clicked) log("Fallback button was disabled or failed to click after retries.");
+            const clicked = await domHelpers.clickWithRetry(
+              fallbackButton as HTMLElement,
+              6000
+            );
+            if (!clicked)
+              log(
+                "Fallback button was disabled or failed to click after retries."
+              );
             if (buttonText.includes("submit")) {
               log(" Final submit button clicked via fallback.");
+              // Don't save here - wait for confirmation page
               break;
             }
             await domHelpers.delay(3000);
             continue;
           } else {
-            log(" Auto-click is disabled. Fallback action button will not be clicked automatically.");
+            log(
+              " Auto-click is disabled. Fallback action button will not be clicked automatically."
+            );
             break;
           }
         }
@@ -1256,20 +1464,27 @@ async function applicationLoop(userData: UserData) {
     const autoClickAllowed = await isAutoClickEnabled();
     if (autoClickAllowed) {
       log(` Clicking button: "${actionButton.textContent?.trim()}"`);
-      const clicked = await domHelpers.clickWithRetry(actionButton as HTMLElement, 8000);
-      if (!clicked) log(" Action button was disabled or failed to click after retries.");
+      const clicked = await domHelpers.clickWithRetry(
+        actionButton as HTMLElement,
+        8000
+      );
+      if (!clicked)
+        log(" Action button was disabled or failed to click after retries.");
 
       if (
         displayText.includes("submit application") ||
         (displayText.includes("submit") && !displayText.includes("continue"))
       ) {
         log(" Final Submit Application button clicked! Process complete.");
+        // Don't save here - wait for confirmation page
         break;
       }
 
       await domHelpers.delay(3000);
     } else {
-      log(` Auto-click is disabled. Action button "${actionButton.textContent?.trim()}" will not be clicked automatically.`);
+      log(
+        ` Auto-click is disabled. Action button "${actionButton.textContent?.trim()}" will not be clicked automatically.`
+      );
       log(" Please click the button manually to proceed.");
       break;
     }
@@ -1284,13 +1499,11 @@ export default async function automateIndeedApplication(rawData: any) {
   const userData: UserData = rawData?.Details
     ? rawData
     : ((rawData?.data?.details
-        ? { ...rawData.data.details }
-        : rawData) as UserData);
+      ? { ...rawData.data.details }
+      : rawData) as UserData);
   log("Starting Indeed Automation Script...");
 
-  log(
-    ` UserData structure: ${JSON.stringify(Object.keys(userData), null, 2)}`
-  );
+  log(` UserData structure: ${JSON.stringify(Object.keys(userData), null, 2)}`);
   if ((userData as any).Details) {
     log(
       ` Details keys: ${JSON.stringify(
@@ -1321,12 +1534,176 @@ export default async function automateIndeedApplication(rawData: any) {
     currentUrl.includes("smartapply") ||
     document.querySelector("iframe#indeed-apply-widget") !== null;
 
+  // --- SmartApply first-load capture ---
+  if (isApplyPage) {
+    chrome.storage.local.get(['tempJobTitle', 'lastIndeedJobUrl'], (res) => {
+      if (!res.tempJobTitle) {
+        const params = new URLSearchParams(window.location.search);
+        const jk = params.get('jk') || params.get('jobKey') || params.get('jobId');
+        if (jk) {
+          const jobUrl = `https://in.indeed.com/viewjob?jk=${jk}`;
+          const jobTitle = `Indeed_job`;
+          const data = { tempJobTitle: jobTitle, lastIndeedJobUrl: jobUrl };
+          console.log('[Indeed] SmartApply first-load capture', data);
+          chrome.storage.local.set(data, () => {
+            // store fallback viewed status immediately
+            saveJobToAnalytics(jobTitle, jobUrl, 'Viewed');
+          });
+        }
+      }
+    });
+  }
+
   try {
     log(` Current URL: ${window.location.href}`);
     log(` isJobPage: ${isJobPage}, isApplyPage: ${isApplyPage}`);
 
     if (isJobPage && !isApplyPage) {
       log(" On a job page. Looking for the 'Apply Now' button...");
+
+      // Debug: Try to find job title with multiple selectors
+      const jobTitleSelectors = [
+        "h1.jobsearch-JobInfoHeader-title",
+        'span[data-testid="jobTitle"]',
+        ".jobsearch-JobTitle h1",
+        '[data-testid="jobsearch-JobInfoHeader-title"]',
+        'h1[data-testid="jobTitle"]',
+        ".jobsearch-JobInfoHeader-title span",
+        "h1.jobsearch-JobTitle",
+        "h1.jobsearch-JobInfoHeader-title-color",
+        ".jobsearch-JobInfoHeader-title-container h1",
+        '[data-testid="job-title"]',
+        '[data-testid="jobTitle-heading"]',
+        ".jobsearch-DesktopStickyContainer h1",
+        ".jobsearch-JobComponent-embeddedHeader h1"
+      ];
+
+      let jobTitle = null;
+
+      // First try direct selectors
+      for (const selector of jobTitleSelectors) {
+        const element = document.querySelector(selector);
+        log(
+          `Trying selector "${selector}": ${element ? "FOUND" : "NOT FOUND"}`
+        );
+        if (element) {
+          jobTitle = element.textContent?.trim();
+          log(`Job title from "${selector}": "${jobTitle}"`);
+          if (jobTitle) break;
+        }
+      }
+
+      // If no title found, try meta tags
+      if (!jobTitle) {
+        const metaTitleElement = document.querySelector('meta[property="og:title"], meta[name="title"]');
+        if (metaTitleElement) {
+          jobTitle = metaTitleElement.getAttribute('content')?.trim();
+          log(`Job title from meta tag: "${jobTitle}"`);
+        }
+      }
+
+      // If still no title, try document title
+      if (!jobTitle) {
+        jobTitle = document.title.split('-')[0]?.trim() || document.title.split('|')[0]?.trim();
+        if (jobTitle) {
+          log(`Job title from document title: "${jobTitle}"`);
+        }
+      }
+
+      // Debug: Try to find company name
+      const companySelectors = [
+        ".jobsearch-CompanyInfoContainer a",
+        '[data-testid="company-name"]',
+        ".jobsearch-InlineCompanyRating a",
+        "a[data-jk]",
+      ];
+
+      let companyName = "Unknown Company";
+      for (const selector of companySelectors) {
+        const element = document.querySelector(selector);
+        log(
+          `Trying company selector "${selector}": ${element ? "FOUND" : "NOT FOUND"
+          }`
+        );
+        if (element) {
+          const name = element.textContent?.trim();
+          if (name) {
+            companyName = name;
+            log(`Company name from "${selector}": "${companyName}"`);
+            break;
+          }
+        }
+      }
+
+      log(
+        `Final job title: "${jobTitle || "NONE FOUND"
+        }", Company: "${companyName}"`
+      );
+
+      // Always store something even if jobTitle could not be extracted
+      if (!jobTitle) {
+        jobTitle = 'Indeed_job';
+        log('Job title not found, using platform fallback "Indeed_job"');
+      }
+
+      if (jobTitle && !jobTitle.includes('application has been submitted')) {
+        const originalJobUrl = window.location.href;
+        // Store both in chrome.storage and sessionStorage for redundancy
+        const jobData = {
+          tempJobTitle: jobTitle,
+          lastIndeedJobUrl: originalJobUrl,
+          lastIndeedCompanyName: companyName,
+          tempJobApplyStartTime: Date.now(),
+        };
+
+        // Also store in sessionStorage as a backup
+        try {
+          sessionStorage.setItem('indeedJobTitle', jobTitle);
+          sessionStorage.setItem('indeedJobUrl', originalJobUrl);
+          log('Stored job details in sessionStorage');
+        } catch (e) {
+          log('Failed to store in sessionStorage: ' + e);
+        }
+
+        log(`Capturing job information: ${JSON.stringify(jobData)}`);
+
+        // Store in chrome.storage.local with callback
+        chrome.storage.local.set(jobData, () => {
+          if (chrome.runtime.lastError) {
+            log(
+              "Failed to store in chrome.storage: " +
+              chrome.runtime.lastError.message
+            );
+          } else {
+            log(`Successfully stored job information in chrome.storage`);
+            // Verify storage by reading it back
+            chrome.storage.local.get(
+              ["tempJobTitle", "lastIndeedJobUrl"],
+              (result) => {
+                log("Verification - stored data: " + JSON.stringify(result));
+              }
+            );
+          }
+        });
+
+        // Also store in sessionStorage as backup
+        try {
+          sessionStorage.setItem("indeedJobData", JSON.stringify(jobData));
+          log("Successfully stored job information in sessionStorage");
+        } catch (e) {
+          log("Failed to store job data in sessionStorage: " + e);
+        }
+
+        // Immediately save to analytics as well (as backup)
+        try {
+          saveJobToAnalytics(jobTitle, originalJobUrl, "Viewed");
+          log('Job immediately saved to analytics with "Viewed" status');
+        } catch (e) {
+          log(
+            "Failed to immediately save to analytics: " + (e as Error).message
+          );
+        }
+      }
 
       const applyButtonSelectors = [
         "#jobsearch-ViewJobButtons-container button.icl-Button--primary",
@@ -1396,9 +1773,7 @@ export default async function automateIndeedApplication(rawData: any) {
             ""
           ).toLowerCase();
           if (btnText.includes("apply")) {
-            log(
-              ` Potential apply button found: "${btnText}" (${btn.tagName})`
-            );
+            log(` Potential apply button found: "${btnText}" (${btn.tagName})`);
             applyButton = btn as HTMLElement;
             break;
           }
@@ -1416,15 +1791,80 @@ export default async function automateIndeedApplication(rawData: any) {
       );
       applyButton.scrollIntoView({ behavior: "smooth", block: "center" });
       await domHelpers.delay(500);
-      const clicked = await domHelpers.clickWithRetry(applyButton as HTMLElement, 6000);
-      if (!clicked) log("Apply Now button was disabled or failed to click after retries.");
-      log(
-        " Clicked 'Apply Now'. Waiting for the application form to load..."
+      const clicked = await domHelpers.clickWithRetry(
+        applyButton as HTMLElement,
+        6000
       );
+      if (!clicked)
+        log("Apply Now button was disabled or failed to click after retries.");
+      log(" Clicked 'Apply Now'. Waiting for the application form to load...");
       await domHelpers.delay(3000);
     }
 
     log("Proceeding to application form...");
+
+    // FALLBACK: If we're in the application process, try to capture job info from current context
+    if (isApplyPage) {
+      log(
+        "On application page - attempting to capture job information as fallback..."
+      );
+
+      // Try to get job title from various sources during application
+      let fallbackJobTitle: any = null;
+      let fallbackJobUrl = window.location.href;
+
+      // Check if we have stored info from previous page
+      chrome.storage.local.get(
+        ["tempJobTitle", "lastIndeedJobUrl"],
+        (result) => {
+          log(
+            "Checking existing storage during application: " +
+            JSON.stringify(result)
+          );
+          if (!result.tempJobTitle) {
+            log(
+              "No stored job title found, attempting to extract from application page..."
+            );
+
+            // Try to extract from application context or URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const jobId = urlParams.get("jk") || urlParams.get("jobKey");
+
+            if (jobId) {
+              fallbackJobTitle = `Indeed_job`;
+              fallbackJobUrl = `https://www.indeed.com/viewjob?jk=${jobId}`;
+
+              const fallbackData = {
+                tempJobTitle: fallbackJobTitle,
+                lastIndeedJobUrl: fallbackJobUrl,
+                lastIndeedCompanyName: "Unknown Company",
+                tempJobApplyStartTime: Date.now(),
+                isFallback: true,
+              };
+
+              log("Storing fallback job data: " + JSON.stringify(fallbackData));
+              chrome.storage.local.set(fallbackData, () => {
+                if (chrome.runtime.lastError) {
+                  log(
+                    "Failed to store fallback data: " +
+                    chrome.runtime.lastError.message
+                  );
+                } else {
+                  log("Successfully stored fallback job data");
+                  // Immediately save to analytics as well
+                  saveJobToAnalytics(
+                    fallbackJobTitle,
+                    fallbackJobUrl,
+                    "Applied"
+                  );
+                }
+              });
+            }
+          }
+        }
+      );
+    }
+
     const details = (userData as any).Details || userData;
     if (details.fullName && !details.firstName) {
       console.log("full Name is " + details.fullName);
@@ -1434,6 +1874,240 @@ export default async function automateIndeedApplication(rawData: any) {
     }
 
     if (isApplyPage) {
+      // Set up success detection observer
+      const observer = new MutationObserver((mutations, obs) => {
+        // Check for various success indicators
+        const successIndicators = [
+          '[data-gnav-element-name="GNAVConfirmation"]',
+          '.ia-continueButton',
+          '.ia-PostApply',
+          '[data-testid="success-message"]',
+          '.indeed-apply-confirmation',
+          '.indeed-apply-success',
+          '.indeed-apply-thank-you',
+          '[data-testid="post-apply-confirmation"]',
+          '.post-apply-success',
+          '.application-success',
+          '.success-message',
+          '.confirmation-message'
+        ];
+
+        const successIndicator = successIndicators.some(selector =>
+          document.querySelector(selector)
+        );
+
+        const successText = document.body.textContent?.toLowerCase() || '';
+        const textIndicators = [
+          'application submitted',
+          'successfully submitted',
+          'thank you for applying',
+          'application complete',
+          'successfully applied'
+        ];
+
+        const hasSuccessText = textIndicators.some(text =>
+          successText.includes(text)
+        );
+
+        if (successIndicator || hasSuccessText) {
+          obs.disconnect();
+          log('Success indicator found. Saving job application...');
+
+          // Try to get job details from multiple sources
+          chrome.storage.local.get(['tempJobTitle', 'lastIndeedJobUrl', 'savedJobsAnalytics'], async (result) => {
+            let jobTitle = result.tempJobTitle;
+            let jobUrl = result.lastIndeedJobUrl;
+
+            // Clean up the URL if it has extra quotes or spaces
+            if (jobUrl) {
+              jobUrl = jobUrl.trim().replace(/['"]/g, '');
+              if (jobUrl.endsWith(',')) {
+                jobUrl = jobUrl.slice(0, -1);
+              }
+              log(`Cleaned job URL: ${jobUrl}`);
+            }
+
+            // If no stored title, try multiple selectors
+            if (!jobTitle) {
+              const titleSelectors = [
+                "h1.jobsearch-JobInfoHeader-title",
+                'span[data-testid="jobTitle"]',
+                ".jobsearch-JobTitle h1",
+                '[data-testid="jobsearch-JobInfoHeader-title"]',
+                'h1[data-testid="jobTitle"]',
+                ".jobsearch-JobInfoHeader-title span",
+                "h1.jobsearch-JobTitle",
+                "h1.jobsearch-JobInfoHeader-title-color",
+                ".jobsearch-JobInfoHeader-title-container h1",
+                '[data-testid="job-title"]',
+                '[data-testid="jobTitle-heading"]',
+                ".jobsearch-DesktopStickyContainer h1",
+                ".jobsearch-JobComponent-embeddedHeader h1",
+                "h1, h2"
+              ];
+
+              for (const selector of titleSelectors) {
+                const element = document.querySelector(selector);
+                if (element) {
+                  jobTitle = element.textContent?.trim();
+                  if (jobTitle) {
+                    log(`Found job title using selector "${selector}": ${jobTitle}`);
+                    break;
+                  }
+                }
+              }
+
+              // If still no title, try meta tags
+              if (!jobTitle) {
+                const metaTitleElement = document.querySelector('meta[property="og:title"], meta[name="title"]');
+                if (metaTitleElement) {
+                  jobTitle = metaTitleElement.getAttribute('content')?.trim();
+                  log(`Found job title from meta tag: ${jobTitle}`);
+                }
+              }
+            }
+
+            // If no stored URL or invalid URL, try to get from page
+            if (!jobUrl || jobUrl.includes('undefined')) {
+              const urlParams = new URLSearchParams(window.location.search);
+              const jk = urlParams.get('jk') || urlParams.get('jobKey');
+              if (jk) {
+                jobUrl = `https://in.indeed.com/viewjob?jk=${jk}`;
+                log(`Constructed job URL from params: ${jobUrl}`);
+              }
+            }
+
+            // Get the current job title and URL from the page
+            if (!jobTitle || jobTitle.includes('application has been submitted')) {
+              chrome.storage.local.get(['tempJobTitle', 'lastIndeedJobUrl'], (result) => {
+                jobTitle = result.tempJobTitle;
+                jobUrl = result.lastIndeedJobUrl || window.location.href;
+
+                if (!jobTitle || jobTitle.includes('application has been submitted')) {
+                  // If still no title, try to get it from the current page
+                  const jk = new URL(jobUrl).searchParams.get('jk');
+                  log(`Attempting to fetch job details for jk: ${jk}`);
+
+                  if (!jk) {
+                    log(`No job ID found in URL: ${jobUrl}`);
+                    jobTitle = `Indeed Job (Unknown)`;
+                  } else {
+                    // Try to get the job title from the current page first
+                    const currentPageSelectors = [
+                      '[data-testid="jobsearch-JobInfoHeader-title"]',
+                      '[data-testid="jobTitle"]',
+                      '[data-testid="job-title"]',
+                      '[data-testid="jobTitle-heading"]',
+                      'h1.jobsearch-JobInfoHeader-title',
+                      'h1.jobsearch-JobInfoHeader-title-color',
+                      '.jobsearch-JobInfoHeader-title',
+                      '.jobsearch-JobInfoHeader-title-container h1'
+                    ];
+
+                    // Try to find the title in the current page first
+                    for (const selector of currentPageSelectors) {
+                      const element = document.querySelector(selector);
+                      if (element) {
+                        const title = element.textContent?.trim();
+                        if (title && !title.includes('application has been submitted')) {
+                          jobTitle = title;
+                          log(`Found job title from current page: ${jobTitle}`);
+                          break;
+                        }
+                      }
+                    }
+
+                    // If still no title, fetch it from the job page
+                    if (!jobTitle || jobTitle.includes('application has been submitted')) {
+                      log(`Fetching job details for jk: ${jk}`);
+                      fetch(`https://in.indeed.com/viewjob?jk=${jk}`)
+                        .then(response => response.text())
+                        .then(html => {
+                          const parser = new DOMParser();
+                          const doc = parser.parseFromString(html, 'text/html');
+
+                          // Try meta tags first
+                          const metaTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content')
+                            || doc.querySelector('meta[name="title"]')?.getAttribute('content');
+
+                          if (metaTitle && !metaTitle.includes('application has been submitted')) {
+                            jobTitle = metaTitle;
+                            log(`Found job title from meta tags: ${jobTitle}`);
+                          } else {
+                            // Try DOM selectors
+                            for (const selector of currentPageSelectors) {
+                              const element = doc.querySelector(selector);
+                              if (element) {
+                                const title = element.textContent?.trim();
+                                if (title && !title.includes('application has been submitted')) {
+                                  jobTitle = title;
+                                  log(`Found job title from fetched page: ${jobTitle}`);
+                                  break;
+                                }
+                              }
+                            }
+                          }
+
+                          // If still no title, use platform-specific fallback
+                          if (!jobTitle || jobTitle.includes('application has been submitted')) {
+                            jobTitle = `Indeed_job`;
+                            log(`Using platform fallback title: ${jobTitle}`);
+                          }
+                        })
+                        .catch(error => {
+                          log(`Error fetching job details: ${error}`);
+                          jobTitle = `Indeed_job`;
+                          log(`Using platform fallback title after error: ${jobTitle}`);
+                        });
+                    }
+                  }
+                }
+              });
+            }
+
+            if (!jobUrl) {
+              jobUrl = window.location.href;
+              log(`Using current URL as fallback: ${jobUrl}`);
+            }
+
+            // Save the job details to analytics
+            if (jobTitle && jobUrl) {
+              log(`Saving job to analytics - Title: ${jobTitle}, URL: ${jobUrl}`);
+              saveJobToAnalytics(jobTitle, jobUrl, 'Applied');
+            } else {
+              log('Missing job details for analytics save');
+            }
+
+            // Always attempt to save, even with fallback data
+            try {
+              const titleParam = jobTitle && !jobTitle.startsWith('Unknown') && !/Indeed_job/i.test(jobTitle) ? jobTitle : undefined;
+              await saveJobToAnalytics(titleParam, jobUrl, 'Applied');
+              log('Successfully saved job application to analytics');
+
+              // Clear temporary storage after successful save (delayed to allow multiple applications)
+              setTimeout(() => {
+                chrome.storage.local.remove([
+                  'tempJobTitle',
+                  'lastIndeedJobUrl',
+                  'lastIndeedCompanyName',
+                  'tempJobApplyStartTime'
+                ], () => {
+                  log('Cleared temporary storage after successful save (delayed)');
+                });
+              }, 5000); // 5 second delay
+            } catch (error) {
+              log('Error saving job application: ' + error);
+            }
+          });
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+
       const appContext = await getApplicationContext();
 
       const firstNameInput = await domHelpers.waitForElement(
@@ -1481,6 +2155,117 @@ export default async function automateIndeedApplication(rawData: any) {
     );
     if (confirmationHeader) {
       log(" Success! Application submitted. Confirmation page detected.");
+
+      // Debug: Check all storage
+      log("=== DEBUG: Checking all storage ===");
+      chrome.storage.local.get(null, (allData) => {
+        log(
+          "All chrome.storage.local data: " + JSON.stringify(allData, null, 2)
+        );
+      });
+
+      try {
+        const sessionData = sessionStorage.getItem("indeedJobData");
+        log("SessionStorage data: " + sessionData);
+      } catch (e) {
+        log("SessionStorage error: " + e);
+      }
+
+      try {
+        // First try to get data from chrome.storage.local
+        chrome.storage.local.get(
+          [
+            "tempJobTitle",
+            "lastIndeedJobUrl",
+            "lastIndeedCompanyName",
+            "tempJobApplyStartTime",
+          ],
+          async (result) => {
+            log(
+              "Retrieved from chrome.storage: " +
+              JSON.stringify(result, null, 2)
+            );
+
+            let jobTitle = result.tempJobTitle;
+            let jobUrl = result.lastIndeedJobUrl;
+            let companyName = result.lastIndeedCompanyName;
+
+            // Check if we're on a confirmation page and jobTitle contains confirmation text
+            if (jobTitle && (
+              jobTitle.toLowerCase().includes("application has been submitted") ||
+              jobTitle.toLowerCase().includes("application submitted") ||
+              jobTitle.toLowerCase().includes("thank you") ||
+              jobTitle.toLowerCase().includes("confirmation") ||
+              jobTitle.toLowerCase().includes("applied successfully")
+            )) {
+              log(`Detected confirmation page title, using platform fallback`);
+              jobTitle = "Indeed_job";
+            }
+
+            // If not found in chrome.storage, try sessionStorage
+            if (!jobTitle || !jobUrl) {
+              try {
+                const sessionData = sessionStorage.getItem("indeedJobData");
+                log("Checking sessionStorage: " + sessionData);
+                if (sessionData) {
+                  const parsedData = JSON.parse(sessionData);
+                  jobTitle = parsedData.tempJobTitle || jobTitle;
+                  jobUrl = parsedData.lastIndeedJobUrl || jobUrl;
+                  companyName = parsedData.lastIndeedCompanyName || companyName;
+                  log("Retrieved job data from sessionStorage backup");
+                  
+                  // Check if sessionStorage jobTitle contains confirmation text
+                  if (jobTitle && (
+                    jobTitle.toLowerCase().includes("application has been submitted") ||
+                    jobTitle.toLowerCase().includes("application submitted") ||
+                    jobTitle.toLowerCase().includes("thank you") ||
+                    jobTitle.toLowerCase().includes("confirmation") ||
+                    jobTitle.toLowerCase().includes("applied successfully")
+                  )) {
+                    log(`Detected confirmation page title in sessionStorage, using platform fallback`);
+                    jobTitle = "Indeed_job";
+                  }
+                }
+              } catch (e) {
+                log("Failed to retrieve from sessionStorage: " + e);
+              }
+            }
+
+            // Simply save the job as Applied - don't try to update previous entries
+            if (jobTitle && jobUrl) {
+              log(
+                `Saving job as Applied: ${jobTitle} - ${jobUrl}`
+              );
+              log(`Attempting to save new Indeed job: ${jobTitle}`);
+              await saveJobToAnalytics(jobTitle, jobUrl, "Applied");
+              log("Job saved as Applied in analytics.");
+
+              // Clear all temporary storage after a delay to allow for multiple job applications
+              setTimeout(() => {
+                chrome.storage.local.remove([
+                  "tempJobTitle",
+                  "lastIndeedJobUrl", 
+                  "lastIndeedCompanyName",
+                  "tempJobApplyStartTime",
+                ], () => {
+                  log('Cleared temporary storage after delay for next job application');
+                });
+                try {
+                  sessionStorage.removeItem("indeedJobData");
+                } catch (e) { }
+              }, 5000); // 5 second delay to allow user to navigate to next job
+            } else {
+              log("Could not find job information for analytics.");
+              log(
+                `Available data - Title: ${jobTitle || "none"}, URL: ${jobUrl || "none"
+                }, Company: ${companyName || "none"}`
+              );
+            }
+          }
+        );
+      } catch (e) {
+        log("Failed to save job to analytics: " + (e as Error).message);
+      }
     } else {
       log(
         " Process finished, but could not confirm submission. Please check manually."

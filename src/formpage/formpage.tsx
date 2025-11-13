@@ -5,6 +5,7 @@ import {
   getCountryCallingCode,
   parsePhoneNumber,
 } from "react-phone-number-input";
+// @ts-ignore – module is implemented in plain JS without type definitions
 import { downloadJSON, uploadJSON } from "./components/JsonImportExport";
 import {
   saveUserData,
@@ -12,6 +13,7 @@ import {
   getUserData,
   getFileData,
 } from "../utils/storageHandler";
+import { scrapeLinkedInProfile, type LinkedInScrapedData } from "../utils/backendService";
 
 const INITIAL_FORM_DATA = {
   fullName: "",
@@ -106,13 +108,16 @@ const FormPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isEditable, setIsEditable] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [resumeUrl, setResumeUrl] = useState(null);
-  const [cvUrl, setCvUrl] = useState(null);
+const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [resumeName, setResumeName] = useState("");
   const [cvName, setCvName] = useState("");
+  const [linkedinUrlInput, setLinkedinUrlInput] = useState("");
+  const [isScrapingLinkedIn, setIsScrapingLinkedIn] = useState(false);
+  const [scrapeError, setScrapeError] = useState("");
 
   // Utility function to convert ArrayBuffer to Base64
-  const arrayBufferToBase64 = useCallback((buffer) => {
+const arrayBufferToBase64 = useCallback((buffer: ArrayBuffer) => {
     let binary = "";
     const bytes = new Uint8Array(buffer);
     for (let i = 0; i < bytes.byteLength; i++) {
@@ -123,7 +128,7 @@ const FormPage = () => {
 
   // Save file to Chrome storage
   const saveFileToLocalStorage = useCallback(
-    (file, location) => {
+(file: File, location: "resume" | "cv") => {
       if (!file) {
         alert("No file selected");
         return;
@@ -131,7 +136,14 @@ const FormPage = () => {
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        const fileContent = event.target?.result;
+const fileContent = event.target?.result;
+        if (!fileContent) {
+          alert("Error reading file");
+          return;
+        }
+
+        // Ensure fileContent is ArrayBuffer
+        const buffer = fileContent as ArrayBuffer;
         const fileName = file.name;
 
         if (!fileContent) {
@@ -139,7 +151,7 @@ const FormPage = () => {
           return;
         }
 
-        const base64String = arrayBufferToBase64(fileContent);
+const base64String = arrayBufferToBase64(buffer);
         const fileUrl = `data:application/pdf;base64,${base64String}`;
 
         const storageData = {
@@ -184,7 +196,19 @@ const FormPage = () => {
             userData?.data?.details &&
             typeof userData.data.details === "object"
           ) {
-            setFormData(userData.data.details);
+            // Merge details with experience data from root level
+            const mergedFormData = {
+              ...userData.data.details,
+              workExperiences: userData.data.workExperiences || userData.data.details.workExperiences || INITIAL_FORM_DATA.workExperiences,
+              projectExperiences: userData.data.projectExperiences || userData.data.details.projectExperiences || INITIAL_FORM_DATA.projectExperiences,
+              educationExperiences: userData.data.educationExperiences || userData.data.details.educationExperiences || INITIAL_FORM_DATA.educationExperiences,
+            };
+            setFormData(mergedFormData);
+            console.log("Loaded form data with experiences:", {
+              workExp: mergedFormData.workExperiences.length,
+              projectExp: mergedFormData.projectExperiences.length,
+              eduExp: mergedFormData.educationExperiences.length
+            });
           } else {
             console.warn(
               "No valid user data found in storage, using default form data"
@@ -220,7 +244,7 @@ const FormPage = () => {
   }, []);
 
   // Handle form input changes
-  const handleChange = useCallback((e) => {
+const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -229,7 +253,7 @@ const FormPage = () => {
   }, []);
 
   // Handle phone number changes
-  const handlePhoneChange = useCallback((field, value) => {
+const handlePhoneChange = useCallback((field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -237,7 +261,7 @@ const FormPage = () => {
   }, []);
 
   // Parse phone numbers and extract country codes
-  const parsePhoneNumbers = useCallback((data) => {
+const parsePhoneNumbers = useCallback((data: any) => {
     const updates = {
       phoneCode: "",
       phoneNumber: "",
@@ -249,9 +273,8 @@ const FormPage = () => {
       try {
         const phoneNumberObj = parsePhoneNumber(data.phoneNumber);
         if (phoneNumberObj) {
-          const countryCallingCode = getCountryCallingCode(
-            phoneNumberObj.country
-          );
+const countryCallingCode = phoneNumberObj.country ?
+            getCountryCallingCode(phoneNumberObj.country as any) : "";
           updates.phoneCode = `+${countryCallingCode}`;
           updates.phoneNumber = phoneNumberObj.nationalNumber.toString();
         }
@@ -264,9 +287,8 @@ const FormPage = () => {
       try {
         const phoneAltObj = parsePhoneNumber(data.phoneAlternativeNumber);
         if (phoneAltObj) {
-          const countryCallingCode = getCountryCallingCode(
-            phoneAltObj?.country
-          );
+const countryCallingCode = phoneAltObj?.country ?
+            getCountryCallingCode(phoneAltObj.country as any) : "";
           updates.phoneAlternativeCode = `+${countryCallingCode}`;
           updates.phoneAlternativeNumber =
             phoneAltObj.nationalNumber.toString();
@@ -280,8 +302,8 @@ const FormPage = () => {
   }, []);
 
   // Handle form submission
-  const handleSubmit = useCallback(
-    async (e) => {
+const handleSubmit = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
 
       try {
@@ -339,25 +361,27 @@ const FormPage = () => {
   );
 
   // Handle edit mode toggle
-  const handleEdit = useCallback((e) => {
+const handleEdit = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsEditable(true);
   }, []);
 
   // Handle file uploads
-  const handleResumeChange = useCallback(
-    (e) => {
+const handleResumeChange = useCallback(
+(e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files || e.target.files.length === 0) return;
       e.preventDefault();
-      const file = e.target.files[0];
+      const file = e.target.files![0];
       saveFileToLocalStorage(file, "resume");
     },
     [saveFileToLocalStorage]
   );
 
-  const handleCvChange = useCallback(
-    (e) => {
+const handleCvChange = useCallback(
+(e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files || e.target.files.length === 0) return;
       e.preventDefault();
-      const file = e.target.files[0];
+      const file = e.target.files![0];
       saveFileToLocalStorage(file, "cv");
     },
     [saveFileToLocalStorage]
@@ -372,22 +396,22 @@ const FormPage = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
-  const goToStep = useCallback((step) => {
+const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
   }, []);
 
   // Handle JSON import/export
   const handleDownloadJSON = useCallback(
-    (e) => {
+(e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       downloadJSON(formData);
     },
     [formData]
   );
 
-  const handleUploadJSON = useCallback((e) => {
+const handleUploadJSON = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    uploadJSON((jsonData) => {
+uploadJSON((jsonData: any) => {
       setFormData(jsonData);
       saveUserData(
         {
@@ -406,6 +430,89 @@ const FormPage = () => {
       );
     });
   }, []);
+
+  // Handle LinkedIn scraping
+  const handleLinkedInScrape = useCallback(async () => {
+
+    if (!linkedinUrlInput.trim()) {
+      console.log("Error: No LinkedIn URL provided");
+      setScrapeError("Please enter a LinkedIn profile URL");
+      return;
+    }
+
+    console.log("Starting LinkedIn scraping for URL:", linkedinUrlInput.trim());
+    setIsScrapingLinkedIn(true);
+    setScrapeError("");
+
+    try {
+      console.log("Calling scrapeLinkedInProfile function...");
+      const result = await scrapeLinkedInProfile(linkedinUrlInput.trim());
+      console.log("scrapeLinkedInProfile result:", result);
+      
+      if (!result.success || !result.data) {
+        setScrapeError(result.error || "Failed to scrape LinkedIn profile");
+        return;
+      }
+
+      const scrapedData = result.data;
+    
+      const convertedWorkExperiences = scrapedData.workExperiences?.map(exp => ({
+        ...exp,
+        skills: Array.isArray(exp.skills) ? exp.skills.join(', ') : exp.skills || ''
+      })) || [];
+      
+      const convertedProjectExperiences = scrapedData.projectExperiences?.map(exp => ({
+        ...exp,
+        skills: Array.isArray(exp.skills) ? exp.skills.join(', ') : exp.skills || ''
+      })) || [];
+      
+      const convertedEducationExperiences = scrapedData.educationExperiences?.map(exp => ({
+        ...exp,
+        skills: Array.isArray(exp.skills) ? exp.skills.join(', ') : exp.skills || ''
+      })) || [];
+
+      setFormData(prev => {
+        const updatedFormData = {
+          ...prev,
+          fullName: scrapedData.fullName || prev.fullName,
+          firstName: scrapedData.firstName || prev.firstName,
+          lastName: scrapedData.lastName || prev.lastName,
+          city: scrapedData.city || prev.city,
+          state: scrapedData.state || prev.state,
+          country: scrapedData.country || prev.country,
+          gender: scrapedData.gender || prev.gender,
+          linkedinUrl: scrapedData.linkedinUrl || prev.linkedinUrl,
+          workedPreviously: scrapedData.workedPreviously || prev.workedPreviously,
+          degree: scrapedData.degree || prev.degree,
+          workExperiences: convertedWorkExperiences.length > 0 ? convertedWorkExperiences : prev.workExperiences,
+          projectExperiences: convertedProjectExperiences.length > 0 ? convertedProjectExperiences : prev.projectExperiences,
+          educationExperiences: convertedEducationExperiences.length > 0 ? convertedEducationExperiences : prev.educationExperiences,
+        };
+        
+        console.log("Updated form data with scraped experiences:", {
+          workExperiences: updatedFormData.workExperiences.length,
+          projectExperiences: updatedFormData.projectExperiences.length,
+          educationExperiences: updatedFormData.educationExperiences.length,
+          workExpData: updatedFormData.workExperiences,
+          projectExpData: updatedFormData.projectExperiences,
+          eduExpData: updatedFormData.educationExperiences
+        });
+        
+        return updatedFormData;
+      });
+
+
+      setLinkedinUrlInput("");
+      
+      console.log("LinkedIn profile scraped and form updated successfully");
+      
+    } catch (error) {
+      console.error("Error scraping LinkedIn:", error);
+      setScrapeError("An unexpected error occurred while scraping");
+    } finally {
+      setIsScrapingLinkedIn(false);
+    }
+  }, [linkedinUrlInput]);
 
   if (loading) {
     return (
@@ -479,9 +586,63 @@ const FormPage = () => {
         </button>
       </div>
 
+      {/* LinkedIn Scraping Section */}
+      {/* <div className="linkedin-scrape-section" style={{ margin: '20px 0', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
+        <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+          Fill from LinkedIn Profile
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <input
+            type="text"
+            value={linkedinUrlInput}
+            onChange={(e) => setLinkedinUrlInput(e.target.value)}
+            placeholder="https://linkedin.com/in/username"
+            disabled={isScrapingLinkedIn}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px',
+              outline: 'none',
+              opacity: isScrapingLinkedIn ? 0.6 : 1
+            }}
+          />
+          <button
+            onClick={handleLinkedInScrape}
+            disabled={isScrapingLinkedIn || !linkedinUrlInput.trim()}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: isScrapingLinkedIn ? '#9ca3af' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: isScrapingLinkedIn ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            {isScrapingLinkedIn && (
+              <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"></circle>
+                <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"></path>
+              </svg>
+            )}
+            {isScrapingLinkedIn ? 'Scraping...' : 'Fill Data'}
+          </button>
+        </div>
+        {scrapeError && (
+          <div style={{ marginTop: '8px', padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#dc2626', fontSize: '14px' }}>
+            {scrapeError}
+          </div>
+        )}
+      </div> */}
+
       {/* Form Content */}
       <div className="form-card">
-        <form className="form-content">
+<form className="form-content" onSubmit={(e) => e.preventDefault()}>
           <FormSteps
             currentStep={currentStep}
             formData={formData}

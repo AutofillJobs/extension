@@ -1,3 +1,5 @@
+
+import fillOracleForm from './oracle/oracleScript'
 import {
   initializeStorage,
   getToggleState,
@@ -62,6 +64,8 @@ async function initialize() {
 
   const isWorkdaySite = window.location.hostname.includes("workday");
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
+  const isOracle = window.location.hostname.includes('oracle');
+
   const icimsSite = window.location.hostname.includes("icims");
   const isZohoSite = window.location.hostname.includes("zoho");
   const isSuccessFactorsSite =
@@ -97,7 +101,18 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) autofillICIMS(userData, null);
       });
-    } else if (isZohoSite && toggleState) {
+    } 
+    else if(isOracle && toggleState) {
+      console.log("Filling Oracle Form");
+      getUserData((userData) => {
+        if(userData?.data?.details){
+          fillOracleForm(userData);
+          console.log(userData);
+          
+        }
+      })
+    } 
+    else if (isZohoSite && toggleState) {
       console.log("Filling ZOHO form");
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);
@@ -143,8 +158,13 @@ window.addEventListener("load", initialize);
 
 // Listen for refetchData message from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('[ContentScript] Message received:', message);
+  
   if (message.action === "refetchData") {
+    console.log('[ContentScript] Processing refetchData request');
     getToggleState((toggleState) => {
+      console.log('[ContentScript] Toggle state:', toggleState);
+      
       if (toggleState) {
         // Re-run form filling logic
         const isWorkdaySite = window.location.hostname.includes("workday");
@@ -170,41 +190,79 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         );
 
         getUserData((userData) => {
-          if (isWorkdaySite) {
-            console.log("Refilling Workday form");
-            if (userData?.data?.details) fillWorkdayForm(userData);
-          } else if (isGreenhouseSite) {
-            console.log("Refilling Greenhouse form");
-            if (userData?.data?.details) fillGreenhouseFields(userData);
-          } else if (icimsSite) {
-            console.log("Refilling ICIMS form");
-            if (userData?.data?.details) autofillICIMS(userData, null);
-          } else if (isZohoSite) {
-            console.log("Refilling ZOHO form");
-            if (userData?.data?.details) fillZohoForm(userData);
-          } else if (isSuccessFactorsSite) {
-            console.log("Refilling SuccessFactors form");
-            if (userData?.data?.details) fillSuccessFactorsForm(userData);
-          } else if (isLeverSite) {
-            console.log("Refilling Lever form");
-            if (userData?.data?.details) fillLeverForm(userData);
-          } else if (isSmartRecruitersSite) {
-            console.log("Refilling SmartRecruiters form");
-            if (userData?.data?.details) fillSmartRecruitersForm(userData);
-          } else if (isLinkedInSite) {
-            console.log("Refilling LinkedIn form");
-            const linkedInData = userData?.data?.details || userData;
-            if (linkedInData) fillLinkedInForm(linkedInData);
-          } else if (isIndeedApplyPage || (isIndeedJobPage && toggleState)) {
-            console.log("Refilling Indeed form");
-            if (userData?.data?.details) automateIndeedApplication(userData);
-          } else {
-            console.log("Refilling generic form");
-            initializeFormFiller();
+          console.log('[ContentScript] Retrieved userData:', userData);
+          
+          // Validate userData structure
+          if (!userData) {
+            console.error('[ContentScript] Invalid formData structure: userData is null/undefined');
+            sendResponse({ success: false, error: 'No user data found' });
+            return;
+          }
+          
+          // Normalize userData structure
+          const formData = userData.data || userData;
+          console.log('[ContentScript] Normalized formData:', formData);
+          
+          if (!formData) {
+            console.error('[ContentScript] Invalid formData structure:', formData);
+            sendResponse({ success: false, error: 'Invalid data structure' });
+            return;
+          }
+
+          try {
+            if (isWorkdaySite) {
+              console.log("Refilling Workday form");
+              if (formData.details) fillWorkdayForm({ data: formData });
+            } else if (isGreenhouseSite) {
+              console.log("Refilling Greenhouse form");
+              if (formData.details) fillGreenhouseFields({ data: formData });
+            } else if (icimsSite) {
+              console.log("Refilling ICIMS form");
+              if (formData.details) autofillICIMS({ data: formData }, null);
+            } else if (isZohoSite) {
+              console.log("Refilling ZOHO form");
+              if (formData.details) fillZohoForm({ data: formData });
+            } else if (isSuccessFactorsSite) {
+              console.log("Refilling SuccessFactors form");
+              if (formData.details) fillSuccessFactorsForm({ data: formData });
+            } else if (isLeverSite) {
+              console.log("Refilling Lever form");
+              if (formData.details) fillLeverForm({ data: formData });
+            } else if (isSmartRecruitersSite) {
+              console.log("Refilling SmartRecruiters form");
+              if (formData.details) fillSmartRecruitersForm({ data: formData });
+            } else if (isLinkedInSite) {
+              console.log("Refilling LinkedIn form");
+              const linkedInData = formData.details || formData;
+              if (linkedInData) fillLinkedInForm(linkedInData);
+            } else if (isIndeedApplyPage || (isIndeedJobPage && toggleState)) {
+              console.log("Refilling Indeed form");
+              if (formData.details) automateIndeedApplication({ data: formData });
+            } else {
+              console.log("Refilling generic form with dataFill");
+              // Import dataFill function for generic form filling
+              import('./autoFormFill/formFiller').then(({ dataFill }) => {
+                if (formData) {
+                  dataFill(formData);
+                } else {
+                  console.error('No form data available for generic filling');
+                }
+              });
+            }
+            sendResponse({ success: true });
+          } catch (error: any) {
+            console.error('[ContentScript] Error during form filling:', error);
+            sendResponse({ success: false, error: error.message });
           }
         });
+      } else {
+        console.log('[ContentScript] Autofill is disabled');
+        sendResponse({ success: false, error: 'Autofill is disabled' });
       }
     });
+    return true; // Keep message port open for async response
+  } else {
+    console.log('[ContentScript] Message type not handled:', message?.type || message?.action);
   }
 });
 
