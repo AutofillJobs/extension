@@ -251,7 +251,7 @@ export default function fillWorkdayForm(data: FormData): void {
     const isAutoClickEnabled = async (): Promise<boolean> => {
         return new Promise((resolve) => {
             chrome.storage.local.get(['autoClickToggleState'], (result) => {
-                const enabled = result.autoClickToggleState !== false; // Default to true if not set
+                const enabled = result.autoClickToggleState === true;
                 console.log('[WorkdayNew] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
                 resolve(enabled);
             });
@@ -1387,6 +1387,28 @@ export default function fillWorkdayForm(data: FormData): void {
             // Similar dropdown handling for veteran status
         }
     }
+<<<<<<< HEAD
+=======
+
+    async function clickNextButton() {
+        const autoClickAllowed = await isAutoClickEnabled();
+        if (!autoClickAllowed) {
+            console.warn('[workdaynewScript] Auto-click is disabled via toggle. Save and Continue button will not be clicked automatically.');
+            return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const nextBtn = document.querySelector<HTMLButtonElement>('button[data-automation-id="pageFooterNextButton"]');
+        if (nextBtn && !nextBtn.disabled) {
+            nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nextBtn.focus();
+            nextBtn.click();
+            console.log('[workdaynewScript] Save and Continue button clicked automatically.');
+        } else {
+            console.warn('[workdaynewScript] Save and Continue button not found or disabled.');
+        }
+    }
+
+>>>>>>> edbc764 (App-enhancement_working)
     const fillExperience = (index: number): void => {
         const workExperiences = data?.data?.workExperiences;
         if (!workExperiences || !Array.isArray(workExperiences)) return;

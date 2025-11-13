@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import {
   detectPreliminaryQuestionsPage,
   fillPreliminaryQuestions,
@@ -49,8 +49,7 @@ export const domHelpers = {
 
   delay: (ms: number) => new Promise((r) => setTimeout(r, ms)),
   // quickDelay caps the wait to 300 ms to keep script responsive
-  quickDelay: (ms: number) =>
-    new Promise((r) => setTimeout(r, Math.min(ms, 300))),
+  quickDelay: (ms: number) => new Promise((r) => setTimeout(r, Math.min(ms, 300))),
 };
 
 const waitForNewForm = async (
@@ -326,27 +325,9 @@ async function fillYourProfiles(details: any) {
   console.log(" Your Profiles section filled.");
 }
 
-// Helper function to check if auto-click is enabled
-async function isAutoClickEnabled(): Promise<boolean> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['autoClickToggleState'], (result) => {
-      const enabled = result.autoClickToggleState !== false; // Default to true if not set
-      console.log('[SmartRecruit] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
-      resolve(enabled);
-    });
-  });
-}
-
 // Function to handle clicking the 'Next' or 'Continue' button
 async function clickNextButton(): Promise<boolean> {
   console.log(" Looking for Next/Continue button...");
-
-  // Check auto-click toggle state
-  const autoClickAllowed = await isAutoClickEnabled();
-  if (!autoClickAllowed) {
-    console.warn(" Auto-click is disabled. Next/Continue button will not be clicked automatically.");
-    return false;
-  }
 
   const primarySelectors = [
     'button[data-test="next-button"]',
@@ -369,7 +350,7 @@ async function clickNextButton(): Promise<boolean> {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       await domHelpers.delay(400);
       el.click();
-      await domHelpers.quickDelay(600);
+await domHelpers.quickDelay(600);
       return true;
     }
   }
@@ -387,14 +368,11 @@ async function clickNextButton(): Promise<boolean> {
     if (!txt) continue;
     if (textCandidates.some((t) => txt.includes(t))) {
       console.log(` Found Next/Continue by text: "${txt}"`);
-      // Double-check auto-click is still enabled (redundant but safe)
-      if (autoClickAllowed) {
-        e.scrollIntoView({ behavior: "smooth", block: "center" });
-        await domHelpers.delay(400);
-        e.click();
-        await domHelpers.delay(3000);
-        return true;
-      }
+      e.scrollIntoView({ behavior: "smooth", block: "center" });
+      await domHelpers.delay(400);
+      e.click();
+      await domHelpers.delay(3000);
+      return true;
     }
   }
 
@@ -926,9 +904,9 @@ async function fillEducationForm(form: HTMLElement, education: any) {
       input.value = value;
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await domHelpers.quickDelay(300);
+await domHelpers.quickDelay(300);
 
-      await domHelpers.quickDelay(500);
+await domHelpers.quickDelay(500);
 
       const autocompleteSelectors = [
         ".c-spl-autocomplete-default-option",
@@ -970,7 +948,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         });
 
         input.dispatchEvent(arrowDownEvent);
-        await domHelpers.quickDelay(200);
+await domHelpers.quickDelay(200);
 
         console.log(`⏎ Pressing Enter to confirm selection`);
         const enterEvent = new KeyboardEvent("keydown", {
@@ -984,7 +962,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
         });
 
         input.dispatchEvent(enterEvent);
-        await domHelpers.quickDelay(300);
+await domHelpers.quickDelay(300);
 
         input.dispatchEvent(
           new KeyboardEvent("keyup", {
@@ -1211,7 +1189,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
 
           if (dayToClick) {
             (dayToClick as HTMLElement).click();
-            await domHelpers.quickDelay(150);
+await domHelpers.quickDelay(150);
           }
 
           (dateInput as HTMLElement).dispatchEvent(
@@ -1313,7 +1291,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
           composed: true,
         });
         targetInput.dispatchEvent(enterEvent);
-        await domHelpers.quickDelay(200);
+await domHelpers.quickDelay(200);
       }
 
       targetInput.dispatchEvent(
@@ -1397,7 +1375,7 @@ async function fillEducationForm(form: HTMLElement, education: any) {
   ) as HTMLElement;
   if (saveButton) {
     saveButton.click();
-    await domHelpers.quickDelay(300);
+await domHelpers.quickDelay(300);
     console.log("Education entry saved.");
   } else {
     console.warn(" Save button not found.");
@@ -1509,41 +1487,24 @@ async function fillExperienceForm(form: HTMLElement, experience: any) {
       input.focus();
       await domHelpers.quickDelay(100);
 
-      const needsAutocomplete =
-        element.tagName === "SPL-AUTOCOMPLETE" ||
-        fieldName.toLowerCase().includes("location") ||
-        fieldName.toLowerCase().includes("title") ||
-        fieldName.toLowerCase().includes("company");
+      const needsAutocomplete = element.tagName === 'SPL-AUTOCOMPLETE' || fieldName.toLowerCase().includes('location') || fieldName.toLowerCase().includes('title') || fieldName.toLowerCase().includes('company');
 
       if (needsAutocomplete) {
-        input.value = value;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        // small pause so SmartRecruiters autocomplete can generate the list
-        await domHelpers.quickDelay(200);
-        input.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: "ArrowDown",
-            code: "ArrowDown",
-            keyCode: 40,
-            bubbles: true,
-          })
-        );
+input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  // small pause so SmartRecruiters autocomplete can generate the list
+  await domHelpers.quickDelay(200);
+  input.dispatchEvent(new KeyboardEvent('keydown', { key:'ArrowDown', code:'ArrowDown', keyCode:40, bubbles:true }));
         await domHelpers.quickDelay(150);
-        input.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: "Enter",
-            code: "Enter",
-            keyCode: 13,
-            bubbles: true,
-          })
-        );
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-        // brief pause to let selection stick
-        await domHelpers.quickDelay(150);
+input.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, bubbles:true }));
+  input.dispatchEvent(new Event('change', { bubbles:true }));
+  // brief pause to let selection stick
+  await domHelpers.quickDelay(150);
       } else {
         input.value = value;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
       }
+
 
       const autocompleteSelectors = [
         ".c-spl-autocomplete-default-option",
@@ -2478,8 +2439,7 @@ export default async function fillSmartRecruitersForm(userData: any) {
     }
 
     // --- Check for Preliminary Questions page ---
-    const isPreliminaryQuestionsPage = await detectPreliminaryQuestionsPage(
-    );
+    const isPreliminaryQuestionsPage = await detectPreliminaryQuestionsPage();
     if (isPreliminaryQuestionsPage) {
       console.log(" Detected Preliminary Questions page");
       await fillPreliminaryQuestions();

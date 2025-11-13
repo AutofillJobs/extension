@@ -21,7 +21,7 @@ const App = () => {
 const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
   // State variables for the popup UI
   const [autofillEnabled, setAutofillEnabled] = useState(true);
-  const [autoClickEnabled, setAutoClickEnabled] = useState(true);
+  const [autoClickEnabled, setAutoClickEnabled] = useState(false);
   const [applicationsToday, setApplicationsToday] = useState(0);
   const [applicationsTotal, setApplicationsTotal] = useState(0);
   const [jobAddedFeedback, setJobAddedFeedback] = useState(false);
@@ -35,6 +35,7 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
       setIsLoading(true);
       
       // Load toggle state from chrome storage
+<<<<<<< HEAD
       chrome.storage.local.get(['toggleState', 'autoClickToggleState'], (result) => {
         console.log('[Popup] Loading toggle states from storage:', result);
         
@@ -45,6 +46,31 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
           console.log('[Popup] No autofill state found, defaulting to true');
           chrome.storage.local.set({ toggleState: true });
           setAutofillEnabled(true);
+=======
+      chrome.storage.local.get(
+        ["toggleState", "autoClickToggleState"],
+        (result) => {
+          console.log("[Popup] Loading toggle states from storage:", result);
+
+          if (result.toggleState !== undefined) {
+            console.log("[Popup] Setting autofill to:", result.toggleState);
+            setAutofillEnabled(result.toggleState);
+          } else {
+            console.log("[Popup] No autofill state found, defaulting to true");
+            chrome.storage.local.set({ toggleState: true });
+            setAutofillEnabled(true);
+          }
+
+          setAutoClickEnabled(false);
+          chrome.storage.local.set({ autoClickToggleState: false });
+
+          console.log(
+            "[Popup] Final states - Autofill:",
+            result.toggleState !== undefined ? result.toggleState : true,
+            "Auto-click:",
+            false
+          );
+>>>>>>> edbc764 (App-enhancement_working)
         }
         
         if (result.autoClickToggleState !== undefined) {
@@ -91,6 +117,7 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
 
   // Function to handle the auto-click toggle
   const handleAutoClickToggle = () => {
+<<<<<<< HEAD
     const newAutoClickState = !autoClickEnabled;
     console.log('[Popup] 🔄 Auto-click toggle clicked - changing from', autoClickEnabled, 'to', newAutoClickState);
     setAutoClickEnabled(newAutoClickState);
@@ -109,6 +136,11 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
     
     chrome.runtime.sendMessage({ type: 'AUTO_CLICK_TOGGLE_CHANGED', value: newAutoClickState });
     console.log('[Popup] 📤 Auto-click toggle message sent to background script');
+=======
+    console.log("[Popup] Auto-click toggle disabled by configuration");
+    setAutoClickEnabled(false);
+    chrome.storage.local.set({ autoClickToggleState: false });
+>>>>>>> edbc764 (App-enhancement_working)
   };
 
   // Function to handle the "Fill Application" button click
@@ -207,9 +239,14 @@ const analyticsUrl = `${chrome.runtime.getURL('formpage.html')}#/analytics`;
             <div className="flex items-center space-x-2">
               <span className="text-xs text-white font-medium">Auto-Click Next</span>
               <div
+<<<<<<< HEAD
                 onClick={handleAutoClickToggle}
                 className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500
                   ${autoClickEnabled ? 'bg-green-500' : 'bg-slate-600'}
+=======
+                className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500
+                  ${autoClickEnabled ? "bg-green-500" : "bg-slate-600"}
+>>>>>>> edbc764 (App-enhancement_working)
                 `}
               >
                 <span className="sr-only">Toggle Auto-Click</span>

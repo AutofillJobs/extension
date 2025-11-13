@@ -83,9 +83,20 @@ const log = (message: string) => console.log(`[Indeed Auto Apply] ${message}`);
 // Helper function to check if auto-click is enabled
 async function isAutoClickEnabled(): Promise<boolean> {
   return new Promise((resolve) => {
+<<<<<<< HEAD
     chrome.storage.local.get(['autoClickToggleState'], (result) => {
       const enabled = result.autoClickToggleState !== false; // Default to true if not set
       console.log('[Indeed] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
+=======
+    chrome.storage.local.get(["autoClickToggleState"], (result) => {
+      const enabled = result.autoClickToggleState === true;
+      console.log(
+        "[Indeed] Auto-click toggle state from storage:",
+        result.autoClickToggleState,
+        "Resolved to:",
+        enabled
+      );
+>>>>>>> edbc764 (App-enhancement_working)
       resolve(enabled);
     });
   });

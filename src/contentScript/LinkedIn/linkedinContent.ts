@@ -190,7 +190,7 @@ const log = (message: string) => console.log(`[LinkedIn Auto Apply] ${message}`)
 async function isAutoClickEnabled(): Promise<boolean> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['autoClickToggleState'], (result) => {
-      const enabled = result.autoClickToggleState !== false; // Default to true if not set
+      const enabled = result.autoClickToggleState === true;
       console.log('[LinkedIn] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
       resolve(enabled);
     });
