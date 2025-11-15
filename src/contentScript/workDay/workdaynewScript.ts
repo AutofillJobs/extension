@@ -251,7 +251,7 @@ export default function fillWorkdayForm(data: FormData): void {
     const isAutoClickEnabled = async (): Promise<boolean> => {
         return new Promise((resolve) => {
             chrome.storage.local.get(['autoClickToggleState'], (result) => {
-                const enabled = result.autoClickToggleState !== false; // Default to true if not set
+                const enabled = result.autoClickToggleState === true; // Default to false if not set
                 console.log('[WorkdayNew] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
                 resolve(enabled);
             });
@@ -1391,15 +1391,22 @@ export default function fillWorkdayForm(data: FormData): void {
     }
 
     async function clickNextButton() {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for autofill to finish
+        const allowed = await isAutoClickEnabled();
+        if (!allowed) {
+            console.warn('[workdaynewScript] Auto-click disabled; user must click Next manually.');
+            return false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const nextBtn = document.querySelector<HTMLButtonElement>('button[data-automation-id="pageFooterNextButton"]');
         if (nextBtn && !nextBtn.disabled) {
             nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             nextBtn.focus();
             nextBtn.click();
             console.log('[workdaynewScript] Save and Continue button clicked automatically.');
+            return true;
         } else {
             console.warn('[workdaynewScript] Save and Continue button not found or disabled.');
+            return false;
         }
     }
 
