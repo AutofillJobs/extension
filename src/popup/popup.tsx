@@ -8,6 +8,8 @@ import {
   User,
 } from "lucide-react";
 
+import { syncDataFromBackend } from "../utils/storageHandler";
+
 // Define interface for recent applications
 interface RecentApplication {
   id: number;
@@ -33,7 +35,10 @@ const App = () => {
 
   // useEffect hook to load data and toggle state on component mount
   useEffect(() => {
-    const fetchData = () => {
+    const fetchData = async () => {
+      console.log("SYNC: Starting sync from Bubble backend...");
+      await syncDataFromBackend();
+      console.log("SYNC: Sync finished.");
       // Load toggle state from chrome storage
       chrome.storage.local.get(
         ["toggleState", "autoClickToggleState", "formData"],
