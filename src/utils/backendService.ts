@@ -84,6 +84,64 @@ interface LinkedInScrapedData {
   scrapedAt: string;
 }
 
+// bubble api service class
+
+interface AutofillDataRecord {
+  _id: string;
+  alt_email: string;
+  city: string;
+  country: string;
+  degree: string;
+  disability: boolean;
+  ethnicity: string;
+  expected_salary: number;
+  field: string;
+  grossSalary: number;
+  notice_period: string;
+  prefix: string;
+  served_in_military: boolean;
+  state: string;
+  veteran: boolean;
+  visa_sponsorship: boolean;
+  work_authorization: boolean;
+  worked_previously: boolean;
+  zip_code: string;
+  "Modified Date": string;
+  "Created Date": string;
+  "Created By": string;
+  Slug: string;
+}
+
+interface AutofillDataPayload {
+  alt_email?: string;
+  city?: string;
+  country?: string;
+  degree?: string;
+  disability?: boolean;
+  ethnicity?: string;
+  expected_salary?: number;
+  field?: string;
+  grossSalary?: number;
+  notice_period?: string;
+  prefix?: string;
+  served_in_military?: boolean;
+  state?: string;
+  veteran?: boolean;
+  visa_sponsorship?: boolean;
+  work_authorization?: boolean;
+  worked_previously?: boolean;
+  zip_code?: string;
+}
+
+interface BubbleAutofillResponse {
+  response: {
+    cursor: number;
+    results: Array<AutofillDataRecord>;
+    count: number;
+    remaining: number;
+  };
+}
+
 class BackendService {
   private config: BackendConfig;
 
@@ -265,6 +323,56 @@ class BackendService {
     }
   }
 
+
+  /**
+   * Fetch the authenticated user's autofill data from the 'AutofillUserData' table.
+   * Relies on Bubble privacy rules to return data only for the authenticated user.
+   */
+  async fetchUserData(): Promise<{
+    success: boolean;
+    data?: AutofillDataRecord; // Returns a single record
+    error?: string;
+  }> {
+    try {
+      // Endpoint for the 'AutofillUserData' table (case sensitive)
+      const response = await fetch(
+        `${this.config.baseUrl}/obj/AutofillUserData`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: BubbleAutofillResponse = await response.json();
+
+      // Privacy rules should return only the user's data.
+      // We assume they have only one autofill record, so we return the first.
+      if (data.response.results.length > 0) {
+        return {
+          success: true,
+          data: data.response.results[0],
+        };
+      }
+
+      // No data found for this user
+      return {
+        success: true,
+        data: undefined,
+      };
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
   /**
    * Sync user data to Bubble API
    * Checks if user exists, then creates or updates accordingly
@@ -276,7 +384,7 @@ class BackendService {
       // Extract only the required fields
       const payload: UserDataPayload = {
         email: userData.email || "",
-        // password: userData.password || "",
+        password: userData.password || "",
         address: userData.address || userData.country || "",
       };
 
@@ -425,7 +533,6 @@ class BackendService {
 // Import configuration
 import { getConfig } from "./config";
 
-
 // Create and export the service instance with dynamic configuration
 let backendServiceInstance: BackendService | null = null;
 
@@ -455,23 +562,27 @@ export async function scrapeLinkedInProfile(
   port: number = 5001
 ): Promise<{ success: boolean; data?: LinkedInScrapedData; error?: string }> {
   try {
-    if (!profileUrl || !profileUrl.includes('linkedin.com')) {
+    if (!profileUrl || !profileUrl.includes("linkedin.com")) {
       console.log("Invalid LinkedIn URL validation failed");
       return {
         success: false,
-        error: 'Invalid LinkedIn URL provided'
+        error: "Invalid LinkedIn URL provided",
       };
     }
 
     console.log("Making fetch request to:", `http://localhost:${port}/scrape`);
     const response = await fetch(`http://localhost:${port}/scrape`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ profileUrl }),
     });
-    console.log("Fetch response received:", response.status, response.statusText);
+    console.log(
+      "Fetch response received:",
+      response.status,
+      response.statusText
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -487,14 +598,21 @@ export async function scrapeLinkedInProfile(
       data,
     };
   } catch (error) {
-    console.error('Error scraping LinkedIn profile:', error);
+    console.error("Error scraping LinkedIn profile:", error);
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : 'Unknown error occurred while scraping',
+        error instanceof Error
+          ? error.message
+          : "Unknown error occurred while scraping",
     };
   }
 }
 
 // Export the class for testing or custom configurations
-export { BackendService, type BackendConfig, type UserDataPayload, type LinkedInScrapedData };
+export {
+  BackendService,
+  type BackendConfig,
+  type UserDataPayload,
+  type LinkedInScrapedData,
+};

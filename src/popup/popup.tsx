@@ -36,7 +36,7 @@ const App = () => {
     const fetchData = () => {
       // Load toggle state from chrome storage
       chrome.storage.local.get(
-        ["toggleState", "autoClickToggleState"],
+        ["toggleState", "autoClickToggleState", "formData"],
         (result) => {
           console.log("[Popup] Loading toggle states from storage:", result);
 
@@ -61,6 +61,12 @@ const App = () => {
               ? result.autoClickToggleState
               : true
           );
+
+          if (result.formData) {
+            console.log(" TEST: Data found in 'formData':", result.formData);
+          } else {
+            console.error(" TEST: No 'formData' key found in storage.");
+          }
         }
       );
       // Placeholder data for demonstration
@@ -118,7 +124,8 @@ const App = () => {
 
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") });
+    // chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") }); // old url that open the formpage in extension itself
+    chrome.tabs.create({ url: "https://applygoat.com/version-test/user_form" });
   };
 
   // Function to handle Add Job to Analytics click
@@ -227,8 +234,6 @@ const App = () => {
                 ></span>
               </div>
             </div> */}
-
-
           </div>
         </div>
 

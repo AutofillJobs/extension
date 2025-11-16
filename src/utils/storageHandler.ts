@@ -163,5 +163,51 @@ export function getFileData(callback: (fileData: any) => void) {
   });
 }
 
+/**
+ * Fetches user's autofill data from the Bubble backend
+ * and saves it to local storage ('formData').
+ */
+export async function syncDataFromBackend(callback?: (success: boolean, error?: string) => void) {
+  console.log("SYNC: Starting sync from Bubble backend...");
+  try {
+    const backendService = await getBackendService();
+    // 1. Fetch the data from Bubble
+    const { success, data, error } = await backendService.fetchUserData();
+
+    if (success && data) {
+      console.log("SYNC: Successfully fetched data from Bubble.", data);
+
+      // 2. Save the fetched data to local storage under the 'formData' key
+      await new Promise<void>((resolve, reject) => {
+        chrome.storage.local.set({ 'formData': data }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('SYNC: Error saving fetched data to local storage:', chrome.runtime.lastError);
+            reject(chrome.runtime.lastError);
+            return;
+          }
+          console.log('SYNC: Fetched data saved to local storage "formData" key.');
+          resolve();
+        });
+      });
+
+      if (callback) callback(true);
+      return; // Success!
+
+    } else if (error) {
+      // Fetch failed (e.g., 401 Unauthorized, API key wrong)
+      console.error('SYNC: Failed to fetch data from Bubble:', error);
+      if (callback) callback(false, error);
+    } else {
+      // Fetch succeeded but no data was found
+      console.log('SYNC: No autofill data found in Bubble for this user.');
+      if (callback) callback(true); // Not an "error" if no data exists
+    }
+
+  } catch (e) {
+    console.error('SYNC: A critical error occurred during sync:', e);
+    if (callback) callback(false, e instanceof Error ? e.message : 'Unknown error');
+  }
+}
+
 // Export backend service for direct access if needed
 export { getBackendService };
