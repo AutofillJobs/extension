@@ -142,6 +142,68 @@ interface BubbleAutofillResponse {
   };
 }
 
+// --- Added by Abhishek to get all user data for autofilling from bubble to extension ---
+
+interface UserProfileRecord {
+  _id: string;
+  phone_number: number;
+  skills: string;
+  summary: string;
+  twitter_url: string;
+}
+
+interface WorkExperienceRecord {
+  _id: string;
+  company_name: string;
+  job_title: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  still_working: boolean;
+  work_type: string;
+}
+
+interface EducationExperienceRecord {
+  _id: string;
+  college_name: string;
+  course_name: string;
+  field: string;
+  grade: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  still_studying: boolean;
+  education_type: string;
+}
+
+interface ProjectExperienceRecord {
+  _id: string;
+  project_name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  github_url: string;
+  host_url: string;
+  still_working: boolean;
+  ai_description: string;
+}
+
+interface AllUserData {
+  profile: UserProfileRecord;
+  work_experience: WorkExperienceRecord[];
+  education: EducationExperienceRecord[];
+  projects: ProjectExperienceRecord[];
+  autofill_data: AutofillDataRecord;
+}
+
+interface BubbleAllUserDataResponse {
+  response: AllUserData;
+}
+
+// --- End of addition by Abhishek ---
+
 class BackendService {
   private config: BackendConfig;
 
@@ -323,23 +385,28 @@ class BackendService {
     }
   }
 
-
   /**
-   * Fetch the authenticated user's autofill data from the 'AutofillUserData' table.
-   * Relies on Bubble privacy rules to return data only for the authenticated user.
+   * Fetches ALL user data (Profile, Work, Education, Projects, Autofill) added by Abhishek
+   * by calling the 'get_all_user_data' API Workflow.
    */
-  async fetchUserData(): Promise<{
+  async fetchAllUserData(): Promise<{
     success: boolean;
-    data?: AutofillDataRecord; // Returns a single record
+    data?: AllUserData;
     error?: string;
   }> {
     try {
-      // Endpoint for the 'AutofillUserData' table (case sensitive)
       const response = await fetch(
-        `${this.config.baseUrl}/obj/AutofillUserData`,
+        `${this.config.baseUrl}/wf/get_all_user_data?ts=${Date.now()}`,
         {
-          method: "GET",
-          headers: this.getHeaders(),
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+          credentials: "include",
+          cache: "no-store",
+          mode: "cors",
         }
       );
 
@@ -347,24 +414,13 @@ class BackendService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data: BubbleAutofillResponse = await response.json();
-
-      // Privacy rules should return only the user's data.
-      // We assume they have only one autofill record, so we return the first.
-      if (data.response.results.length > 0) {
-        return {
-          success: true,
-          data: data.response.results[0],
-        };
-      }
-
-      // No data found for this user
+      const json: BubbleAllUserDataResponse = await response.json();
       return {
         success: true,
-        data: undefined,
+        data: json.response,
       };
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("Error fetching all user data:", error);
       return {
         success: false,
         error:

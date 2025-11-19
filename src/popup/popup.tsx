@@ -87,6 +87,25 @@ const App = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== "local") return;
+      if (changes.formData) {
+        console.log("[Popup] formData updated:", changes.formData.newValue);
+      }
+      if (changes.toggleState) {
+        setAutofillEnabled(Boolean(changes.toggleState.newValue));
+      }
+      if (changes.autoClickToggleState) {
+        setAutoClickEnabled(Boolean(changes.autoClickToggleState.newValue));
+      }
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => {
+      chrome.storage.onChanged.removeListener(onChanged);
+    };
+  }, []);
+
   // Function to handle the autofill toggle
   const handleAutofillToggle = () => {
     const newToggleState = !autofillEnabled;
@@ -130,7 +149,7 @@ const App = () => {
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
     // chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") }); // old url that open the formpage in extension itself
-    chrome.tabs.create({ url: "https://applygoat.com/version-test/user_form" });
+    chrome.tabs.create({ url: "https://applygoat.com/version-test/profile" });
   };
 
   // Function to handle Add Job to Analytics click
