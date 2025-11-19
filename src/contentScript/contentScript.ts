@@ -1,9 +1,10 @@
-
-import fillOracleForm from './oracle/oracleScript'
+import fillOracleForm from "./oracle/oracleScript";
 import {
   initializeStorage,
   getToggleState,
   getUserData,
+  syncDataFromBackend,
+  getBackendService,
 } from "../utils/storageHandler";
 import {
   setupMessageListeners,
@@ -24,6 +25,7 @@ import {
 import fillLeverForm from "./lever/leverScript";
 import fillLinkedInForm from "./LinkedIn/linkedinContent";
 import automateIndeedApplication from "./Indeed/indeedContent";
+
 
 // Utility: Wait for input in DOM
 const waitForInput = (selector: string, timeout = 5000) => {
@@ -64,7 +66,7 @@ async function initialize() {
 
   const isWorkdaySite = window.location.hostname.includes("workday");
   const isGreenhouseSite = window.location.hostname.includes("greenhouse");
-  const isOracle = window.location.hostname.includes('oracle');
+  const isOracle = window.location.hostname.includes("oracle");
 
   const icimsSite = window.location.hostname.includes("icims");
   const isZohoSite = window.location.hostname.includes("zoho");
@@ -101,18 +103,15 @@ async function initialize() {
       getUserData((userData) => {
         if (userData?.data?.details) autofillICIMS(userData, null);
       });
-    } 
-    else if(isOracle && toggleState) {
+    } else if (isOracle && toggleState) {
       console.log("Filling Oracle Form");
       getUserData((userData) => {
-        if(userData?.data?.details){
+        if (userData?.data?.details) {
           fillOracleForm(userData);
           console.log(userData);
-          
         }
-      })
-    } 
-    else if (isZohoSite && toggleState) {
+      });
+    } else if (isZohoSite && toggleState) {
       console.log("Filling ZOHO form");
       getUserData((userData) => {
         if (userData?.data?.details) fillZohoForm(userData);
@@ -158,13 +157,13 @@ window.addEventListener("load", initialize);
 
 // Listen for refetchData message from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[ContentScript] Message received:', message);
-  
+  console.log("[ContentScript] Message received:", message);
+
   if (message.action === "refetchData") {
-    console.log('[ContentScript] Processing refetchData request');
+    console.log("[ContentScript] Processing refetchData request");
     getToggleState((toggleState) => {
-      console.log('[ContentScript] Toggle state:', toggleState);
-      
+      console.log("[ContentScript] Toggle state:", toggleState);
+
       if (toggleState) {
         // Re-run form filling logic
         const isWorkdaySite = window.location.hostname.includes("workday");
@@ -190,22 +189,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         );
 
         getUserData((userData) => {
-          console.log('[ContentScript] Retrieved userData:', userData);
-          
+          console.log("[ContentScript] Retrieved userData:", userData);
+
           // Validate userData structure
           if (!userData) {
-            console.error('[ContentScript] Invalid formData structure: userData is null/undefined');
-            sendResponse({ success: false, error: 'No user data found' });
+            console.error(
+              "[ContentScript] Invalid formData structure: userData is null/undefined"
+            );
+            sendResponse({ success: false, error: "No user data found" });
             return;
           }
-          
+
           // Normalize userData structure
           const formData = userData.data || userData;
-          console.log('[ContentScript] Normalized formData:', formData);
-          
+          console.log("[ContentScript] Normalized formData:", formData);
+
           if (!formData) {
-            console.error('[ContentScript] Invalid formData structure:', formData);
-            sendResponse({ success: false, error: 'Invalid data structure' });
+            console.error(
+              "[ContentScript] Invalid formData structure:",
+              formData
+            );
+            sendResponse({ success: false, error: "Invalid data structure" });
             return;
           }
 
@@ -237,37 +241,48 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               if (linkedInData) fillLinkedInForm(linkedInData);
             } else if (isIndeedApplyPage || (isIndeedJobPage && toggleState)) {
               console.log("Refilling Indeed form");
-              if (formData.details) automateIndeedApplication({ data: formData });
+              if (formData.details)
+                automateIndeedApplication({ data: formData });
             } else {
               console.log("Refilling generic form with dataFill");
               // Import dataFill function for generic form filling
-              import('./autoFormFill/formFiller').then(({ dataFill }) => {
+              import("./autoFormFill/formFiller").then(({ dataFill }) => {
                 if (formData) {
                   dataFill(formData);
                 } else {
-                  console.error('No form data available for generic filling');
+                  console.error("No form data available for generic filling");
                 }
               });
             }
             sendResponse({ success: true });
           } catch (error: any) {
-            console.error('[ContentScript] Error during form filling:', error);
+            console.error("[ContentScript] Error during form filling:", error);
             sendResponse({ success: false, error: error.message });
           }
         });
       } else {
-        console.log('[ContentScript] Autofill is disabled');
-        sendResponse({ success: false, error: 'Autofill is disabled' });
+        console.log("[ContentScript] Autofill is disabled");
+        sendResponse({ success: false, error: "Autofill is disabled" });
       }
     });
     return true; // Keep message port open for async response
   } else {
-    console.log('[ContentScript] Message type not handled:', message?.type || message?.action);
+    console.log(
+      "[ContentScript] Message type not handled:",
+      message?.type || message?.action
+    );
   }
 });
 
 window.addEventListener("message", (event) => {
-  if (event.origin !== "http://127.0.0.1:5500") return;
+  const o = event.origin || "";
+  const allowed =
+    !event.origin ||
+    o === window.location.origin ||
+    o.endsWith("applygoat.com") ||
+    o.endsWith("bubbleapps.io") ||
+    o === "http://127.0.0.1:5500";
+  if (!allowed) return;
 
   const message = event.data;
   if (message.type === "UPDATE_USER_INFO") {
@@ -289,7 +304,7 @@ interface Application {
   companyLink: string;
   jobTitle: string;
   status: string;
-  dateApplied: string; 
+  dateApplied: string;
   isCareerForm?: boolean;
 }
 
@@ -483,101 +498,191 @@ window.addEventListener("load", detectConfirmationPage);
 const saveJobToAnalytics = () => {
   const websiteLink = window.location.href;
   let jobTitle = "Unknown Job";
-  
+
   // Site-specific selectors
   if (window.location.hostname.includes("linkedin.com")) {
-    jobTitle = document.querySelector<HTMLElement>('h2.top-card-layout__title')?.innerText.trim() ||
-               document.querySelector<HTMLElement>('h1.top-card-layout__title')?.innerText.trim() ||
-               document.querySelector('title')?.textContent?.replace(/\|.*$/, '').trim() ||
-               jobTitle;
+    jobTitle =
+      document
+        .querySelector<HTMLElement>("h2.top-card-layout__title")
+        ?.innerText.trim() ||
+      document
+        .querySelector<HTMLElement>("h1.top-card-layout__title")
+        ?.innerText.trim() ||
+      document
+        .querySelector("title")
+        ?.textContent?.replace(/\|.*$/, "")
+        .trim() ||
+      jobTitle;
   } else if (window.location.hostname.includes("indeed.com")) {
-    jobTitle = document.querySelector<HTMLElement>('h1.jobsearch-JobInfoHeader-title')?.innerText.trim() || jobTitle;
+    jobTitle =
+      document
+        .querySelector<HTMLElement>("h1.jobsearch-JobInfoHeader-title")
+        ?.innerText.trim() || jobTitle;
   } else if (window.location.hostname.includes("smartrecruiters.com")) {
-    jobTitle = document.querySelector<HTMLElement>('[data-test="job-title"]')?.innerText.trim() ||
-               document.querySelector<HTMLElement>('.job-title')?.innerText.trim() ||
-               document.querySelector<HTMLElement>('h1[data-test-id="job-title"]')?.innerText.trim() ||
-               jobTitle;
+    jobTitle =
+      document
+        .querySelector<HTMLElement>('[data-test="job-title"]')
+        ?.innerText.trim() ||
+      document.querySelector<HTMLElement>(".job-title")?.innerText.trim() ||
+      document
+        .querySelector<HTMLElement>('h1[data-test-id="job-title"]')
+        ?.innerText.trim() ||
+      jobTitle;
   } else if (window.location.hostname.includes("workday")) {
-    jobTitle = document.querySelector<HTMLElement>('[data-automation-id="jobPostingHeader"] h1')?.innerText.trim() ||
-               document.querySelector<HTMLElement>('h1[data-automation-id="job-title"]')?.innerText.trim() ||
-               jobTitle;
+    jobTitle =
+      document
+        .querySelector<HTMLElement>(
+          '[data-automation-id="jobPostingHeader"] h1'
+        )
+        ?.innerText.trim() ||
+      document
+        .querySelector<HTMLElement>('h1[data-automation-id="job-title"]')
+        ?.innerText.trim() ||
+      jobTitle;
   } else if (window.location.hostname.includes("greenhouse")) {
-    jobTitle = document.querySelector<HTMLElement>('.app-title')?.innerText.trim() ||
-               document.querySelector<HTMLElement>('h1.app-title')?.innerText.trim() ||
-               jobTitle;
+    jobTitle =
+      document.querySelector<HTMLElement>(".app-title")?.innerText.trim() ||
+      document.querySelector<HTMLElement>("h1.app-title")?.innerText.trim() ||
+      jobTitle;
   }
 
   // Generic fallback (avoid title tag with warnings/errors)
   if (jobTitle === "Unknown Job") {
-    const titleElement = document.querySelector('h1, h2, h3');
+    const titleElement = document.querySelector("h1, h2, h3");
     if (titleElement?.textContent) {
       const titleText = titleElement.textContent.trim();
       // Skip titles that look like error messages or warnings
-      if (!titleText.toLowerCase().includes('sorry') && 
-          !titleText.toLowerCase().includes('error') &&
-          !titleText.toLowerCase().includes('not supported') &&
-          titleText.length > 10) {
+      if (
+        !titleText.toLowerCase().includes("sorry") &&
+        !titleText.toLowerCase().includes("error") &&
+        !titleText.toLowerCase().includes("not supported") &&
+        titleText.length > 10
+      ) {
         jobTitle = titleText;
       }
     }
-    
+
     // Last resort: try title tag but clean it up
     if (jobTitle === "Unknown Job") {
-      const pageTitle = document.querySelector('title')?.textContent?.trim();
-      if (pageTitle && 
-          !pageTitle.toLowerCase().includes('sorry') &&
-          !pageTitle.toLowerCase().includes('error') &&
-          !pageTitle.toLowerCase().includes('not supported')) {
-        jobTitle = pageTitle.split('|')[0].split('-')[0].trim();
+      const pageTitle = document.querySelector("title")?.textContent?.trim();
+      if (
+        pageTitle &&
+        !pageTitle.toLowerCase().includes("sorry") &&
+        !pageTitle.toLowerCase().includes("error") &&
+        !pageTitle.toLowerCase().includes("not supported")
+      ) {
+        jobTitle = pageTitle.split("|")[0].split("-")[0].trim();
       }
     }
   }
-  
-  console.log('[ContentScript] Saving job to analytics:', { jobTitle, websiteLink });
-  
+
+  console.log("[ContentScript] Saving job to analytics:", {
+    jobTitle,
+    websiteLink,
+  });
+
   chrome.storage.local.get(["savedJobsAnalytics"], (result) => {
     const savedJobs = result.savedJobsAnalytics || [];
     const jobId = Date.now().toString();
-    
+
     const newSavedJob = {
       id: jobId,
       title: jobTitle,
       url: websiteLink,
       dateAdded: new Date().toISOString(),
     };
-    
+
     const existingJob = savedJobs.find((job: any) => job.url === websiteLink);
     if (existingJob) {
-      console.log('Job already saved to analytics:', websiteLink);
+      console.log("Job already saved to analytics:", websiteLink);
       return;
     }
-    
+
     savedJobs.push(newSavedJob);
     chrome.storage.local.set({ savedJobsAnalytics: savedJobs }, () => {
-      console.log('Job saved to analytics storage:', newSavedJob);
+      console.log("Job saved to analytics storage:", newSavedJob);
     });
   });
 };
 
 // Message listener for manual save from popup
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse)=>{
-  console.log('[ContentScript] Message received:', msg);
-  if(msg && msg.type === 'SAVE_APPLICATION_MANUAL'){
-    console.log('[ContentScript] Processing SAVE_APPLICATION_MANUAL request');
-    console.log('[ContentScript] Current URL:', window.location.href);
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  console.log("[ContentScript] Message received:", msg);
+  if (msg && msg.type === "SAVE_APPLICATION_MANUAL") {
+    console.log("[ContentScript] Processing SAVE_APPLICATION_MANUAL request");
+    console.log("[ContentScript] Current URL:", window.location.href);
     try {
       saveJobToAnalytics();
-      console.log('[ContentScript] saveJobToAnalytics called, sending success response');
-      sendResponse({success: true});
-    } catch (error : any) {
-      console.error('[ContentScript] Error saving job:', error);
-      sendResponse({success: false, error: error.message});
+      console.log(
+        "[ContentScript] saveJobToAnalytics called, sending success response"
+      );
+      sendResponse({ success: true });
+    } catch (error: any) {
+      console.error("[ContentScript] Error saving job:", error);
+      sendResponse({ success: false, error: error.message });
     }
     return true; // Keep message port open for async response
   } else {
-    console.log('[ContentScript] Message type not handled:', msg?.type);
+    console.log("[ContentScript] Message type not handled:", msg?.type);
   }
 });
 
 // Expose function for debugging
 (window as any).detectCareerPage = detectCareerPage;
+
+// --- REAL-TIME SYNC LISTENER ---
+// Listens for "APPLYGOAT_DATA_UPDATED" message from the Bubble website
+window.addEventListener("message", async (event) => {
+  // 🔍 Debug: log every message once to understand why filter fails
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[ContentScript] 📨 message received", {
+      origin: event.origin,
+      sourceIsWindow: event.source === window,
+      data: event.data,
+    });
+  }
+  const o = event.origin || "";
+  const allowed =
+    !event.origin ||
+    o === window.location.origin ||
+    o.endsWith("applygoat.com") ||
+    o.endsWith("bubbleapps.io") ||
+    o === "http://127.0.0.1:5500";
+  if (!allowed) return;
+
+  const isUpdateSignal =
+    (event.data &&
+      typeof event.data === "object" &&
+      event.data.type === "APPLYGOAT_DATA_UPDATED") ||
+    (typeof event.data === "string" && event.data === "APPLYGOAT_DATA_UPDATED");
+  if (isUpdateSignal) {
+    console.log(
+      "[ContentScript] 🔄 Website reported data update. Triggering sync..."
+    );
+
+    try {
+      const service = await getBackendService();
+      const { success, data, error } = await service.fetchAllUserData();
+      if (success && data) {
+        await new Promise<void>((resolve, reject) => {
+          chrome.storage.local.set({ formData: data }, () => {
+            if (chrome.runtime.lastError) {
+              return reject(chrome.runtime.lastError);
+            }
+            console.log(
+              "[ContentScript] ✅ Saved latest user details to local storage."
+            );
+            resolve();
+          });
+        });
+      } else {
+        console.error(
+          "[ContentScript] ❌ Fetch latest user details failed:",
+          error
+        );
+      }
+    } catch (err) {
+      console.error("[ContentScript] Error executing sync:", err);
+    }
+  }
+});

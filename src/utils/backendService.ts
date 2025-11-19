@@ -84,6 +84,126 @@ interface LinkedInScrapedData {
   scrapedAt: string;
 }
 
+// bubble api service class
+
+interface AutofillDataRecord {
+  _id: string;
+  alt_email: string;
+  city: string;
+  country: string;
+  degree: string;
+  disability: boolean;
+  ethnicity: string;
+  expected_salary: number;
+  field: string;
+  grossSalary: number;
+  notice_period: string;
+  prefix: string;
+  served_in_military: boolean;
+  state: string;
+  veteran: boolean;
+  visa_sponsorship: boolean;
+  work_authorization: boolean;
+  worked_previously: boolean;
+  zip_code: string;
+  "Modified Date": string;
+  "Created Date": string;
+  "Created By": string;
+  Slug: string;
+}
+
+interface AutofillDataPayload {
+  alt_email?: string;
+  city?: string;
+  country?: string;
+  degree?: string;
+  disability?: boolean;
+  ethnicity?: string;
+  expected_salary?: number;
+  field?: string;
+  grossSalary?: number;
+  notice_period?: string;
+  prefix?: string;
+  served_in_military?: boolean;
+  state?: string;
+  veteran?: boolean;
+  visa_sponsorship?: boolean;
+  work_authorization?: boolean;
+  worked_previously?: boolean;
+  zip_code?: string;
+}
+
+interface BubbleAutofillResponse {
+  response: {
+    cursor: number;
+    results: Array<AutofillDataRecord>;
+    count: number;
+    remaining: number;
+  };
+}
+
+// --- Added by Abhishek to get all user data for autofilling from bubble to extension ---
+
+interface UserProfileRecord {
+  _id: string;
+  phone_number: number;
+  skills: string;
+  summary: string;
+  twitter_url: string;
+}
+
+interface WorkExperienceRecord {
+  _id: string;
+  company_name: string;
+  job_title: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  still_working: boolean;
+  work_type: string;
+}
+
+interface EducationExperienceRecord {
+  _id: string;
+  college_name: string;
+  course_name: string;
+  field: string;
+  grade: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  still_studying: boolean;
+  education_type: string;
+}
+
+interface ProjectExperienceRecord {
+  _id: string;
+  project_name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  github_url: string;
+  host_url: string;
+  still_working: boolean;
+  ai_description: string;
+}
+
+interface AllUserData {
+  profile: UserProfileRecord;
+  work_experience: WorkExperienceRecord[];
+  education: EducationExperienceRecord[];
+  projects: ProjectExperienceRecord[];
+  autofill_data: AutofillDataRecord;
+}
+
+interface BubbleAllUserDataResponse {
+  response: AllUserData;
+}
+
+// --- End of addition by Abhishek ---
+
 class BackendService {
   private config: BackendConfig;
 
@@ -266,6 +386,50 @@ class BackendService {
   }
 
   /**
+   * Fetches ALL user data (Profile, Work, Education, Projects, Autofill) added by Abhishek
+   * by calling the 'get_all_user_data' API Workflow.
+   */
+  async fetchAllUserData(): Promise<{
+    success: boolean;
+    data?: AllUserData;
+    error?: string;
+  }> {
+    try {
+      const response = await fetch(
+        `${this.config.baseUrl}/wf/get_all_user_data?ts=${Date.now()}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+          credentials: "include",
+          cache: "no-store",
+          mode: "cors",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const json: BubbleAllUserDataResponse = await response.json();
+      return {
+        success: true,
+        data: json.response,
+      };
+    } catch (error) {
+      console.error("Error fetching all user data:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  /**
    * Sync user data to Bubble API
    * Checks if user exists, then creates or updates accordingly
    */
@@ -276,7 +440,7 @@ class BackendService {
       // Extract only the required fields
       const payload: UserDataPayload = {
         email: userData.email || "",
-        // password: userData.password || "",
+        password: userData.password || "",
         address: userData.address || userData.country || "",
       };
 
@@ -425,7 +589,6 @@ class BackendService {
 // Import configuration
 import { getConfig } from "./config";
 
-
 // Create and export the service instance with dynamic configuration
 let backendServiceInstance: BackendService | null = null;
 
@@ -455,23 +618,27 @@ export async function scrapeLinkedInProfile(
   port: number = 5001
 ): Promise<{ success: boolean; data?: LinkedInScrapedData; error?: string }> {
   try {
-    if (!profileUrl || !profileUrl.includes('linkedin.com')) {
+    if (!profileUrl || !profileUrl.includes("linkedin.com")) {
       console.log("Invalid LinkedIn URL validation failed");
       return {
         success: false,
-        error: 'Invalid LinkedIn URL provided'
+        error: "Invalid LinkedIn URL provided",
       };
     }
 
     console.log("Making fetch request to:", `http://localhost:${port}/scrape`);
     const response = await fetch(`http://localhost:${port}/scrape`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ profileUrl }),
     });
-    console.log("Fetch response received:", response.status, response.statusText);
+    console.log(
+      "Fetch response received:",
+      response.status,
+      response.statusText
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -487,14 +654,21 @@ export async function scrapeLinkedInProfile(
       data,
     };
   } catch (error) {
-    console.error('Error scraping LinkedIn profile:', error);
+    console.error("Error scraping LinkedIn profile:", error);
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : 'Unknown error occurred while scraping',
+        error instanceof Error
+          ? error.message
+          : "Unknown error occurred while scraping",
     };
   }
 }
 
 // Export the class for testing or custom configurations
-export { BackendService, type BackendConfig, type UserDataPayload, type LinkedInScrapedData };
+export {
+  BackendService,
+  type BackendConfig,
+  type UserDataPayload,
+  type LinkedInScrapedData,
+};

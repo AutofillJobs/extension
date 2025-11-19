@@ -9,7 +9,9 @@
     "default_icon": "icon.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab",
+    "cookies"
   ],
   "icons": {
     "16": "icon.png",
@@ -23,6 +25,8 @@
   "content_scripts": [
     {
       "matches": [
+        "https://applygoat.com/*",
+        "https://*.applygoat.com/*",
         "*://*/*",
         "*://*.indeed.com/*",
         "*://smartapply.indeed.com/*",
