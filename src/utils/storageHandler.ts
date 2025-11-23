@@ -2,13 +2,13 @@ let toggleState: boolean | null = null;
 let autoClickSave: boolean = false; // Default to false
 
 // Import backend service
-import { getBackendService } from './backendService';
+import { getBackendService } from "./backendService";
 
 export async function initializeStorage(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    chrome.storage.local.get(['toggleState', 'autoClickSave'], (result) => {
+    chrome.storage.local.get(["toggleState", "autoClickSave"], (result) => {
       if (chrome.runtime.lastError) {
-        console.error('Error getting toggleState:', chrome.runtime.lastError);
+        console.error("Error getting toggleState:", chrome.runtime.lastError);
         reject(chrome.runtime.lastError);
         return;
       }
@@ -16,19 +16,22 @@ export async function initializeStorage(): Promise<void> {
       toggleState = result.toggleState ?? null;
       autoClickSave = result.autoClickSave ?? false;
 
-      console.log('Initial toggle state from local storage:', toggleState);
-      console.log('Initial autoClickSave state from local storage:', autoClickSave);
+      console.log("Initial toggle state from local storage:", toggleState);
+      console.log(
+        "Initial autoClickSave state from local storage:",
+        autoClickSave
+      );
 
       // Listen for changes
       chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === 'local') {
+        if (areaName === "local") {
           if (changes.toggleState) {
             toggleState = changes.toggleState.newValue;
-            console.log('Toggle state updated to:', toggleState);
+            console.log("Toggle state updated to:", toggleState);
           }
           if (changes.autoClickSave) {
             autoClickSave = changes.autoClickSave.newValue;
-            console.log('AutoClickSave state updated to:', autoClickSave);
+            console.log("AutoClickSave state updated to:", autoClickSave);
           }
         }
       });
@@ -46,46 +49,51 @@ export function getAutoClickSaveState(callback: (state: boolean) => void) {
   callback(autoClickSave);
 }
 
-export async function updateAutoClickSaveState(newState: boolean, callback?: (success: boolean, error?: string) => void) {
+export async function updateAutoClickSaveState(
+  newState: boolean,
+  callback?: (success: boolean, error?: string) => void
+) {
   return new Promise<void>((resolve, reject) => {
-    chrome.storage.local.set({ 'autoClickSave': newState }, () => {
-    if (chrome.runtime.lastError) {
-      console.error('Error updating autoClickSave state:', chrome.runtime.lastError);
-      if (callback) {
-        callback(false, chrome.runtime.lastError.message);
+    chrome.storage.local.set({ autoClickSave: newState }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "Error updating autoClickSave state:",
+          chrome.runtime.lastError
+        );
+        if (callback) {
+          callback(false, chrome.runtime.lastError.message);
+        }
+        return;
       }
-      return;
-    }
-    autoClickSave = newState;
-    console.log('AutoClickSave state updated to:', newState);
-    if (callback) {
-      callback(true);
-    }
-    resolve()
+      autoClickSave = newState;
+      console.log("AutoClickSave state updated to:", newState);
+      if (callback) {
+        callback(true);
+      }
+      resolve();
+    });
   });
-
-  })
 }
 
 export function getUserData(callback: (userData: any) => void) {
-  chrome.storage.local.get(['formData'], (result: { formData?: any }) => {
+  chrome.storage.local.get(["formData"], (result: { formData?: any }) => {
     if (chrome.runtime.lastError) {
-      console.error('Error getting user data:', chrome.runtime.lastError);
+      console.error("Error getting user data:", chrome.runtime.lastError);
       callback(null);
       return;
     }
-    
+
     try {
       // Validate that the data has the expected structure
       const formData = result.formData;
-      if (formData && typeof formData === 'object') {
+      if (formData && typeof formData === "object") {
         callback(formData);
       } else {
-        console.warn('Invalid formData structure:', formData);
+        console.warn("Invalid formData structure:", formData);
         callback(null);
       }
     } catch (error) {
-      console.error('Error processing user data:', error);
+      console.error("Error processing user data:", error);
       callback(null);
     }
   });
@@ -149,16 +157,19 @@ export async function saveUserData(
   }
 }
 
-export function saveFileData(fileData: { [key: string]: any }, callback?: (success: boolean, error?: string) => void) {
+export function saveFileData(
+  fileData: { [key: string]: any },
+  callback?: (success: boolean, error?: string) => void
+) {
   chrome.storage.local.set(fileData, () => {
     if (chrome.runtime.lastError) {
-      console.error('Error saving file data:', chrome.runtime.lastError);
+      console.error("Error saving file data:", chrome.runtime.lastError);
       if (callback) {
         callback(false, chrome.runtime.lastError.message);
       }
       return;
     }
-    console.log('File data saved successfully');
+    console.log("File data saved successfully");
     if (callback) {
       callback(true);
     }
@@ -166,14 +177,17 @@ export function saveFileData(fileData: { [key: string]: any }, callback?: (succe
 }
 
 export function getFileData(callback: (fileData: any) => void) {
-  chrome.storage.local.get(['resumeUrl', 'resumeName', 'resumeBase64', 'cvUrl', 'cvName', 'cvBase64'], (result) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error getting file data:', chrome.runtime.lastError);
-      callback(null);
-      return;
+  chrome.storage.local.get(
+    ["resumeUrl", "resumeName", "resumeBase64", "cvUrl", "cvName", "cvBase64"],
+    (result) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error getting file data:", chrome.runtime.lastError);
+        callback(null);
+        return;
+      }
+      callback(result);
     }
-    callback(result);
-  });
+  );
 }
 
 /**
@@ -190,10 +204,13 @@ export async function syncDataFromBackend(
 
     if (success && data) {
       console.log("SYNC: Successfully fetched data from Bubble.", data);
+      console.log("auto_fill_data:", data.autofill_data);
 
       const profile = data?.profile || {};
       const autofill = data?.autofill_data || {};
-      const work = Array.isArray(data?.work_experience) ? data.work_experience : [];
+      const work = Array.isArray(data?.work_experience)
+        ? data.work_experience
+        : [];
       const edu = Array.isArray((data as any)?.education_experience)
         ? (data as any).education_experience
         : Array.isArray((data as any)?.education)
@@ -206,7 +223,8 @@ export async function syncDataFromBackend(
         : [];
 
       const sanitize = (v: any) => (typeof v === "string" ? v.trim() : v ?? "");
-      const toStr = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
+      const toStr = (v: any) =>
+        v === null || v === undefined ? "" : String(v).trim();
       const details = {
         firstName: sanitize(profile.first_name),
         lastName: sanitize(profile.last_name),
@@ -224,15 +242,49 @@ export async function syncDataFromBackend(
         summary: sanitize(profile.summary),
         maritalStatus: sanitize((profile as any).marital_status),
         gender: sanitize((profile as any).gender),
-        expectedSalary: toStr((autofill as any).expected_salary ?? (profile as any).expected_salary),
-        grossSalary: toStr((autofill as any).grossSalary ?? (profile as any).grossSalary),
+        expectedSalary: toStr(
+          (autofill as any).expected_salary ?? (profile as any).expected_salary
+        ),
+        grossSalary: toStr(
+          (autofill as any).grossSalary ?? (profile as any).grossSalary
+        ),
         noticePeriod: sanitize((autofill as any).notice_period),
-        workAuthorization: ((autofill as any).work_authorization === true ? "Yes" : (autofill as any).work_authorization === false ? "No" : sanitize((autofill as any).work_authorization)),
-        visaSponsorship: ((autofill as any).visa_sponsorship === true ? "Yes" : (autofill as any).visa_sponsorship === false ? "No" : sanitize((autofill as any).visa_sponsorship)),
-        workedPreviously: ((autofill as any).worked_previously === true ? "Yes" : (autofill as any).worked_previously === false ? "No" : sanitize((autofill as any).worked_previously)),
-        veteran: ((autofill as any).veteran === true ? "Yes" : (autofill as any).veteran === false ? "No" : sanitize((autofill as any).veteran)),
-        servedInMilitary: ((autofill as any).served_in_military === true ? "Yes" : (autofill as any).served_in_military === false ? "No" : sanitize((autofill as any).served_in_military)),
-        disability: ((autofill as any).disability === true ? "Yes" : (autofill as any).disability === false ? "No" : sanitize((autofill as any).disability)),
+        workAuthorization:
+          (autofill as any).work_authorization === true
+            ? "Yes"
+            : (autofill as any).work_authorization === false
+            ? "No"
+            : sanitize((autofill as any).work_authorization),
+        visaSponsorship:
+          (autofill as any).visa_sponsorship === true
+            ? "Yes"
+            : (autofill as any).visa_sponsorship === false
+            ? "No"
+            : sanitize((autofill as any).visa_sponsorship),
+        workedPreviously:
+          (autofill as any).worked_previously === true
+            ? "Yes"
+            : (autofill as any).worked_previously === false
+            ? "No"
+            : sanitize((autofill as any).worked_previously),
+        veteran:
+          (autofill as any).veteran === true
+            ? "Yes"
+            : (autofill as any).veteran === false
+            ? "No"
+            : sanitize((autofill as any).veteran),
+        servedInMilitary:
+          (autofill as any).served_in_military === true
+            ? "Yes"
+            : (autofill as any).served_in_military === false
+            ? "No"
+            : sanitize((autofill as any).served_in_military),
+        disability:
+          (autofill as any).disability === true
+            ? "Yes"
+            : (autofill as any).disability === false
+            ? "No"
+            : sanitize((autofill as any).disability),
         ethnicity: sanitize((autofill as any).ethnicity),
         degree: sanitize((autofill as any).degree ?? (profile as any).degree),
         field: sanitize((autofill as any).field),
@@ -258,10 +310,19 @@ export async function syncDataFromBackend(
       }));
 
       const projectExperiences = proj.map((p: any) => ({
-        title: sanitize((p as any).project_title ?? (p as any).project_name ?? p.title),
+        title: sanitize(
+          (p as any).project_title ?? (p as any).project_name ?? p.title
+        ),
         description: sanitize(p.description),
-        technologies: sanitize((p as any).technologies ?? (p as any).tech_stack),
-        link: sanitize((p as any).project_url ?? (p as any).github_url ?? (p as any).host_url ?? p.link),
+        technologies: sanitize(
+          (p as any).technologies ?? (p as any).tech_stack
+        ),
+        link: sanitize(
+          (p as any).project_url ??
+            (p as any).github_url ??
+            (p as any).host_url ??
+            p.link
+        ),
         startDate: sanitize(p.start_date),
         endDate: sanitize(p.end_date),
       }));

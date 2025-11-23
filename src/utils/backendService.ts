@@ -596,7 +596,6 @@ class BackendService {
 // Import configuration
 import { getConfig } from "./config";
 
-
 // Create and export the service instance with dynamic configuration
 let backendServiceInstance: BackendService | null = null;
 
@@ -626,23 +625,27 @@ export async function scrapeLinkedInProfile(
   port: number = 5001
 ): Promise<{ success: boolean; data?: LinkedInScrapedData; error?: string }> {
   try {
-    if (!profileUrl || !profileUrl.includes('linkedin.com')) {
+    if (!profileUrl || !profileUrl.includes("linkedin.com")) {
       console.log("Invalid LinkedIn URL validation failed");
       return {
         success: false,
-        error: 'Invalid LinkedIn URL provided'
+        error: "Invalid LinkedIn URL provided",
       };
     }
 
     console.log("Making fetch request to:", `http://localhost:${port}/scrape`);
     const response = await fetch(`http://localhost:${port}/scrape`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ profileUrl }),
     });
-    console.log("Fetch response received:", response.status, response.statusText);
+    console.log(
+      "Fetch response received:",
+      response.status,
+      response.statusText
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -658,14 +661,21 @@ export async function scrapeLinkedInProfile(
       data,
     };
   } catch (error) {
-    console.error('Error scraping LinkedIn profile:', error);
+    console.error("Error scraping LinkedIn profile:", error);
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : 'Unknown error occurred while scraping',
+        error instanceof Error
+          ? error.message
+          : "Unknown error occurred while scraping",
     };
   }
 }
 
 // Export the class for testing or custom configurations
-export { BackendService, type BackendConfig, type UserDataPayload, type LinkedInScrapedData };
+export {
+  BackendService,
+  type BackendConfig,
+  type UserDataPayload,
+  type LinkedInScrapedData,
+};
