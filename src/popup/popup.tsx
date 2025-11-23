@@ -8,6 +8,8 @@ import {
   User,
 } from "lucide-react";
 
+import { syncDataFromBackend } from "../utils/storageHandler";
+
 // Define interface for recent applications
 interface RecentApplication {
   id: number;
@@ -33,10 +35,13 @@ const App = () => {
 
   // useEffect hook to load data and toggle state on component mount
   useEffect(() => {
-    const fetchData = () => {
+    const fetchData = async () => {
+      console.log("SYNC: Starting sync from Bubble backend...");
+      await syncDataFromBackend();
+      console.log("SYNC: Sync finished.");
       // Load toggle state from chrome storage
       chrome.storage.local.get(
-        ["toggleState", "autoClickToggleState"],
+        ["toggleState", "autoClickToggleState", "formData"],
         (result) => {
           console.log("[Popup] Loading toggle states from storage:", result);
 
@@ -61,6 +66,12 @@ const App = () => {
               ? result.autoClickToggleState
               : true
           );
+
+          if (result.formData) {
+            console.log(" TEST: Data found in 'formData':", result.formData);
+          } else {
+            console.error(" TEST: No 'formData' key found in storage.");
+          }
         }
       );
       // Placeholder data for demonstration
@@ -74,6 +85,25 @@ const App = () => {
       setIsLoading(false);
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== "local") return;
+      if (changes.formData) {
+        console.log("[Popup] formData updated:", changes.formData.newValue);
+      }
+      if (changes.toggleState) {
+        setAutofillEnabled(Boolean(changes.toggleState.newValue));
+      }
+      if (changes.autoClickToggleState) {
+        setAutoClickEnabled(Boolean(changes.autoClickToggleState.newValue));
+      }
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => {
+      chrome.storage.onChanged.removeListener(onChanged);
+    };
   }, []);
 
   // Function to handle the autofill toggle
@@ -118,7 +148,8 @@ const App = () => {
 
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") });
+    // chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") }); // old url that open the formpage in extension itself
+    chrome.tabs.create({ url: "https://applygoat.com/version-test/profile" });
   };
 
   // Function to handle Add Job to Analytics click
@@ -227,8 +258,6 @@ const App = () => {
                 ></span>
               </div>
             </div> */}
-
-
           </div>
         </div>
 

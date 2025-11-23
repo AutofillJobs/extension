@@ -1,7 +1,7 @@
 import { FormData } from './utils/types';
 
 let Email: string = "";
-let userData: any;
+let userData: FormData;
 
 export function setupBubbleMessageListener() {
   console.log("Setting up Bubble message listener...");

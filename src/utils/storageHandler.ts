@@ -163,5 +163,124 @@ export function getFileData(callback: (fileData: any) => void) {
   });
 }
 
+/**
+ * Fetches user's autofill data from the Bubble backend
+ * and saves it to local storage ('formData').
+ */
+export async function syncDataFromBackend(
+  callback?: (success: boolean, error?: string) => void
+) {
+  console.log("SYNC: Starting sync from Bubble backend...");
+  try {
+    const backendService = await getBackendService();
+    const { success, data, error } = await backendService.fetchAllUserData();
+
+    if (success && data) {
+      console.log("SYNC: Successfully fetched data from Bubble.", data);
+
+      const profile = data?.profile || {};
+      const autofill = data?.autofill_data || {};
+      const work = Array.isArray(data?.work_experience) ? data.work_experience : [];
+      const edu = Array.isArray((data as any)?.education_experience)
+        ? (data as any).education_experience
+        : Array.isArray((data as any)?.education)
+        ? (data as any).education
+        : [];
+      const proj = Array.isArray((data as any)?.project_experience)
+        ? (data as any).project_experience
+        : Array.isArray((data as any)?.projects)
+        ? (data as any).projects
+        : [];
+
+      const sanitize = (v: any) => (typeof v === "string" ? v.trim() : v ?? "");
+      const toStr = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
+      const details = {
+        firstName: sanitize(profile.first_name),
+        lastName: sanitize(profile.last_name),
+        email: sanitize(profile.email),
+        phoneNumber: toStr(profile.phone_number),
+        linkedinUrl: sanitize(profile.linkedin_url),
+        githubUrl: sanitize(profile.github_url),
+        twitterUrl: sanitize(profile.twitter_url),
+        city: sanitize(autofill.city ?? profile.city),
+        zip: sanitize(autofill.zip_code ?? profile.zip_code),
+        street: sanitize(profile.address),
+        state: sanitize(profile.state),
+        country: sanitize(profile.country),
+        skills: sanitize(profile.skills),
+        summary: sanitize(profile.summary),
+        maritalStatus: sanitize((profile as any).marital_status),
+        gender: sanitize((profile as any).gender),
+      } as Record<string, string>;
+
+      const workExperiences = work.map((w: any) => ({
+        companyName: sanitize(w.company_name),
+        jobTitle: sanitize(w.job_title),
+        description: sanitize(w.description),
+        startDate: sanitize(w.start_date),
+        endDate: sanitize(w.end_date),
+        location: sanitize(w.location),
+      }));
+
+      const educationExperiences = edu.map((e: any) => ({
+        collegeName: sanitize(e.college_name),
+        courseName: sanitize(e.course_name),
+        startDate: sanitize(e.start_date),
+        endDate: sanitize(e.end_date),
+      }));
+
+      const projectExperiences = proj.map((p: any) => ({
+        title: sanitize((p as any).project_title ?? (p as any).project_name ?? p.title),
+        description: sanitize(p.description),
+        technologies: sanitize((p as any).technologies ?? (p as any).tech_stack),
+        link: sanitize((p as any).project_url ?? (p as any).github_url ?? (p as any).host_url ?? p.link),
+        startDate: sanitize(p.start_date),
+        endDate: sanitize(p.end_date),
+      }));
+
+      const transformed = {
+        data: {
+          details,
+          workExperiences,
+          projectExperiences,
+          educationExperiences,
+        },
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        chrome.storage.local.set({ formData: transformed }, () => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "SYNC: Error saving fetched data to local storage:",
+              chrome.runtime.lastError
+            );
+            reject(chrome.runtime.lastError);
+            return;
+          }
+          console.log(
+            'SYNC: Fetched data saved to local storage "formData" key.'
+          );
+          resolve();
+        });
+      });
+
+      if (callback) callback(true);
+      return; // Success!
+    } else if (error) {
+      // Fetch failed (e.g., 401 Unauthorized, API key wrong)
+      console.error("SYNC: Failed to fetch data from Bubble:", error);
+      if (callback) callback(false, error);
+    } else {
+      // Fetch succeeded but no data was found
+      console.log("SYNC: No autofill data found in Bubble for this user.");
+      if (callback) callback(true); // Not an "error" if no data exists
+    }
+  } catch (e) {
+    console.error("SYNC: A critical error occurred during sync:", e);
+    if (callback)
+      callback(false, e instanceof Error ? e.message : "Unknown error");
+  }
+}
+
 // Export backend service for direct access if needed
 export { getBackendService };
