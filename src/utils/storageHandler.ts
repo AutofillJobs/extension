@@ -91,17 +91,20 @@ export function getUserData(callback: (userData: any) => void) {
   });
 }
 
-export async function saveUserData(data: any, callback?: (success: boolean, error?: string) => void) {
+export async function saveUserData(
+  data: any,
+  callback?: (success: boolean, error?: string) => void
+) {
   try {
     // First save to local storage
     await new Promise<void>((resolve, reject) => {
-      chrome.storage.local.set({ 'formData': data }, () => {
+      chrome.storage.local.set({ formData: data }, () => {
         if (chrome.runtime.lastError) {
-          console.error('Error saving user data:', chrome.runtime.lastError);
+          console.error("Error saving user data:", chrome.runtime.lastError);
           reject(chrome.runtime.lastError);
           return;
         }
-        console.log('User data saved successfully to local storage');
+        console.log("User data saved successfully to local storage");
         resolve();
       });
     });
@@ -109,18 +112,28 @@ export async function saveUserData(data: any, callback?: (success: boolean, erro
     // Then sync to backend if we have user details
     if (data?.data?.details) {
       try {
-        console.log('Syncing user data to backend...');
+        console.log("Syncing user data to backend...");
         const backendService = await getBackendService();
         const syncResult = await backendService.syncUserData(data.data.details);
-        
+
         if (syncResult.success) {
-          console.log('User data synced to backend successfully');
+          console.log("User data synced to backend successfully");
+
+          // After successful sync, immediately refetch the latest copy so that
+          // the extension stays in-sync with any server-side transformations
+          // (e.g. calculated fields, slug generation, etc.).
+          try {
+            await syncDataFromBackend();
+            console.log("Local cache refreshed with latest data from backend");
+          } catch (refreshErr) {
+            console.warn("Refetch after sync failed:", refreshErr);
+          }
         } else {
-          console.warn('Backend sync failed:', syncResult.error);
+          console.warn("Backend sync failed:", syncResult.error);
           // Don't fail the save operation if backend sync fails
         }
       } catch (backendError) {
-        console.error('Backend sync error:', backendError);
+        console.error("Backend sync error:", backendError);
         // Don't fail the save operation if backend sync fails
       }
     }
@@ -129,9 +142,9 @@ export async function saveUserData(data: any, callback?: (success: boolean, erro
       callback(true);
     }
   } catch (error) {
-    console.error('Error in saveUserData:', error);
+    console.error("Error in saveUserData:", error);
     if (callback) {
-      callback(false, error instanceof Error ? error.message : 'Unknown error');
+      callback(false, error instanceof Error ? error.message : "Unknown error");
     }
   }
 }
@@ -211,6 +224,21 @@ export async function syncDataFromBackend(
         summary: sanitize(profile.summary),
         maritalStatus: sanitize((profile as any).marital_status),
         gender: sanitize((profile as any).gender),
+        expectedSalary: toStr((autofill as any).expected_salary ?? (profile as any).expected_salary),
+        grossSalary: toStr((autofill as any).grossSalary ?? (profile as any).grossSalary),
+        noticePeriod: sanitize((autofill as any).notice_period),
+        workAuthorization: ((autofill as any).work_authorization === true ? "Yes" : (autofill as any).work_authorization === false ? "No" : sanitize((autofill as any).work_authorization)),
+        visaSponsorship: ((autofill as any).visa_sponsorship === true ? "Yes" : (autofill as any).visa_sponsorship === false ? "No" : sanitize((autofill as any).visa_sponsorship)),
+        workedPreviously: ((autofill as any).worked_previously === true ? "Yes" : (autofill as any).worked_previously === false ? "No" : sanitize((autofill as any).worked_previously)),
+        veteran: ((autofill as any).veteran === true ? "Yes" : (autofill as any).veteran === false ? "No" : sanitize((autofill as any).veteran)),
+        servedInMilitary: ((autofill as any).served_in_military === true ? "Yes" : (autofill as any).served_in_military === false ? "No" : sanitize((autofill as any).served_in_military)),
+        disability: ((autofill as any).disability === true ? "Yes" : (autofill as any).disability === false ? "No" : sanitize((autofill as any).disability)),
+        ethnicity: sanitize((autofill as any).ethnicity),
+        degree: sanitize((autofill as any).degree ?? (profile as any).degree),
+        field: sanitize((autofill as any).field),
+        altEmail: sanitize((autofill as any).alt_email),
+        prefix: sanitize((autofill as any).prefix),
+        address1: sanitize(profile.address),
       } as Record<string, string>;
 
       const workExperiences = work.map((w: any) => ({
