@@ -1955,6 +1955,7 @@ export default function fillWorkdayForm(data: FormData): void {
             if (fieldName.includes("schoolname")) input.value = edu.collegeName || '';
             else if (fieldName.includes("fieldofstudy")) input.value = edu.courseName || '';
             else if (fieldName.includes("gradeaverage")) input.value = edu.grade || '';
+            else if( fieldName.includes("degree")) input.value = edu.courseName || '';
             else if (fieldName.includes("firstyearattended")) {
                 input.value = edu.startDate || '';
                 input.focus();
@@ -1970,8 +1971,8 @@ export default function fillWorkdayForm(data: FormData): void {
 
         // Degree dropdown - enhanced selector and validation
         const degreeDropdownBtn = section.querySelector<HTMLButtonElement>('button[name="degree"], button[id*="degree"]');
-        if (degreeDropdownBtn && edu.educationType) {
-            console.log(`[workdaynewScript] Clicking degree dropdown for: ${edu.educationType}`);
+        if (degreeDropdownBtn && edu.courseName) {
+            console.log(`[workdaynewScript] Clicking degree dropdown for: ${edu.courseName}`);
             degreeDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -1983,7 +1984,7 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.log(`[workdaynewScript] Found ${options.length} degree options`);
 
                 let optionFound = false;
-                const targetDegree = edu.educationType.toLowerCase();
+                const targetDegree = edu.courseName.toLowerCase();
 
                 // Create flexible degree mappings
                 const degreeMappings: Record<string, string[]> = {
