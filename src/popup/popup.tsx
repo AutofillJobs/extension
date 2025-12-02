@@ -149,7 +149,7 @@ const App = () => {
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
     // chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") }); // old url that open the formpage in extension itself
-    chrome.tabs.create({ url: "https://applygoat.com/version-test/profile" });
+    chrome.tabs.create({ url: "https://applygoat.com/version-test/profile?mode=extension" });
   };
 
   // Function to handle Add Job to Analytics click
