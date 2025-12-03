@@ -8,6 +8,8 @@ import {
   User,
 } from "lucide-react";
 
+import { syncDataFromBackend } from "../utils/storageHandler";
+
 // Define interface for recent applications
 interface RecentApplication {
   id: number;
@@ -21,7 +23,7 @@ const App = () => {
   const analyticsUrl = `${chrome.runtime.getURL("formpage.html")}#/analytics`;
   // State variables for the popup UI
   const [autofillEnabled, setAutofillEnabled] = useState(true);
-  const [autoClickEnabled, setAutoClickEnabled] = useState(true);
+  const [autoClickEnabled, setAutoClickEnabled] = useState(false);
   const [applicationsToday, setApplicationsToday] = useState(0);
   const [applicationsTotal, setApplicationsTotal] = useState(0);
   const [jobAddedFeedback, setJobAddedFeedback] = useState(false);
@@ -33,10 +35,13 @@ const App = () => {
 
   // useEffect hook to load data and toggle state on component mount
   useEffect(() => {
-    const fetchData = () => {
+    const fetchData = async () => {
+      console.log("SYNC: Starting sync from Bubble backend...");
+      await syncDataFromBackend();
+      console.log("SYNC: Sync finished.");
       // Load toggle state from chrome storage
       chrome.storage.local.get(
-        ["toggleState", "autoClickToggleState"],
+        ["toggleState", "autoClickToggleState", "formData"],
         (result) => {
           console.log("[Popup] Loading toggle states from storage:", result);
 
@@ -49,19 +54,9 @@ const App = () => {
             setAutofillEnabled(true);
           }
 
-          if (result.autoClickToggleState !== undefined) {
-            console.log(
-              "[Popup] Setting auto-click to:",
-              result.autoClickToggleState
-            );
-            setAutoClickEnabled(result.autoClickToggleState);
-          } else {
-            console.log(
-              "[Popup] No auto-click state found, defaulting to true"
-            );
-            chrome.storage.local.set({ autoClickToggleState: true });
-            setAutoClickEnabled(true);
-          }
+          // Force auto-click disabled regardless of stored value
+          chrome.storage.local.set({ autoClickToggleState: false });
+          setAutoClickEnabled(false);
 
           console.log(
             "[Popup] Final states - Autofill:",
@@ -71,6 +66,12 @@ const App = () => {
               ? result.autoClickToggleState
               : true
           );
+
+          if (result.formData) {
+            console.log(" TEST: Data found in 'formData':", result.formData);
+          } else {
+            console.error(" TEST: No 'formData' key found in storage.");
+          }
         }
       );
       // Placeholder data for demonstration
@@ -84,6 +85,25 @@ const App = () => {
       setIsLoading(false);
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== "local") return;
+      if (changes.formData) {
+        console.log("[Popup] formData updated:", changes.formData.newValue);
+      }
+      if (changes.toggleState) {
+        setAutofillEnabled(Boolean(changes.toggleState.newValue));
+      }
+      if (changes.autoClickToggleState) {
+        setAutoClickEnabled(Boolean(changes.autoClickToggleState.newValue));
+      }
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => {
+      chrome.storage.onChanged.removeListener(onChanged);
+    };
   }, []);
 
   // Function to handle the autofill toggle
@@ -108,45 +128,9 @@ const App = () => {
 
   // Function to handle the auto-click toggle
   const handleAutoClickToggle = () => {
-    const newAutoClickState = !autoClickEnabled;
-    console.log(
-      "[Popup] 🔄 Auto-click toggle clicked - changing from",
-      autoClickEnabled,
-      "to",
-      newAutoClickState
-    );
-    setAutoClickEnabled(newAutoClickState);
-
-    chrome.storage.local.set(
-      { autoClickToggleState: newAutoClickState },
-      () => {
-        console.log(
-          "[Popup] ✅ Auto-click toggle saved to storage:",
-          newAutoClickState
-        );
-
-        // Verify it was saved correctly
-        chrome.storage.local.get(["autoClickToggleState"], (result) => {
-          console.log(
-            "[Popup] 🔍 Verification - Auto-click state in storage:",
-            result.autoClickToggleState
-          );
-          if (result.autoClickToggleState !== newAutoClickState) {
-            console.error(
-              "[Popup] ❌ ERROR: Storage value does not match expected value!"
-            );
-          }
-        });
-      }
-    );
-
-    chrome.runtime.sendMessage({
-      type: "AUTO_CLICK_TOGGLE_CHANGED",
-      value: newAutoClickState,
-    });
-    console.log(
-      "[Popup] 📤 Auto-click toggle message sent to background script"
-    );
+    console.log("[Popup] Auto-click is disabled by configuration");
+    chrome.storage.local.set({ autoClickToggleState: false });
+    setAutoClickEnabled(false);
   };
 
   // Function to handle the "Fill Application" button click
@@ -164,7 +148,8 @@ const App = () => {
 
   // Function to handle the Settings button click
   const handleEditDetailsClick = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") });
+    // chrome.tabs.create({ url: chrome.runtime.getURL("formpage.html") }); // old url that open the formpage in extension itself
+    chrome.tabs.create({ url: "https://applygoat.com/version-test/profile?mode=extension" });
   };
 
   // Function to handle Add Job to Analytics click
@@ -254,13 +239,13 @@ const App = () => {
               </div>
             </div>
             {/* Auto-Click Toggle */}
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <span className="text-xs text-white font-medium">
                 Auto-Click Next
               </span>
               <div
                 onClick={handleAutoClickToggle}
-                className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500
+                className={`relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500
                   ${autoClickEnabled ? "bg-green-500" : "bg-slate-600"}
                 `}
               >
@@ -272,7 +257,7 @@ const App = () => {
                   `}
                 ></span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 

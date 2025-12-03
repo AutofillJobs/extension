@@ -8,14 +8,14 @@ function createWorkdayFormFiller(userData:any) {
     return new Promise((resolve) => {
       try {
         chrome.storage.local.get(['autoClickToggleState'], (result) => {
-          const enabled = result.autoClickToggleState !== false; // Default to true if not set
+          const enabled = result.autoClickToggleState === true; // Default to false if not set
           console.log('[Workday] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
           resolve(enabled);
         });
       } catch (e) {
-        // If chrome storage is not accessible, default to true to preserve existing behavior
-        console.log('[Workday] Chrome storage not accessible, defaulting to true');
-        resolve(true);
+        // If chrome storage is not accessible, default to false to prevent auto navigation
+        console.log('[Workday] Chrome storage not accessible, defaulting to false');
+        resolve(false);
       }
     });
   }

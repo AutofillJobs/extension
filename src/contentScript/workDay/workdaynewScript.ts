@@ -1,6 +1,8 @@
 import { FormData } from "../utils/types";
 export default function fillWorkdayForm(data: FormData): void {
     let saveClicked = false;
+    let answeringInProgress = false;
+    let lastDropdownActionTs = 0;
 
     // Page detection function for Application Questions
     const detectApplicationQuestionsPage = (): 'app-questions-1' | 'app-questions-2' | 'unknown' => {
@@ -251,7 +253,7 @@ export default function fillWorkdayForm(data: FormData): void {
     const isAutoClickEnabled = async (): Promise<boolean> => {
         return new Promise((resolve) => {
             chrome.storage.local.get(['autoClickToggleState'], (result) => {
-                const enabled = result.autoClickToggleState !== false; // Default to true if not set
+                const enabled = result.autoClickToggleState === true; // Default to false if not set
                 console.log('[WorkdayNew] Auto-click toggle state from storage:', result.autoClickToggleState, 'Resolved to:', enabled);
                 resolve(enabled);
             });
@@ -740,35 +742,135 @@ export default function fillWorkdayForm(data: FormData): void {
                     }, 800);
                 }
             }, 2000);
-            // state dropdown selection
             const stateDropdownSelection = document.querySelector<HTMLButtonElement>('button[name="countryRegion"]');
             if (!stateDropdownSelection) return;
+            {
+                const now = Date.now();
+                const diff = now - lastDropdownActionTs;
+                if (diff < 800) await wait(800 - diff);
+                lastDropdownActionTs = Date.now();
+            }
+            stateDropdownSelection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await wait(200);
+            try { stateDropdownSelection.focus(); } catch {}
             stateDropdownSelection.click();
-            setTimeout(() => {
+            await wait(500);
+            {
                 const options = document.querySelectorAll<HTMLElement>('[role="option"]');
                 const state = data.data?.details?.state;
-                if (!state) return;
-                options.forEach(option => {
-                    if (option.innerText.trim().toLowerCase() === state.toLowerCase()) {
-                        option.click();
+                if (state) {
+                    for (const option of Array.from(options)) {
+                        if (option.innerText.trim().toLowerCase() === state.toLowerCase()) {
+                            (option as HTMLElement).click();
+                            break;
+                        }
                     }
-                });
-            }, 500);
-            // phone type dropdown selection
+                }
+            }
+            await wait(400);
+            {
+                const txt = (stateDropdownSelection.textContent || '').trim().toLowerCase();
+                if (!txt || txt === 'select one') {
+                    stateDropdownSelection.click();
+                    await wait(500);
+                    const options = document.querySelectorAll<HTMLElement>('[role="option"]');
+                    const state = data.data?.details?.state;
+                    if (state) {
+                        for (const option of Array.from(options)) {
+                            if (option.innerText.trim().toLowerCase() === state.toLowerCase()) {
+                                (option as HTMLElement).click();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            await wait(1200);
+            stateDropdownSelection.blur();
+            stateDropdownSelection.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+            stateDropdownSelection.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+            await wait(300);
+            document.body.click();
+            await wait(500);
+            {
+                const open = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                if (open) {
+                    stateDropdownSelection.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    stateDropdownSelection.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    await wait(300);
+                    document.body.click();
+                    await wait(400);
+                }
+            }
             const phoneTypeDropdownSelection = document.querySelector<HTMLButtonElement>('button[name="phoneType"]');
             if (!phoneTypeDropdownSelection) return;
+            {
+                const now = Date.now();
+                const diff = now - lastDropdownActionTs;
+                if (diff < 800) await wait(800 - diff);
+                lastDropdownActionTs = Date.now();
+            }
+            phoneTypeDropdownSelection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await wait(200);
+            try { phoneTypeDropdownSelection.focus(); } catch {}
             phoneTypeDropdownSelection.click();
-            console.log(phoneTypeDropdownSelection);
-            setTimeout(() => {
+            await wait(500);
+            {
                 const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
-                options.forEach(option => {
-                    if (option.innerText.trim().toLowerCase() === "home") {
-                        option.click();
+                for (const option of Array.from(options)) {
+                    if (option.innerText.trim().toLowerCase() === 'home') {
+                        (option as HTMLElement).click();
+                        break;
                     }
-                });
-            }, 500);
+                }
+            }
+            await wait(400);
+            {
+                const txt = (phoneTypeDropdownSelection.textContent || '').trim().toLowerCase();
+                if (!txt || txt === 'select one') {
+                    phoneTypeDropdownSelection.click();
+                    await wait(500);
+                    const options = document.querySelectorAll<HTMLElement>('li[role="option"]');
+                    for (const option of Array.from(options)) {
+                        if (option.innerText.trim().toLowerCase() === 'home') {
+                            (option as HTMLElement).click();
+                            break;
+                        }
+                    }
+                }
+            }
+            await wait(1200);
+            phoneTypeDropdownSelection.blur();
+            phoneTypeDropdownSelection.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+            phoneTypeDropdownSelection.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+            await wait(300);
+            document.body.click();
+            await wait(500);
+            {
+                const open = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                if (open) {
+                    phoneTypeDropdownSelection.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    phoneTypeDropdownSelection.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    await wait(300);
+                    document.body.click();
+                    await wait(400);
+                }
+            }
             searchInput.focus()
             searchInput.dispatchEvent(event)
+
+            await wait(1200);
+            {
+                const open = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                if (open) {
+                    try { document.activeElement && (document.activeElement as HTMLElement).blur(); } catch {}
+                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                    await wait(300);
+                    document.body.click();
+                    await wait(400);
+                }
+            }
 
             // After personal info form filling is complete, click Save & Continue
             setTimeout(async () => {
@@ -780,7 +882,18 @@ export default function fillWorkdayForm(data: FormData): void {
     // Application Questions 1 of 2 - Main application questions with proper validation
     async function fillApplicationQuestions1
     () {
+        if (answeringInProgress) return;
+        answeringInProgress = true;
         console.log('[workdaynewScript] Starting Application Questions 1 of 2...');
+
+        const getContextText = (btn: HTMLButtonElement): string => {
+            const parent = btn.closest('fieldset, .css-1bnjvia, [role="group"], .wd-field') || btn.parentElement as HTMLElement | null;
+            return parent?.textContent?.toLowerCase() || '';
+        };
+        const decideAnswerFromContext = (ctx: string): string => {
+            if (/acknowledge|i\s*have\s*read|enter\s*"?yes"?|agree|affirm|confirm/i.test(ctx)) return 'Yes';
+            return 'No';
+        };
 
         const questionMapping = [
             {
@@ -958,6 +1071,13 @@ export default function fillWorkdayForm(data: FormData): void {
                     dropdownButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     await wait(500);
 
+                    {
+                        const now = Date.now();
+                        const diff = now - lastDropdownActionTs;
+                        if (diff < 800) await wait(800 - diff);
+                        lastDropdownActionTs = Date.now();
+                    }
+
                     // Multiple click strategies to ensure dropdown opens
                     console.log(`[workdaynewScript] Clicking dropdown button for: ${mapping.question}`);
 
@@ -1020,29 +1140,44 @@ export default function fillWorkdayForm(data: FormData): void {
                         ];
 
                         for (const selector of optionSelectors) {
-                            const options = document.querySelectorAll(selector);
+                            let options: Element[] = [];
+                            for (const doc of getAllDocs()) {
+                                const found = Array.from(doc.querySelectorAll(selector));
+                                if (found.length) { options = found; break; }
+                            }
                             console.log(`[workdaynewScript] Found ${options.length} options with selector: ${selector}`);
 
                             for (const option of options) {
                                 const optionText = option.textContent?.trim().toLowerCase() || '';
-                                const answerText = mapping.answer.toLowerCase();
+                                const context = getContextText(dropdownButton);
+                                const answerText = decideAnswerFromContext(context).toLowerCase();
 
                                 console.log(`[workdaynewScript] Comparing option: "${optionText}" with answer: "${answerText}"`);
 
                                 // Enhanced matching logic
                                 const isExactMatch = optionText === answerText;
                                 const isContainedMatch = optionText.includes(answerText) || answerText.includes(optionText);
-                                const isYesNoMatch = (answerText.includes('yes') && optionText.includes('yes')) ||
-                                    (answerText.includes('no') && optionText.includes('no'));
+                                const isYesNoMatch = (answerText.includes('yes') && /(^|\W)yes(\W|$)/i.test(optionText)) ||
+                                    (answerText.includes('no') && (/(^|\W)no(\W|$)/i.test(optionText) || /local/i.test(optionText) || /do\s*not|not\b/i.test(optionText)));
 
                                 if (isExactMatch || isContainedMatch || isYesNoMatch) {
                                     console.log(`[workdaynewScript] Selecting option: "${optionText}"`);
 
                                     // Multiple click strategies
                                     try {
-                                        (option as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        await wait(200);
-                                        (option as HTMLElement).click();
+                                        const optEl = option as HTMLElement;
+                                        let clickTarget = optEl;
+                                        if (optEl.tagName === 'LI' && optEl.firstElementChild && optEl.firstElementChild.tagName === 'DIV') {
+                                            clickTarget = optEl.firstElementChild as HTMLElement;
+                                        } else if ((optEl.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && optEl.firstElementChild) {
+                                            clickTarget = optEl.firstElementChild as HTMLElement;
+                                        }
+                                        clickTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        await wait(150);
+                                        try { clickTarget.focus(); } catch {}
+                                        clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                                        clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                                        clickTarget.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
                                         await wait(500);
 
                                         // Verify selection worked
@@ -1051,6 +1186,26 @@ export default function fillWorkdayForm(data: FormData): void {
                                             console.log(`[workdaynewScript] Successfully selected: ${updatedButtonText}`);
                                             optionSelected = true;
                                             questionsProcessed++;
+                                            dropdownButton.blur();
+                                            dropdownButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                            dropdownButton.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                            await wait(150);
+                                            document.body.click();
+                                            await wait(150);
+                                            break;
+                                        }
+                                        dropdownButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+                                        await wait(300);
+                                        const updatedButtonText2 = dropdownButton.textContent?.trim();
+                                        if (updatedButtonText2 && updatedButtonText2 !== 'Select One') {
+                                            optionSelected = true;
+                                            questionsProcessed++;
+                                            dropdownButton.blur();
+                                            dropdownButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                            dropdownButton.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                            await wait(150);
+                                            document.body.click();
+                                            await wait(150);
                                             break;
                                         }
                                     } catch (clickError) {
@@ -1074,7 +1229,7 @@ export default function fillWorkdayForm(data: FormData): void {
 
                     if (!optionSelected) {
                         console.warn(`[workdaynewScript] Failed to select option for: ${mapping.question} - ${mapping.answer}`);
-                        document.body.click(); // Close dropdown
+                        document.body.click();
                         allQuestionsAnswered = false;
                     }
 
@@ -1085,6 +1240,72 @@ export default function fillWorkdayForm(data: FormData): void {
 
                 await wait(200); // Brief pause between questions
             }
+
+            try {
+                const genericButtons = Array.from(document.querySelectorAll('button[aria-haspopup="listbox"], button[role="combobox"], .wd-input-dropdown button')) as HTMLButtonElement[];
+                for (const btn of genericButtons) {
+                    const txt = btn.textContent?.trim() || '';
+                    if (txt && txt.toLowerCase() !== 'select one') continue;
+                    const ctx = getContextText(btn);
+                    const decided = decideAnswerFromContext(ctx).toLowerCase();
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await wait(300);
+                    {
+                        const now = Date.now();
+                        const diff = now - lastDropdownActionTs;
+                        if (diff < 800) await wait(800 - diff);
+                        lastDropdownActionTs = Date.now();
+                    }
+                    try { btn.focus(); } catch {}
+                    btn.click();
+                    await wait(600);
+                    let selected = false;
+                    for (const doc of getAllDocs()) {
+                        const options = Array.from(doc.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]'));
+                        for (const opt of options) {
+                            const t = (opt.textContent || '').trim().toLowerCase();
+                            const matchYes = decided === 'yes' && /(^|\W)yes(\W|$)/i.test(t);
+                            const matchNo = decided === 'no' && /(^|\W)no(\W|$)/i.test(t);
+                            if (t === decided || matchYes || matchNo) {
+                                let target = opt as HTMLElement;
+                                if (target.tagName === 'LI' && target.firstElementChild && target.firstElementChild.tagName === 'DIV') {
+                                    target = target.firstElementChild as HTMLElement;
+                                } else if ((target.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && target.firstElementChild) {
+                                    target = target.firstElementChild as HTMLElement;
+                                }
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                await wait(150);
+                                try { target.focus(); } catch {}
+                                target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                                target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                                target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                await wait(400);
+                                const updated = (btn.textContent || '').trim();
+                                if (updated && updated.toLowerCase() !== 'select one') {
+                                    selected = true;
+                                    btn.blur();
+                                    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    await wait(200);
+                                    document.body.click();
+                                    await wait(300);
+                                    const stillOpen = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                                    if (stillOpen) {
+                                        btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        await wait(200);
+                                        document.body.click();
+                                        await wait(200);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        if (selected) break;
+                    }
+                    await wait(200);
+                }
+            } catch {}
 
             // Check if all questions are answered
             const remainingQuestions = await checkRemainingApplicationQuestions();
@@ -1101,6 +1322,77 @@ export default function fillWorkdayForm(data: FormData): void {
             }
         }
 
+        for (let extra = 0; extra < 4; extra++) {
+            const rem = await checkRemainingApplicationQuestions();
+            if (rem === 0) break;
+            try {
+                const genericButtons = Array.from(document.querySelectorAll('button[aria-haspopup="listbox"], button[role="combobox"], .wd-input-dropdown button')) as HTMLButtonElement[];
+                for (const btn of genericButtons) {
+                    const txt = btn.textContent?.trim() || '';
+                    if (txt && txt.toLowerCase() !== 'select one') continue;
+                    const ctx = getContextText(btn);
+                    const decided = decideAnswerFromContext(ctx).toLowerCase();
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await wait(300);
+                    {
+                        const now = Date.now();
+                        const diff = now - lastDropdownActionTs;
+                        if (diff < 800) await wait(800 - diff);
+                        lastDropdownActionTs = Date.now();
+                    }
+                    try { btn.focus(); } catch {}
+                    btn.click();
+                    await wait(600);
+                    let selected = false;
+                    for (const doc of getAllDocs()) {
+                        const options = Array.from(doc.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]'));
+                        for (const opt of options) {
+                            const t = (opt.textContent || '').trim().toLowerCase();
+                            const matchYes = decided === 'yes' && /(^|\W)yes(\W|$)/i.test(t);
+                            const matchNo = decided === 'no' && /(^|\W)no(\W|$)/i.test(t);
+                            if (t === decided || matchYes || matchNo) {
+                                let target = opt as HTMLElement;
+                                if (target.tagName === 'LI' && target.firstElementChild && target.firstElementChild.tagName === 'DIV') {
+                                    target = target.firstElementChild as HTMLElement;
+                                } else if ((target.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && target.firstElementChild) {
+                                    target = target.firstElementChild as HTMLElement;
+                                }
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                await wait(150);
+                                try { target.focus(); } catch {}
+                                target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                                target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                                target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                await wait(400);
+                                const updated = (btn.textContent || '').trim();
+                                if (updated && updated.toLowerCase() !== 'select one') {
+                                    selected = true;
+                                    btn.blur();
+                                    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    await wait(200);
+                                    document.body.click();
+                                    await wait(300);
+                                    const stillOpen = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                                    if (stillOpen) {
+                                        btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        await wait(200);
+                                        document.body.click();
+                                        await wait(200);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        if (selected) break;
+                    }
+                    await wait(200);
+                }
+            } catch {}
+            await wait(800);
+        }
+
         // Final validation check
         const remaining = await checkRemainingApplicationQuestions();
         if (remaining === 0) {
@@ -1112,8 +1404,8 @@ export default function fillWorkdayForm(data: FormData): void {
         // Wait for form validation to complete before clicking Save
         await waitUntilFormIsValid();
 
-        // Click Save & Continue
         await waitAndClickButton();
+        answeringInProgress = false;
     }
 
     // Helper function to check remaining unanswered application questions
@@ -1162,7 +1454,18 @@ export default function fillWorkdayForm(data: FormData): void {
 
     // Application Questions 2 of 2 - Employee relations and acknowledgment questions
     async function fillApplicationQuestions2() {
+        if (answeringInProgress) return;
+        answeringInProgress = true;
         console.log('[workdaynewScript] Filling Application Questions 2 of 2...');
+
+        const getContextText2 = (btn: HTMLButtonElement): string => {
+            const parent = btn.closest('fieldset, .css-1bnjvia, [role="group"], .wd-field') || btn.parentElement as HTMLElement | null;
+            return parent?.textContent?.toLowerCase() || '';
+        };
+        const decideAnswerFromContext2 = (ctx: string): string => {
+            if (/acknowledge|i\s*have\s*read|enter\s*"?yes"?|agree|affirm|confirm/i.test(ctx)) return 'Yes';
+            return 'No';
+        };
 
         // Updated mapping for second page questions
         const questionMapping = [
@@ -1215,20 +1518,23 @@ export default function fillWorkdayForm(data: FormData): void {
 
                     let dropdownButton: HTMLButtonElement | null = null;
 
-                    // Try direct selectors first
+                    // Try direct selectors across documents
                     for (const selector of selectors) {
-                        const buttons = document.querySelectorAll(selector);
-                        for (const button of buttons) {
-                            const buttonElement = button as HTMLButtonElement;
-                            const parentText = buttonElement.closest('fieldset, .css-1bnjvia')?.textContent?.toLowerCase() || '';
-
-                            if (parentText.includes(mapping.question.toLowerCase()) ||
-                                buttonElement.textContent?.trim() === 'Select One') {
-                                dropdownButton = buttonElement;
-                                break;
+                        let foundBtn: HTMLButtonElement | null = null;
+                        for (const doc of getAllDocs()) {
+                            const buttons = doc.querySelectorAll(selector);
+                            for (const button of buttons) {
+                                const buttonElement = button as HTMLButtonElement;
+                                const parentText = buttonElement.closest('fieldset, .css-1bnjvia, [role="group"], .wd-field')?.textContent?.toLowerCase() || '';
+                                if (parentText.includes(mapping.question.toLowerCase()) ||
+                                    buttonElement.textContent?.trim() === 'Select One') {
+                                    foundBtn = buttonElement;
+                                    break;
+                                }
                             }
+                            if (foundBtn) break;
                         }
-                        if (dropdownButton) break;
+                        if (foundBtn) { dropdownButton = foundBtn; break; }
                     }
 
                     if (dropdownButton) {
@@ -1239,19 +1545,62 @@ export default function fillWorkdayForm(data: FormData): void {
                         }
 
                         dropdownButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        {
+                            const now = Date.now();
+                            const diff = now - lastDropdownActionTs;
+                            if (diff < 800) await wait(800 - diff);
+                            lastDropdownActionTs = Date.now();
+                        }
                         dropdownButton.focus();
                         dropdownButton.click();
 
-                        // Wait and select option
-                        setTimeout(() => {
-                            const options = document.querySelectorAll('li[role="option"], div[role="option"]');
-                            options.forEach(option => {
-                                const optionText = option.textContent?.trim().toLowerCase();
-                                if (optionText === mapping.answer.toLowerCase()) {
-                                    (option as HTMLElement).click();
+                        await wait(500);
+                        const decided = decideAnswerFromContext2(getContextText2(dropdownButton)).toLowerCase();
+                        let selected = false;
+                        for (const doc of getAllDocs()) {
+                            const options = doc.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]');
+                            for (const option of options) {
+                                const optionText = (option.textContent || '').trim().toLowerCase();
+                                if (optionText === decided ||
+                                    (decided === 'no' && (/(^|\W)no(\W|$)/i.test(optionText) || /local/i.test(optionText) || /do\s*not|not\b/i.test(optionText))) ||
+                                    (decided === 'yes' && /(^|\W)yes(\W|$)/i.test(optionText))) {
+                                    const optEl = option as HTMLElement;
+                                    let clickTarget = optEl;
+                                    if (optEl.tagName === 'LI' && optEl.firstElementChild && optEl.firstElementChild.tagName === 'DIV') {
+                                        clickTarget = optEl.firstElementChild as HTMLElement;
+                                    } else if ((optEl.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && optEl.firstElementChild) {
+                                        clickTarget = optEl.firstElementChild as HTMLElement;
+                                    }
+                                    clickTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    await wait(150);
+                                    try { clickTarget.focus(); } catch {}
+                                    clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                                    clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                                    clickTarget.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                    await wait(400);
+                                    const updated = (dropdownButton.textContent || '').trim();
+                                    if (updated && updated.toLowerCase() !== 'select one') {
+                                        selected = true;
+                                        dropdownButton.blur();
+                                    }
+                                    dropdownButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    dropdownButton.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                    await wait(250);
+                                    document.body.click();
+                                    await wait(250);
+                                    const stillOpen = document.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]').length > 0;
+                                    if (stillOpen) {
+                                        dropdownButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        dropdownButton.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                                        await wait(200);
+                                        document.body.click();
+                                        await wait(200);
+                                    }
+                                    break;
                                 }
-                            });
-                        }, 500);
+                            }
+                            if (selected) break;
+                        }
 
                         questionsProcessed++;
                     } else {
@@ -1275,6 +1624,123 @@ export default function fillWorkdayForm(data: FormData): void {
                 setTimeout(() => { }, 1000);
             }
         }
+
+        for (let extra = 0; extra < 4; extra++) {
+            const genericButtons = Array.from(document.querySelectorAll('button[aria-haspopup="listbox"], button[role="combobox"], .wd-input-dropdown button')) as HTMLButtonElement[];
+            let anyAnswered = false;
+            for (const btn of genericButtons) {
+                const txt = btn.textContent?.trim() || '';
+                if (txt && txt.toLowerCase() !== 'select one') continue;
+                const ctx = getContextText2(btn);
+                const decided = decideAnswerFromContext2(ctx).toLowerCase();
+                btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await wait(300);
+                {
+                    const now = Date.now();
+                    const diff = now - lastDropdownActionTs;
+                    if (diff < 800) await wait(800 - diff);
+                    lastDropdownActionTs = Date.now();
+                }
+                try { btn.focus(); } catch {}
+                btn.click();
+                await wait(600);
+                for (const doc of getAllDocs()) {
+                    const options = Array.from(doc.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]'));
+                    let selected = false;
+                    for (const opt of options) {
+                        const t = (opt.textContent || '').trim().toLowerCase();
+                        const matchYes = decided === 'yes' && /(^|\W)yes(\W|$)/i.test(t);
+                        const matchNo = decided === 'no' && /(^|\W)no(\W|$)/i.test(t);
+                        if (t === decided || matchYes || matchNo) {
+                            let target = opt as HTMLElement;
+                            if (target.tagName === 'LI' && target.firstElementChild && target.firstElementChild.tagName === 'DIV') {
+                                target = target.firstElementChild as HTMLElement;
+                            } else if ((target.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && target.firstElementChild) {
+                                target = target.firstElementChild as HTMLElement;
+                            }
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            await wait(150);
+                            try { target.focus(); } catch {}
+                            target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                            target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                            target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                            await wait(400);
+                            selected = true;
+                            break;
+                        }
+                    }
+                    if (selected) {
+                        anyAnswered = true;
+                        btn.blur();
+                        btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                        btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                        await wait(150);
+                        document.body.click();
+                        await wait(150);
+                        break;
+                    }
+                }
+                await wait(200);
+            }
+            if (!anyAnswered) break;
+            await wait(800);
+        }
+
+        try {
+            const genericButtons = Array.from(document.querySelectorAll('button[aria-haspopup="listbox"], button[role="combobox"], .wd-input-dropdown button')) as HTMLButtonElement[];
+            for (const btn of genericButtons) {
+                const txt = btn.textContent?.trim() || '';
+                if (txt && txt.toLowerCase() !== 'select one') continue;
+                const ctx = getContextText2(btn);
+                const decided = decideAnswerFromContext2(ctx).toLowerCase();
+                btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await wait(300);
+                {
+                    const now = Date.now();
+                    const diff = now - lastDropdownActionTs;
+                    if (diff < 800) await wait(800 - diff);
+                    lastDropdownActionTs = Date.now();
+                }
+                try { btn.focus(); } catch {}
+                btn.click();
+                await wait(600);
+                let selected = false;
+                for (const doc of getAllDocs()) {
+                    const options = Array.from(doc.querySelectorAll('li[role="option"], div[role="option"], [data-automation-id="promptOption"]'));
+                    for (const opt of options) {
+                        const t = (opt.textContent || '').trim().toLowerCase();
+                        const matchYes = decided === 'yes' && /(^|\W)yes(\W|$)/i.test(t);
+                        const matchNo = decided === 'no' && /(^|\W)no(\W|$)/i.test(t);
+                        if (t === decided || matchYes || matchNo) {
+                            let target = opt as HTMLElement;
+                            if (target.tagName === 'LI' && target.firstElementChild && target.firstElementChild.tagName === 'DIV') {
+                                target = target.firstElementChild as HTMLElement;
+                            } else if ((target.getAttribute('data-automation-id') || '').toLowerCase() === 'promptoption' && target.firstElementChild) {
+                                target = target.firstElementChild as HTMLElement;
+                            }
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            await wait(150);
+                            try { target.focus(); } catch {}
+                            target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                            target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+                            target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                            await wait(400);
+                            selected = true;
+                            btn.blur();
+                            btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+                            btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+                            await wait(150);
+                            document.body.click();
+                            await wait(150);
+                            break;
+                        }
+                    }
+                    if (selected) break;
+                }
+                await wait(200);
+            }
+        } catch {}
+        answeringInProgress = false;
     }
 
     async function fillVoluntaryDisclosure() {
@@ -1391,15 +1857,22 @@ export default function fillWorkdayForm(data: FormData): void {
     }
 
     async function clickNextButton() {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for autofill to finish
+        const allowed = await isAutoClickEnabled();
+        if (!allowed) {
+            console.warn('[workdaynewScript] Auto-click disabled; user must click Next manually.');
+            return false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const nextBtn = document.querySelector<HTMLButtonElement>('button[data-automation-id="pageFooterNextButton"]');
         if (nextBtn && !nextBtn.disabled) {
             nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             nextBtn.focus();
             nextBtn.click();
             console.log('[workdaynewScript] Save and Continue button clicked automatically.');
+            return true;
         } else {
             console.warn('[workdaynewScript] Save and Continue button not found or disabled.');
+            return false;
         }
     }
 
@@ -1453,6 +1926,18 @@ export default function fillWorkdayForm(data: FormData): void {
             textarea.dispatchEvent(new Event("input", { bubbles: true }));
             textarea.dispatchEvent(new Event("change", { bubbles: true }));
         }
+
+        setTimeout(() => {
+            const active = document.activeElement as HTMLElement | null;
+            try { active?.blur(); } catch {}
+            try {
+                const escDown = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true });
+                const escUp = new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true });
+                document.dispatchEvent(escDown);
+                document.dispatchEvent(escUp);
+            } catch {}
+            setTimeout(() => { try { document.body.click(); } catch {} }, 300);
+        }, 600);
     };
 
     const fillEducation = async (index: number): Promise<void> => {
@@ -1470,6 +1955,7 @@ export default function fillWorkdayForm(data: FormData): void {
             if (fieldName.includes("schoolname")) input.value = edu.collegeName || '';
             else if (fieldName.includes("fieldofstudy")) input.value = edu.courseName || '';
             else if (fieldName.includes("gradeaverage")) input.value = edu.grade || '';
+            else if( fieldName.includes("degree")) input.value = edu.courseName || '';
             else if (fieldName.includes("firstyearattended")) {
                 input.value = edu.startDate || '';
                 input.focus();
@@ -1485,8 +1971,8 @@ export default function fillWorkdayForm(data: FormData): void {
 
         // Degree dropdown - enhanced selector and validation
         const degreeDropdownBtn = section.querySelector<HTMLButtonElement>('button[name="degree"], button[id*="degree"]');
-        if (degreeDropdownBtn && edu.educationType) {
-            console.log(`[workdaynewScript] Clicking degree dropdown for: ${edu.educationType}`);
+        if (degreeDropdownBtn && edu.courseName) {
+            console.log(`[workdaynewScript] Clicking degree dropdown for: ${edu.courseName}`);
             degreeDropdownBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -1498,7 +1984,7 @@ export default function fillWorkdayForm(data: FormData): void {
                 console.log(`[workdaynewScript] Found ${options.length} degree options`);
 
                 let optionFound = false;
-                const targetDegree = edu.educationType.toLowerCase();
+                const targetDegree = edu.courseName.toLowerCase();
 
                 // Create flexible degree mappings
                 const degreeMappings: Record<string, string[]> = {
@@ -1639,6 +2125,13 @@ export default function fillWorkdayForm(data: FormData): void {
         console.log('[workdaynewScript] Finished filling Languages section.');
     };
 
+    const getAllDocs = (): Document[] => {
+        const docs: Document[] = [document];
+        document.querySelectorAll('iframe').forEach(ifr => {
+            try { if ((ifr as HTMLIFrameElement).contentDocument) docs.push((ifr as HTMLIFrameElement).contentDocument as Document); } catch {}
+        });
+        return docs;
+    };
     const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
     const observer = new MutationObserver(async (mutations) => {
         let shouldFillForm = false;
@@ -1655,11 +2148,11 @@ export default function fillWorkdayForm(data: FormData): void {
                         console.log(`[workdaynewScript] Detected page: ${currentPage}`);
 
                         if (currentPage === 'app-questions-1') {
-                            await fillApplicationQuestions1();
+                            if (!answeringInProgress) await fillApplicationQuestions1();
                             console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
                             await clickSaveAndContinue();
                         } else if (currentPage === 'app-questions-2') {
-                            await fillApplicationQuestions2();
+                            if (!answeringInProgress) await fillApplicationQuestions2();
                             console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
                             await clickSaveAndContinue();
                         }
@@ -1716,12 +2209,12 @@ export default function fillWorkdayForm(data: FormData): void {
             // Use page detection for Application Questions and wait for completion
             const currentPage = detectApplicationQuestionsPage();
             if (currentPage === 'app-questions-1') {
-                await fillApplicationQuestions1();
+                if (!answeringInProgress) await fillApplicationQuestions1();
                 console.log('[workdaynewScript] Application Questions 1 complete, clicking Save & Continue...');
                 // await clickSaveAndContinue();
                 await clickNextButton();
             } else if (currentPage === 'app-questions-2') {
-                await fillApplicationQuestions2();
+                if (!answeringInProgress) await fillApplicationQuestions2();
                 console.log('[workdaynewScript] Application Questions 2 complete, clicking Save & Continue...');
                 // await clickSaveAndContinue();
                 await clickNextButton();
