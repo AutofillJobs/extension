@@ -6,8 +6,9 @@
   "license": "MIT",
   "scripts": {
     "watch": "webpack --watch --progress --config webpack.dev.js",
-    "build": "cross-env NODE_ENV=develop webpack --watch --progress --config webpack.prod.js",
-    "build:prod": "cross-env NODE_ENV=production webpack --config webpack.prod.js",
+    "build": "cross-env NODE_ENV=production webpack --config webpack.prod.js",
+    "build:chrome": "cross-env NODE_ENV=production webpack --config webpack.prod.js",
+    "build:edge": "cross-env NODE_ENV=production BROWSER=edge webpack --config webpack.prod.js",
     "analyze": "node analyze-bundle.js"
   },
   "devDependencies": {

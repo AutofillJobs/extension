@@ -170,19 +170,25 @@ export function fillDetails(userDetails: any, regexMap: any) {
       }
 
       if (matchFound && matchedKey && userDetails[matchedKey]) {
-        const selectValue = userDetails[matchedKey];
+        const selectValue = String(userDetails[matchedKey]).toLowerCase().trim();
+        let matched = false;
         Array.from(select.options).forEach((option) => {
-          if (option.text === selectValue || option.value === selectValue) {
+          if (matched) return;
+          const optText = option.text.toLowerCase().trim();
+          const optVal = option.value.toLowerCase().trim();
+          if (optText === selectValue || optVal === selectValue ||
+              optText.includes(selectValue) || selectValue.includes(optText)) {
             select.value = option.value;
             select.dispatchEvent(new Event("change", { bubbles: true }));
             select.dispatchEvent(new Event("input", { bubbles: true }));
             filledFields[matchedKey] = userDetails[matchedKey];
+            matched = true;
           }
         });
       }
     });
   };
-  
+
   fillSelectField(userDetails, selectInputRegex);
 
   const fillRadioButton = (userDetails: any, regexMap: any) => {
